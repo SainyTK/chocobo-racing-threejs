@@ -52,6 +52,30 @@ The server listens on `0.0.0.0`. Use this computer's LAN IP on devices on the sa
 
 For internet play, deploy the Node server on a reachable HTTPS host with WebSocket support. Static-file hosting alone is insufficient.
 
+## Studio
+
+The studio is an internal viewer for single game elements: racers, Magic Stones, spell effects and stage objects.
+
+```sh
+npm run studio
+```
+
+It opens http://localhost:5180 with its own Vite server, separate from the game server.
+The production build does not include it.
+
+Search the library with `/` (or Cmd/Ctrl+K), then press Enter to show the highlighted element in the active pane.
+Shift+Enter adds it as a new pane.
+Compare up to four panes side by side, each with its own element and variant, labelled A to D.
+`V` (or "All variants") fills the panes with the variants of the active element, and `[` / `]` step through variants.
+Linked cameras turn every pane together, and Restart replays every pane from the same moment.
+Variants marked "In game" are what the game currently uses.
+
+The address bar always holds the full comparison, so "Copy link" shares exactly what you see.
+"Save image" downloads all panes as one PNG with each pane's letter, element and variant, ready to post for a decision.
+Quality switches between the game's High and Low settings.
+
+To register a new element, add an entry under `studio/elements/` and list it in `studio/registry.ts`.
+
 ## Production
 
 ```sh
@@ -104,9 +128,14 @@ Reports are in `output/playwright-report/`; screenshots are in `output/testing/`
 - `src/gfx/effects/`: spell and race effects: fireballs, ice traps, lightning, Ultima, Reflect bubbles, Doom runes, boost trails, drift sparks and status auras.
   `index.ts` holds the `Effects` controller; `bolt.ts`, `trail.ts`, `bursts.ts`, `status.ts` and `pickup.ts` each hold one effect component.
 - `src/gfx/particles/`: instanced billboard particle pools and their shaders.
+- `src/gfx/orbs/`: Magic Stone orbs. Each stone is a glass sphere with its element ray-marched inside it: a flame, a tumbling ice cube, plasma-globe lightning, a whirlwind, a mirror ball, shrinking rings, a Doom clock in smoke, a star core and a rainbow question mark.
+  `interiors.ts` holds one shader per stone, `glass.ts` the shell and `index.ts` builds an orb. Track pickups, held stones and HUD slots all use them.
+- `src/gfx/stage/`: boost pads, trackside props and the scenery primitives and materials they are built from.
+- `src/gfx/pipeline.ts`: renderer settings, bloom composer and lights shared by the game and the studio.
 - `src/gfx/materials/`: toon, glow, outline, ghost, fresnel shell, crystal and ground decal materials, one per file.
 - `src/gfx/geometry/`: the geometry helpers used to sculpt the models (baked transforms, primitives, rocks and swept tubes).
 - `src/main.ts`: modes, menus, HUD, input, local race loop and ghost recording.
+- `studio/`: the internal element viewer (`npm run studio`). `registry.ts` lists the elements, `elements/` defines them by category and `viewport.ts` renders one pane.
 - `src/network.ts`: reconnects, world-space interpolation and bounded extrapolation.
 - `src/audio.ts`: original synthesized music and effects.
 - `docs/research.md`: original-game research, sources, technology choices and fidelity limits.

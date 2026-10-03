@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "tsx watch server/index.ts",
     "start": "NODE_ENV=production tsx server/index.ts",
+    "studio": "vite --config studio/vite.config.ts",
     "build": "tsc --noEmit && vite build",
     "test": "vitest run",
     "test:e2e": "playwright test",

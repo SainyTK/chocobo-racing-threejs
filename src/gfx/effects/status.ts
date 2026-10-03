@@ -1,16 +1,19 @@
 import * as THREE from 'three';
-import { crystalMaterial } from '../materials/crystal.ts';
-import { sphereGeo, shardGeo, gemGeo } from './geometries.ts';
+import type { Item } from '../../../shared/game/index.ts';
+import type { Orb } from '../orbs/index.ts';
+import { sphereGeo, shardGeo } from './geometries.ts';
 import { Trail } from './trail.ts';
 
+/** A held stone's orbit slot. The orb is rebuilt only when the stone in that slot changes. */
+export interface HeldStone { anchor: THREE.Group; kind: Item | null; orb: Orb | null }
 /** Per-racer effect state: boost trails, held stones, shield bubble, freeze shell and Doom rune. */
 export interface Status {
-  trails: Trail[]; stones: THREE.Mesh[]; shield: THREE.Mesh; frozen: THREE.Group; doom: THREE.Sprite; doomCanvas: HTMLCanvasElement; doomValue: number;
+  trails: Trail[]; stones: HeldStone[]; shield: THREE.Mesh; frozen: THREE.Group; doom: THREE.Sprite; doomCanvas: HTMLCanvasElement; doomValue: number;
   boostColor: THREE.Color; frozenUntil: number; flash: number; emitAcc: number; lastStun: number;
 }
 
 export function createStatus(group: THREE.Group, shieldMat: THREE.Material, frozenMat: THREE.Material): Status {
-  const stones = Array.from({ length: 3 }, () => { const m = new THREE.Mesh(gemGeo, crystalMaterial('#ffffff', { opacity: .95, intensity: 1.5 })); m.scale.setScalar(.32); m.visible = false; group.add(m); return m; });
+  const stones = Array.from({ length: 3 }, (): HeldStone => { const anchor = new THREE.Group(); anchor.visible = false; group.add(anchor); return { anchor, kind: null, orb: null }; });
   const shield = new THREE.Mesh(sphereGeo, shieldMat); shield.visible = false; group.add(shield);
   const frozen = new THREE.Group(); for (let i = 0; i < 9; i++) { const m = new THREE.Mesh(shardGeo, frozenMat); const a = i / 9 * Math.PI * 2; m.position.set(Math.sin(a) * 1.1, 0, Math.cos(a) * 1.1); m.rotation.set(Math.cos(a) * .35, a, -Math.sin(a) * .35); m.scale.set(1.5, 2 + (i % 3) * .5, 1.5); frozen.add(m); } frozen.visible = false; group.add(frozen);
   const doomCanvas = document.createElement('canvas'); doomCanvas.width = doomCanvas.height = 128; const doom = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(doomCanvas), transparent: true, depthWrite: false })); doom.scale.setScalar(1.8); doom.visible = false; group.add(doom);
@@ -29,6 +32,6 @@ export function drawDoom(s: Status, n: number) {
 }
 
 export function disposeStatus(group: THREE.Group, s: Status) {
-  s.trails.forEach(t => { group.remove(t.mesh); t.dispose(); }); s.stones.forEach(m => { group.remove(m); (m.material as THREE.Material).dispose(); });
+  s.trails.forEach(t => { group.remove(t.mesh); t.dispose(); }); s.stones.forEach(h => { group.remove(h.anchor); h.orb?.dispose(); });
   group.remove(s.shield, s.frozen, s.doom); (s.doom.material as THREE.SpriteMaterial).map?.dispose(); s.doom.material.dispose();
 }

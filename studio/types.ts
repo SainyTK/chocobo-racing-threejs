@@ -1,0 +1,27 @@
+import type * as THREE from 'three';
+import type { Effects } from '../src/gfx/effects/index.ts';
+
+export const CATEGORIES = ['Characters', 'Items', 'Effects', 'Stage'] as const;
+export type Category = typeof CATEGORIES[number];
+
+/** What an element can draw into: its pane's scene, the pane's own effects controller and camera. */
+export interface StudioContext { scene: THREE.Scene; fx: Effects; camera: THREE.Camera }
+
+/** One live element in a pane. Ground level is y = 0; the pane adds `object` to its scene and removes it on dispose. */
+export interface Instance { object?: THREE.Object3D; update?(t: number, dt: number): void; dispose?(): void }
+
+export interface Variant { id: string; label: string; /** Marks the variant the game currently uses. */ inGame?: boolean }
+
+export interface StudioElement {
+  /** Stable id used in shared links, e.g. `item.fire`. */
+  id: string; name: string; category: Category; tags?: string[]; variants: Variant[];
+  /** Orbit target height and distance. Elements with a bounded `object` may omit it to frame automatically. */
+  view?: { y: number; distance: number };
+  create(variant: string, ctx: StudioContext): Instance;
+}
+
+/** Calls `fire` at t = 0 and every `period` seconds after, so one-shot effects replay in step across panes. */
+export function every(period: number, fire: () => void) {
+  let last = -1;
+  return (t: number) => { const k = Math.floor(t / period); if (k !== last) { last = k; fire(); } };
+}

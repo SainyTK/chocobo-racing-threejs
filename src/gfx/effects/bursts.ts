@@ -23,11 +23,11 @@ export class Bursts {
     }
     b.age = 0; b.life = life; b.size = size; b.grow = o.grow ?? 1; b.follow = o.follow; b.mesh.visible = true; b.mesh.position.copy(at); b.mesh.userData.height = o.height ?? 12;
   }
-  update(dt: number, race: Race, time: number) {
+  update(dt: number, race: Race | null, time: number) {
     for (const b of this.pool) {
       if (b.age >= b.life) continue; b.age += dt; const t = Math.min(1, b.age / b.life), m = b.mesh.material as THREE.ShaderMaterial;
       if (b.age >= b.life) { b.mesh.visible = false; continue; }
-      if (b.follow) { const r = race.racers.find(p => p.id === b.follow); if (r) b.mesh.position.set(r.px, floorY(race, r.px, r.pz) + 1.6, r.pz); }
+      if (b.follow && race) { const r = race.racers.find(p => p.id === b.follow); if (r) b.mesh.position.set(r.px, floorY(race, r.px, r.pz) + 1.6, r.pz); }
       const ease = 1 - (1 - t) ** 3;
       if (b.kind === 'ring') { b.mesh.scale.setScalar(b.size * (.15 + ease * .85)); m.uniforms.uProgress.value = t; }
       if (b.kind === 'pillar') { const w = b.size * (1 - t * .6); b.mesh.scale.set(w, b.mesh.userData.height * Math.min(1, t * 4), w); m.uniforms.uOpacity.value = (1 - t) ** 1.5; }
