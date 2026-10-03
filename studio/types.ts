@@ -1,14 +1,27 @@
 import type * as THREE from 'three';
 import type { Effects } from '../src/gfx/effects/index.ts';
+import type { Environment } from '../src/gfx/stage/course.ts';
+import type { ViewState } from './viewport.ts';
 
-export const CATEGORIES = ['Characters', 'Items', 'Effects', 'Stage'] as const;
+export const CATEGORIES = ['Characters', 'Items', 'Effects', 'Stage', 'Courses'] as const;
 export type Category = typeof CATEGORIES[number];
 
 /** What an element can draw into: its pane's scene, the pane's own effects controller and camera. */
 export interface StudioContext { scene: THREE.Scene; fx: Effects; camera: THREE.Camera }
 
 /** One live element in a pane. Ground level is y = 0; the pane adds `object` to its scene and removes it on dispose. */
-export interface Instance { object?: THREE.Object3D; update?(t: number, dt: number): void; dispose?(): void }
+export interface Instance {
+  object?: THREE.Object3D; update?(t: number, dt: number): void; dispose?(): void;
+  /** Course light, fog and sky. The pane then hides its own ground and background. */
+  env?: Environment;
+  /** Orbit target and distance, for elements whose interesting spot is not at the origin. */
+  focus?: { target: THREE.Vector3; distance: number; near?: number; far?: number };
+  /**
+   * Drives the camera itself (a race chase camera, a fly-through). The pane's orbit angles and zoom arrive as
+   * `view`, so dragging still looks around. Returns the point the sun's shadows should centre on.
+   */
+  camera?(camera: THREE.PerspectiveCamera, view: ViewState, t: number, dt: number): THREE.Vector3;
+}
 
 export interface Variant { id: string; label: string; /** Marks the variant the game currently uses. */ inGame?: boolean }
 

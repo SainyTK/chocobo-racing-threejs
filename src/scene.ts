@@ -1,7 +1,6 @@
 import * as THREE from 'three';
-import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import type { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
-import { TRACKS, courseObjects, pointAt, trackLength, type TrackId } from '../shared/track/index.ts';
+import { courseObjects, pointAt, type TrackId } from '../shared/track/index.ts';
 import type { Item, Race } from '../shared/game/index.ts';
 import { createCharacter, type Character } from './gfx/characters/index.ts';
 import { Effects } from './gfx/effects/index.ts';
@@ -11,13 +10,9 @@ import { FX_GEOMETRIES } from './gfx/effects/geometries.ts';
 import { ghostMaterial } from './gfx/materials/ghost.ts';
 import { Shape } from './gfx/particles/particles.ts';
 import { configureRenderer, createComposer, createLights } from './gfx/pipeline.ts';
-import { sphere, box, cone, STAGE_GEOMETRIES } from './gfx/stage/geometries.ts';
-import { sceneryMaterial as mat, sceneryMaterials } from './gfx/stage/materials.ts';
 import { makeBoostPad, padGeo, padMaterial } from './gfx/stage/boost-pad.ts';
-import { courseProp, PROP_SLOTS } from './gfx/stage/props.ts';
-const shared: THREE.BufferGeometry[] = [...STAGE_GEOMETRIES, padGeo, ...FX_GEOMETRIES, ...ORB_GEOMETRIES];
-function part(parent: THREE.Object3D, geo: THREE.BufferGeometry, color: string, x: number, y: number, z: number, sx: number, sy: number, sz: number) { const m = new THREE.Mesh(geo, mat(color)); m.position.set(x, y, z); m.scale.set(sx, sy, sz); parent.add(m); return m; }
-function batch(group: THREE.Group) { const batches = new Map<THREE.Material, THREE.Mesh[]>(); for (const o of group.children) if (o instanceof THREE.Mesh) { const m = o.material as THREE.Material; if (!batches.has(m)) batches.set(m, []); batches.get(m)!.push(o); } for (const [m, parts] of batches) if (parts.length > 1) { const gs = parts.map(p => { p.updateMatrix(); return p.geometry.clone().applyMatrix4(p.matrix); }); const g = mergeGeometries(gs); gs.forEach(g => g.dispose()); if (g) { parts.forEach(p => group.remove(p)); group.add(new THREE.Mesh(g, m)); } } }
+import { buildCourse, applyEnvironment, sunOffset, type Course, type StageQuality } from './gfx/stage/course.ts';
+const shared: THREE.BufferGeometry[] = [padGeo, ...FX_GEOMETRIES, ...ORB_GEOMETRIES];
 export interface GhostPoint { t: number; x: number; z: number; yaw: number; s: number }
 interface RacerView { c: Character; label?: THREE.Sprite; scale: number }
 function makeLabel(name: string) {
@@ -38,21 +33,21 @@ function softwareRenderer() {
 }
 export class World {
   readonly software = softwareRenderer(); readonly recommendedQuality = this.software ? 'low' : 'high';
-  renderer: THREE.WebGLRenderer; scene = new THREE.Scene(); camera = new THREE.PerspectiveCamera(58, 1, .2, 950);
-  terrain = new THREE.Group(); dynamic = new THREE.Group(); racers = new Map<string, RacerView>(); hero = createCharacter(0); heroIndex = 0; track: TrackId = 'test'; raceId = ''; mode: 'menu' | 'race' = 'menu'; clock = 0; cameraReady = false; stones: Pickup[] = []; ghost: Character | null = null;
+  renderer: THREE.WebGLRenderer; scene = new THREE.Scene(); camera = new THREE.PerspectiveCamera(58, 1, .2, 1500);
+  course: Course | null = null; dynamic = new THREE.Group(); racers = new Map<string, RacerView>(); hero = createCharacter(0); heroIndex = 0; track: TrackId = 'test'; raceId = ''; mode: 'menu' | 'race' = 'menu'; clock = 0; cameraReady = false; stones: Pickup[] = []; ghost: Character | null = null;
   fx: Effects; hemi: THREE.HemisphereLight; sun: THREE.DirectionalLight;
-  private composer: EffectComposer; private quality = 'high'; private ghostMat = ghostMaterial(); private portraits: string[] = []; private icons = new Map<Item, string>();
+  private composer: EffectComposer; private quality = 'high'; private ghostMat = ghostMaterial(); private portraits: string[] = []; private icons = new Map<Item, string>(); private sunOffset = new THREE.Vector3();
   constructor(canvas: HTMLCanvasElement) {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: !this.software, powerPreference: 'high-performance' }); this.renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5)); this.renderer.info.autoReset = false; configureRenderer(this.renderer);
     ({ hemi: this.hemi, sun: this.sun } = createLights());
-    this.scene.add(this.hemi, this.sun, this.sun.target, this.terrain, this.dynamic, this.hero.root);
+    this.scene.add(this.hemi, this.sun, this.sun.target, this.dynamic, this.hero.root);
     this.fx = new Effects(this.scene);
     this.composer = createComposer(this.renderer, this.scene, this.camera);
     this.buildTrack('test'); this.resize(); addEventListener('resize', () => this.resize());
   }
   resize() { this.renderer.setSize(innerWidth, innerHeight, false); this.composer.setPixelRatio(this.renderer.getPixelRatio()); this.composer.setSize(innerWidth, innerHeight); this.camera.aspect = innerWidth / innerHeight; this.camera.updateProjectionMatrix(); }
-  setQuality(q: string) { this.quality = q; this.fx.density = q === 'high' ? 1 : .5; setOrbDetail(q === 'high' ? 1 : .5); this.renderer.setPixelRatio(q === 'retro' ? .65 : q === 'low' ? 1 : Math.min(devicePixelRatio, 1.5)); this.renderer.shadowMap.enabled = q === 'high'; this.sun.castShadow = q === 'high'; this.scene.traverse(o => { if (o instanceof THREE.Mesh && o.material instanceof THREE.Material) o.material.needsUpdate = true; }); this.resize(); }
-  disposeObject(obj: THREE.Object3D) { const keep = [...sceneryMaterials(), padMaterial]; obj.traverse(o => { if (o instanceof THREE.Mesh) { if (!shared.includes(o.geometry)) o.geometry.dispose(); for (const m of Array.isArray(o.material) ? o.material : [o.material]) if (!keep.includes(m)) { (m as THREE.MeshBasicMaterial).map?.dispose(); m.dispose(); } } if (o instanceof THREE.Sprite) { if (!o.material.map?.userData.shared) o.material.map?.dispose(); o.material.dispose(); } }); }
+  setQuality(q: string) { this.quality = q; this.fx.density = q === 'high' ? 1 : .5; setOrbDetail(q === 'high' ? 1 : .5); this.renderer.setPixelRatio(q === 'retro' ? .65 : q === 'low' ? 1 : Math.min(devicePixelRatio, 1.5)); this.renderer.shadowMap.enabled = q === 'high'; this.sun.castShadow = q === 'high'; this.course?.setQuality(q as StageQuality); this.scene.traverse(o => { if (o instanceof THREE.Mesh && o.material instanceof THREE.Material) o.material.needsUpdate = true; }); this.resize(); }
+  disposeObject(obj: THREE.Object3D) { const keep = [padMaterial]; obj.traverse(o => { if (o instanceof THREE.Mesh) { if (!shared.includes(o.geometry)) o.geometry.dispose(); for (const m of Array.isArray(o.material) ? o.material : [o.material]) if (!keep.includes(m)) { (m as THREE.MeshBasicMaterial).map?.dispose(); m.dispose(); } } if (o instanceof THREE.Sprite) { if (!o.material.map?.userData.shared) o.material.map?.dispose(); o.material.dispose(); } }); }
   setHero(ch: number) { this.scene.remove(this.hero.root); this.hero.dispose(); this.hero = createCharacter(ch); this.heroIndex = ch; this.hero.root.visible = this.mode === 'menu'; this.scene.add(this.hero.root); }
   setGhost(ch: number | null) {
     if (this.ghost) { this.scene.remove(this.ghost.root); this.ghost.dispose(); this.ghost = null; } if (ch === null) return;
@@ -86,37 +81,13 @@ export class World {
     g.putImageData(img, 0, 0); rt.dispose(); return canvas.toDataURL('image/png');
   }
   buildTrack(id: TrackId) {
-    this.track = id; this.cameraReady = false; this.disposeObject(this.terrain); this.disposeObject(this.dynamic); this.terrain.clear(); this.dynamic.clear(); this.stones = [];
-    const t = TRACKS[id], len = trackLength(id), w = t.width;
-    this.scene.background = new THREE.Color(t.sky); this.scene.fog = new THREE.Fog(t.fog, id === 'mines' || id === 'manor' ? 80 : 175, id === 'mines' || id === 'manor' ? 230 : 650);
-    const scenery = new THREE.Group(), add = (geo: THREE.BufferGeometry, color: string, s: number, offset: number, y: number, sx: number, sy: number, sz: number, ry = 0) => { const p = pointAt(id, s, offset); const m = part(scenery, geo, color, p.x, p.y + y, p.z, sx, sy, sz); m.rotation.y = p.yaw + ry; return m; };
-    const ribbon = (a: number, b: number, color: string, height = 0) => { const ps: number[] = [], ix: number[] = []; for (let i = 0; i <= 800; i++) for (const x of [a, b]) { const p = pointAt(id, i / 800 * len, x); ps.push(p.x, p.y + height, p.z); } for (let i = 0; i < 800; i++) { const k = i * 2; ix.push(k, k + 2, k + 1, k + 1, k + 2, k + 3); } const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(ps, 3)); g.setIndex(ix); g.computeVertexNormals(); this.terrain.add(new THREE.Mesh(g, mat(color))); };
-    if (!t.cliff) ribbon(-55, 55, t.ground, -.2); else ribbon(-w - 1.5, w + 1.5, t.edge, -1);
-    ribbon(-w, w, t.road); ribbon(-w, -w + .45, '#eee4d0', .02); ribbon(w - .45, w, '#eee4d0', .02);
-    part(scenery, box, t.ground, 0, t.cliff ? -52 : -12, 0, 2000, 2, 2000);
-    for (let s = 0; s < len; s += 5) for (const side of [-1, 1]) {
-      add(box, Math.floor(s / 5) % 2 ? t.edge : '#eee4d5', s, side * (w + .3), .05, .65, .12, 5.1);
-      if (t.wall) add(box, id === 'test' ? '#617384' : t.edge, s, side * (w + .7), id === 'manor' ? 3.5 : 1, 1, id === 'manor' ? 7 : 2, 5.15);
-    }
-    for (let i = 0; i < PROP_SLOTS; i++) { const s = i * len / PROP_SLOTS; courseProp(id, i, (geo, color, ds, offset, y, sx, sy, sz) => { add(geo, color, s + ds, offset, y, sx, sy, sz); }); }
-    for (let s = 60; s < len; s += id === 'mines' ? 22 : 120) {
-      if (id === 'mines' || id === 'gate' || id === 'manor') { for (const sign of [-1, 1]) add(box, id === 'mines' ? '#92684a' : '#b3a58c', s, sign * (w + .3), 5.5, 1.2, 11, 1.4); add(box, id === 'mines' ? '#92684a' : '#b3a58c', s, 0, 10.7, w * 2 + 2, 1.2, 1.8); if (id === 'mines') add(box, '#443c49', s, 0, 13, w * 2 + 7, 3, 24); }
-      if (id === 'gingerbread') { const p = pointAt(id, s); const arch = part(scenery, new THREE.TorusGeometry(w + 1, 1, 6, 18, Math.PI), '#f7a8ca', p.x, p.y, p.z, 1, 1, 1); arch.rotation.y = p.yaw; }
-      // Direction boards face approaching racers and mark the outside of bends.
-      const p = pointAt(id, s + 15); const sign = p.curve >= 0 ? 1 : -1; add(box, '#f2ce54', s, -sign * (w + 2), 2.8, 3, 1.9, .15); const arrow = add(cone, '#382c37', s - .12, -sign * (w + 2), 2.8, .65, 1.2, .09); arrow.rotation.z = -sign * Math.PI / 2;
-    }
-    for (let s = 0; s < len; s += 12) if (id === 'test') add(box, '#b5b2ab', s, 0, .03, .22, .04, 4);
-    for (let j = 0; j < 2; j++) for (let i = 0; i < Math.floor(w); i++) add(box, (i + j) % 2 ? '#ffffff' : '#222237', j * 1.8, -w + 1 + i * 2, .07, 2, .05, 1.8);
-    for (const side of [-1, 1]) add(box, '#c0c8d2', 0, side * (w + 1), 5, .8, 10, .8);
-    add(box, '#354877', 0, 0, 9.5, w * 2 + 3, 2.4, .8);
-    const c = document.createElement('canvas'); c.width = 1024; c.height = 128; const ctx = c.getContext('2d')!; ctx.fillStyle = '#ffdf62'; ctx.font = 'italic bold 72px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('CHOCOBO RACING', 512, 88); const banner = new THREE.Mesh(new THREE.PlaneGeometry(w * 1.8, 2.2), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), transparent: true, side: THREE.DoubleSide })); const start = pointAt(id, -.46); banner.position.set(start.x, start.y + 9.5, start.z); banner.rotation.y = start.yaw + Math.PI; this.dynamic.add(banner);
+    this.track = id; this.cameraReady = false; this.disposeObject(this.dynamic); this.dynamic.clear(); this.stones = [];
+    if (this.course) { this.scene.remove(this.course.root); this.course.dispose(); }
+    this.course = buildCourse(id); this.course.setQuality(this.quality as StageQuality); this.scene.add(this.course.root);
+    applyEnvironment(this.course.env, this.scene, this.hemi, this.sun);
     const objects = courseObjects(id);
     objects.stones.forEach((st, i) => { const p = pointAt(id, st.s, st.x), stone = makePickup(st.kind, i); stone.root.position.set(p.x, p.y + 1.5, p.z); this.dynamic.add(stone.root); this.stones.push(stone); });
     for (const pad of objects.pads) { const p = pointAt(id, pad.s, pad.x), m = makeBoostPad(); m.position.set(p.x, p.y + .07, p.z); m.rotation.y = p.yaw; this.dynamic.add(m); }
-    for (const h of objects.hazards) add(sphere, id === 'volcano' ? '#ff8c36' : '#756350', h.s, h.x, .08, 2.6, .08, 3.5);
-    for (let i = 0; i < 24; i++) { const a = i * 2.4; part(scenery, sphere, id === 'volcano' ? '#844952' : '#ebe7ef', Math.sin(a) * 340, id === 'gardens' ? -14 : 85 + i % 4 * 12, Math.cos(a) * 340, 28, 9, 17); }
-    batch(scenery); this.terrain.add(scenery);
-    this.terrain.traverse(o => { if (o instanceof THREE.Mesh) o.receiveShadow = true; });
   }
   private addRacer(id: string, character: number, name?: string) {
     const c = createCharacter(character), view: RacerView = { c, scale: 1 };
@@ -164,8 +135,9 @@ export class World {
       if (this.fx.shake > 0) { const k = this.fx.shake * .5; this.camera.position.add(new THREE.Vector3((Math.random() - .5) * k, (Math.random() - .5) * k, (Math.random() - .5) * k)); }
     }
     // The shadow frustum follows the focus point so racers always cast crisp shadows.
-    this.sun.position.set(target.x - 22, target.y + 70, target.z + 16); this.sun.target.position.copy(target);
-    this.hemi.intensity = 1.7 + this.fx.flash * 1.6;
+    const env = this.course!.env; this.sun.position.copy(target).add(sunOffset(env, this.sunOffset)); this.sun.target.position.copy(target);
+    this.hemi.intensity = env.hemi.intensity + this.fx.flash * 1.6;
+    this.course!.update(t, live, this.camera);
     this.renderer.info.reset(); if (this.quality === 'high') this.composer.render(); else this.renderer.render(this.scene, this.camera);
   }
   stats() { return { calls: this.renderer.info.render.calls, triangles: this.renderer.info.render.triangles, geometries: this.renderer.info.memory.geometries, textures: this.renderer.info.memory.textures, ...this.fx.stats() }; }

@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import type { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { configureRenderer, createComposer, createLights } from '../src/gfx/pipeline.ts';
+import { applyEnvironment, sunOffset as courseSun } from '../src/gfx/stage/course.ts';
 import { Effects } from '../src/gfx/effects/index.ts';
 import { BACKGROUNDS, type Background, type Quality } from './state.ts';
 import type { Instance, StudioElement } from './types.ts';
@@ -21,7 +22,7 @@ export class Viewport {
   private renderer: THREE.WebGLRenderer; private composer: EffectComposer; private fx: Effects; private lights = createLights();
   private instance: Instance | null = null; private target = new THREE.Vector3(); private distance = 6; private bloom = true;
   private ground = new THREE.Group(); private gridMat: THREE.LineBasicMaterial;
-  private size = { w: 0, h: 0 };
+  private size = { w: 0, h: 0 }; private options: PaneOptions | null = null; private sun = sunOffset.clone(); private hemiBase = 1.7;
 
   constructor(public view: ViewState) {
     this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: true, preserveDrawingBuffer: false }); this.renderer.setPixelRatio(Math.min(devicePixelRatio, 2)); configureRenderer(this.renderer);
@@ -40,17 +41,26 @@ export class Viewport {
     const o = this.instance.object;
     if (o) { o.traverse(m => { if (m instanceof THREE.Mesh && !(m.material instanceof THREE.ShaderMaterial)) m.castShadow = true; }); this.scene.add(o); }
     this.instance.update?.(0, 0);
-    if (element.view) { this.target.set(0, element.view.y, 0); this.distance = element.view.distance; }
+    const env = this.instance.env, f = this.instance.focus;
+    if (env) { applyEnvironment(env, this.scene, this.lights.hemi, this.lights.sun); courseSun(env, this.sun); this.hemiBase = env.hemi.intensity; }
+    this.camera.near = f?.near ?? .05; this.camera.far = f?.far ?? 600; this.camera.fov = FOV; this.camera.updateProjectionMatrix();
+    if (this.options) this.setOptions(this.options);
+    if (f) { this.target.copy(f.target); this.distance = f.distance; }
+    else if (element.view) { this.target.set(0, element.view.y, 0); this.distance = element.view.distance; }
     else if (o) { const sphere = new THREE.Box3().setFromObject(o).getBoundingSphere(new THREE.Sphere()); this.target.copy(sphere.center); this.distance = sphere.radius / Math.sin(THREE.MathUtils.degToRad(FOV / 2)) * 1.08; }
   }
 
   private unload() {
     if (!this.instance) return;
     this.instance.dispose?.(); if (this.instance.object) this.scene.remove(this.instance.object); this.instance = null; this.fx.reset();
+    // Back to the studio's neutral lighting for the next element.
+    const fresh = createLights(); this.lights.hemi.color.copy(fresh.hemi.color); this.lights.hemi.groundColor.copy(fresh.hemi.groundColor); this.lights.sun.color.copy(fresh.sun.color); this.lights.sun.intensity = fresh.sun.intensity;
+    this.scene.fog = null; this.sun.copy(sunOffset); this.hemiBase = 1.7;
   }
 
   setOptions(o: PaneOptions) {
-    const bg = new THREE.Color(BACKGROUNDS[o.background]); this.scene.background = bg; this.ground.visible = o.ground; this.bloom = o.quality === 'high'; this.fx.density = o.quality === 'high' ? 1 : .5;
+    this.options = o; const env = this.instance?.env;
+    const bg = new THREE.Color(BACKGROUNDS[o.background]); if (!env) this.scene.background = bg; this.ground.visible = o.ground && !env; this.bloom = o.quality === 'high'; this.fx.density = o.quality === 'high' ? 1 : .5;
     const light = bg.r * .3 + bg.g * .59 + bg.b * .11 > .5; this.gridMat.color.set(light ? '#000000' : '#ffffff'); this.gridMat.opacity = light ? .12 : .08;
   }
 
@@ -62,10 +72,12 @@ export class Viewport {
   render(t: number, dt: number) {
     // Back off in panes taller than wide, so the subject still fits across.
     const { az, el, zoom } = this.view, d = this.distance * zoom / Math.min(1, this.camera.aspect) ** .6;
-    this.camera.position.set(this.target.x + Math.sin(az) * Math.cos(el) * d, this.target.y + Math.sin(el) * d, this.target.z + Math.cos(az) * Math.cos(el) * d); this.camera.lookAt(this.target);
+    let focus = this.target;
+    if (this.instance?.camera) focus = this.instance.camera(this.camera, this.view, t, dt);
+    else { this.camera.position.set(this.target.x + Math.sin(az) * Math.cos(el) * d, this.target.y + Math.sin(el) * d, this.target.z + Math.cos(az) * Math.cos(el) * d); this.camera.lookAt(this.target); }
     this.instance?.update?.(t, dt);
     this.scene.updateMatrixWorld(); this.fx.preview(dt, this.camera);
-    const { hemi, sun } = this.lights; hemi.intensity = 1.7 + this.fx.flash * 1.6; sun.position.copy(this.target).add(sunOffset); sun.target.position.copy(this.target);
+    const { hemi, sun } = this.lights; hemi.intensity = this.hemiBase + this.fx.flash * 1.6; sun.position.copy(focus).add(this.sun); sun.target.position.copy(focus);
     if (this.bloom) this.composer.render(); else this.renderer.render(this.scene, this.camera);
   }
 
