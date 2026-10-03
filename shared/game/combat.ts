@@ -1,5 +1,5 @@
 import { spellName, type Item } from './items.ts';
-import { addStone, syncInventory } from './inventory.ts';
+import { addStone, takeStack } from './inventory.ts';
 import { event } from './events.ts';
 import type { Race, Racer } from './types.ts';
 
@@ -9,9 +9,9 @@ export const aboveGround = (p: Racer) => p.flying > 0 || p.character === 4 || p.
 export function hit(r: Race, target: Racer, source: Racer, kind: Item | 'charge' = 'fire', level = 1, reflected = false) {
   if (target.finishTime !== null || target.invincible > 0 || target.falling > 0) return;
   if (target.abilityId === 'barrier' && target.ability >= 100) { target.ability = 0; event(r, target, 'block', 'Barrier!'); return; }
-  const reflectIndex = target.stones.indexOf('shield');
+  const reflectIndex = target.stones.findIndex(s => s.kind === 'shield');
   if (kind !== 'charge' && (reflectIndex >= 0 || target.shield > 0)) {
-    if (target.shield <= 0) { target.stones.splice(reflectIndex, 1); syncInventory(target); }
+    if (target.shield <= 0) takeStack(target, reflectIndex);
     const returnAttack = level < 3 && kind !== 'ice' && kind !== 'ultima' && !reflected;
     event(r, target, returnAttack ? 'reflect' : 'block', returnAttack ? 'Reflect!' : 'Magic blocked!', source.id);
     if (returnAttack) hit(r, source, target, kind, level, true); return;

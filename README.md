@@ -42,7 +42,14 @@ Manual acceleration is on by default. You must steer around corners. The game do
 
 A long drift causes a spin, not a release turbo. Release the pedals during an over-drift spin, then press accelerate to perform a Spin Dash. A timed accelerator press just before GO gives a dash start.
 
-Carry three Magic Stones. The last collected stone casts first. Consecutive matching stones combine into stronger spells. Reflect can defend automatically while held. Rear contact can steal a rival's stone; a collision can pass a Doom curse.
+Carry up to three stacks of Magic Stones, trailing in a line behind your racer.
+A stone that matches your latest stack merges into it, up to level three, so it frees a slot for another pickup.
+Level two and three stacks glow, and level three blazes.
+The latest stack casts first, at its full level.
+Reflect and Doom never merge.
+Reflect can defend automatically while held.
+Drive into a rival's trailing stack to take it.
+A collision can pass a Doom curse.
 
 Local menus pause the race. Online rooms continue running. Disconnected online racers get CPU control and can reconnect within 60 seconds, including after a page reload.
 
@@ -144,8 +151,8 @@ Reports are in `output/playwright-report/`; screenshots are in `output/testing/`
 - `src/gfx/effects/`: spell and race effects: fireballs, ice traps, lightning, Ultima, Reflect bubbles, Doom runes, boost trails, drift sparks and status auras.
   `index.ts` holds the `Effects` controller; `bolt.ts`, `trail.ts`, `bursts.ts`, `status.ts` and `pickup.ts` each hold one effect component.
 - `src/gfx/particles/`: instanced billboard particle pools and their shaders.
-- `src/gfx/orbs/`: Magic Stone orbs. Each stone is a glass sphere with its element ray-marched inside it: a flame, a tumbling ice cube, plasma-globe lightning, a whirlwind, a mirror ball, shrinking rings, a Doom clock in smoke, a star core and a rainbow question mark.
-  `interiors.ts` holds one shader per stone, `glass.ts` the shell and `index.ts` builds an orb. Track pickups, held stones and HUD slots all use them.
+- `src/gfx/orbs/`: Magic Stone orbs. Each stone is a glass sphere with its element ray-marched inside it: a flame, a turning cluster of ice crystals, plasma-globe lightning, a speed dash with trailing spikes, a mirror ball, shrinking rings, a Doom skull in smoke, a star core and a white question mark.
+  `interiors.ts` holds one shader per stone, `glass.ts` the shell and `index.ts` builds an orb. Track pickups, held stones and HUD slots all use them. `stack.ts` wraps a held orb in its level two or three aura.
 - `src/gfx/stage/`: course scenery.
   `course.ts` assembles a course; `kit.ts` places and merges props; `terrain.ts` builds the ground heightfield and textured road; `sky.ts` the sky dome and distant mountains; `liquid.ts` water, lava and cloud seas; `ambient.ts` drifting particles; `textures.ts` procedural road and ground textures; `props/` shared props; `courses/` one file per course.
 - `src/gfx/pipeline.ts`: renderer settings, bloom composer and lights shared by the game and the studio.

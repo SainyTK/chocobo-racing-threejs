@@ -7,12 +7,13 @@ import { Effects } from './gfx/effects/index.ts';
 import { makePickup, type Pickup } from './gfx/effects/pickup.ts';
 import { makeOrb, setOrbDetail, ORB_GEOMETRIES } from './gfx/orbs/index.ts';
 import { FX_GEOMETRIES } from './gfx/effects/geometries.ts';
+import { AURA_GEOMETRIES } from './gfx/orbs/stack.ts';
 import { ghostMaterial } from './gfx/materials/ghost.ts';
 import { Shape } from './gfx/particles/particles.ts';
 import { configureRenderer, createComposer, createLights } from './gfx/pipeline.ts';
 import { makeBoostPad, padGeo, padMaterial } from './gfx/stage/boost-pad.ts';
 import { buildCourse, applyEnvironment, sunOffset, type Course, type StageQuality } from './gfx/stage/course.ts';
-const shared: THREE.BufferGeometry[] = [padGeo, ...FX_GEOMETRIES, ...ORB_GEOMETRIES];
+const shared: THREE.BufferGeometry[] = [padGeo, ...FX_GEOMETRIES, ...ORB_GEOMETRIES, ...AURA_GEOMETRIES];
 export interface GhostPoint { t: number; x: number; z: number; yaw: number; s: number }
 interface RacerView { c: Character; label?: THREE.Sprite; scale: number }
 function makeLabel(name: string) {

@@ -5,7 +5,7 @@ import { courseObjects } from '../../track/objects.ts';
 import { ABILITIES } from '../abilities.ts';
 import { RACERS } from '../racers.ts';
 import { ITEMS, drawStone } from '../items.ts';
-import { addStone } from '../inventory.ts';
+import { addStone, canAddStone, maxLevel, MAX_STACKS } from '../inventory.ts';
 import { aboveGround, crash, hit } from '../combat.ts';
 import { recover, useAbility, useItem } from '../actions.ts';
 import { event } from '../events.ts';
@@ -20,7 +20,7 @@ export function stepRacer(r: Race, p: Racer, dt: number) {
   for (const key of ['boost', 'shield', 'stun', 'invincible', 'flying', 'gripUp', 'charging', 'mini', 'contactCooldown', 'wallCooldown', 'pickupCooldown'] as const) p[key] = Math.max(0, p[key] - dt);
   if (p.doom > 0) { p.doom = Math.max(0, p.doom - dt); if (p.doom <= 0) crash(r, p, 3.5, 'Doom!'); }
   p.ability = Math.min(100, p.ability + dt * 100 / ABILITIES[p.abilityId].recharge);
-  if (p.abilityId === 'magic' && p.ability >= 100 && p.stones.length > 0 && p.stones.length < 3 && !['shield', 'doom'].includes(p.stones.at(-1)!)) { addStone(p, p.stones.at(-1)!); p.ability = 0; event(r, p, 'ability', 'Magic Plus!'); }
+  if (p.abilityId === 'magic' && p.ability >= 100 && p.item && p.itemLevel < maxLevel(p.item)) { addStone(p, p.item); p.ability = 0; event(r, p, 'ability', 'Magic Plus!'); }
   if (p.falling > 0) { p.falling -= dt; if (p.falling <= 0) recover(r, p); return; }
   if (input.rescue && r.time - p.lastRescue > 3) { recover(r, p); return; }
   if (input.item && !p.lastItem && p.stun <= 0) useItem(r, p);
@@ -76,7 +76,8 @@ export function stepRacer(r: Race, p: Racer, dt: number) {
     }
   }
   if (r.mode !== 'time' && p.pickupCooldown <= 0) for (const stone of objects.stones) {
-    if (r.pickups[stone.id] > 0 || p.stones.length >= 3) continue;
+    // A random stone could roll anything, so it needs a free slot.
+    if (r.pickups[stone.id] > 0 || (stone.kind === 'random' ? p.stones.length >= MAX_STACKS : !canAddStone(p, stone.kind))) continue;
     if (Math.abs(mod(stone.s - p.routeS + len / 2, len) - len / 2) > 2.8 || Math.abs(stone.x - p.x) > 2.1) continue;
     const kind = stone.kind === 'random' ? drawStone(random(r)) : stone.kind;
     addStone(p, kind); r.pickups[stone.id] = 1.1; p.pickupCooldown = .25; event(r, p, 'pickup', `${ITEMS[kind].name} Stone`); break;

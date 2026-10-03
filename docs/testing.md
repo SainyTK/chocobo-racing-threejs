@@ -14,7 +14,7 @@ Tested on 2026-09-13. This file covers the free-driving rewrite, not the earlier
 
 ## Simulation coverage
 
-Tests verify eight closed track geometries and world-to-road projection; the eight vehicles and independent abilities; free heading without automatic steering; acceleration, braking and reverse; wall response; cliffs and recovery; sequential checkpoint validation; reverse-crossing rejection; timed starts; drift spinouts and Spin Dash; strict input filtering; three-slot LIFO magic; matching-stone groups; all spell families; aimed and homing fireballs; ice traps; Reflect's held and manually cast forms; area-attack blocking; natural airborne immunity to ground ice; Doom transfer and detonation; input-edge casting; pickup respawn; solo Time Attack; every ability; lap splits; and deterministic results.
+Tests verify eight closed track geometries and world-to-road projection; the eight vehicles and independent abilities; free heading without automatic steering; acceleration, braking and reverse; wall response; cliffs and recovery; sequential checkpoint validation; reverse-crossing rejection; timed starts; drift spinouts and Spin Dash; strict input filtering; three-slot LIFO magic; matching stones merging into one stack; theft of trailing stacks; all spell families; aimed and homing fireballs; ice traps; Reflect's held and manually cast forms; area-attack blocking; natural airborne immunity to ground ice; Doom transfer and detonation; input-edge casting; pickup respawn; solo Time Attack; every ability; lap splits; and deterministic results.
 
 Each course also has a three-lap, six-CPU test. Every finisher must have crossed all 36 gates and recorded three valid splits.
 

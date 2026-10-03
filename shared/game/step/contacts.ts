@@ -1,11 +1,10 @@
-import { angleDelta } from '../../math.ts';
 import { RACERS } from '../racers.ts';
-import { addStone, syncInventory } from '../inventory.ts';
+import { addStone, canAddStone, stackPositions, takeStack } from '../inventory.ts';
 import { crash, hit } from '../combat.ts';
 import { event } from '../events.ts';
 import type { Race } from '../types.ts';
 
-/** Pushes overlapping racers apart and applies contact effects: Doom transfer, Charge, squashing and stone theft. */
+/** Pushes overlapping racers apart and applies contact effects: Doom transfer, Charge and squashing. */
 export function resolveContacts(r: Race) {
   for (let i = 0; i < r.racers.length; i++) for (let j = i + 1; j < r.racers.length; j++) {
     const a = r.racers[i], b = r.racers[j]; if (a.finishTime !== null || b.finishTime !== null || a.falling > 0 || b.falling > 0) continue;
@@ -23,7 +22,22 @@ export function resolveContacts(r: Race) {
     for (const [p, q] of [[a, b], [b, a]]) {
       if (p.charging > 0) hit(r, q, p, 'charge');
       if (q.mini > 0 && q.miniLevel === 3 && p.mini <= 0) crash(r, q, 2, 'Squashed!');
-      if (p.stones.length < 3 && q.stones.length && p.s < q.s && p.speed > 8 && Math.abs(angleDelta(Math.atan2(q.px - p.px, q.pz - p.pz), p.yaw)) < .7) { addStone(p, q.stones.pop()!); syncInventory(q); event(r, p, 'steal', 'Stole a Magic Stone!', q.id); }
+    }
+  }
+}
+
+/** A racer that drives into a rival's trailing stack takes the whole stack, as if it were a track pickup. */
+export function stealStacks(r: Race) {
+  for (const holder of r.racers) {
+    if (!holder.stones.length || holder.finishTime !== null || holder.falling > 0) continue;
+    const at = stackPositions(holder);
+    for (const thief of r.racers) {
+      if (thief === holder || thief.finishTime !== null || thief.falling > 0 || thief.stun > 0 || thief.pickupCooldown > 0) continue;
+      const reach = 1.1 * RACERS[thief.character].size * (thief.mini > 0 ? 1 - thief.miniLevel * .18 : 1);
+      let i = at.length - 1; while (i >= 0 && !(Math.hypot(at[i].x - thief.px, at[i].z - thief.pz) < reach && canAddStone(thief, holder.stones[i].kind))) i--;
+      if (i < 0) continue;
+      const stack = takeStack(holder, i)!; addStone(thief, stack.kind, stack.level); thief.pickupCooldown = .25;
+      event(r, thief, 'steal', stack.level > 1 ? `Stole a level ${stack.level} stack!` : 'Stole a Magic Stone!', holder.id); break;
     }
   }
 }

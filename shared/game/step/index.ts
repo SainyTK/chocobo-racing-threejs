@@ -4,7 +4,7 @@ import { event } from '../events.ts';
 import type { Race } from '../types.ts';
 import { stepRacer } from './racer.ts';
 import { stepProjectiles } from './projectiles.ts';
-import { resolveContacts } from './contacts.ts';
+import { resolveContacts, stealStacks } from './contacts.ts';
 import { updateStandings } from './standings.ts';
 
 export function stepRace(r: Race, dt = TICK) {
@@ -24,5 +24,6 @@ export function stepRace(r: Race, dt = TICK) {
   for (const p of r.racers) stepRacer(r, p, dt);
   stepProjectiles(r, dt);
   resolveContacts(r);
+  stealStacks(r);
   updateStandings(r);
 }

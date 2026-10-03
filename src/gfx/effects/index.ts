@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { ITEMS, type Race, type Racer, type Item } from '../../../shared/game/index.ts';
+import { ITEMS, stackPositions, type Race, type Racer, type Item } from '../../../shared/game/index.ts';
 import { TRACKS } from '../../../shared/track/index.ts';
 import { Particles, Shape, type Emit } from '../particles/particles.ts';
 import type { Character } from '../characters/index.ts';
@@ -10,7 +10,7 @@ import { sphereGeo, ringGeo, shardGeo } from './geometries.ts';
 import { Bolt, boltMaterial } from './bolt.ts';
 import { Bursts } from './bursts.ts';
 import { createStatus, drawDoom, disposeStatus, type Status } from './status.ts';
-import { makeOrb } from '../orbs/index.ts';
+import { makeHeldStack } from '../orbs/stack.ts';
 import { rand, floorY } from './util.ts';
 
 const v = new THREE.Vector3(), v2 = new THREE.Vector3();
@@ -250,13 +250,27 @@ export class Effects {
       // Doom countdown rune.
       s.doom.visible = p.doom > 0;
       if (p.doom > 0) { const n = Math.ceil(p.doom); if (n !== s.doomValue) drawDoom(s, n); c.head.getWorldPosition(v); s.doom.position.set(v.x, v.y + 1.7 * scale, v.z); s.doom.scale.setScalar(1.8 + Math.max(0, Math.sin(this.time * (14 - n))) * .2); if (live && Math.random() < .5) this.glow.emit({ x: p.px + rand() * .8, y: y + rand(.5, 2.5), z: p.pz + rand() * .8, vy: rand(.8, 1.8), life: rand(.5, .9), size: rand(.35, .6), color: '#c46cff', endColor: '#3a0a5a', drag: .5 }); }
-      // Held stones orbit behind the racer.
+      // Held stacks trail behind the racer where the simulation places them, so what you see is what a rival can grab.
+      const at = stackPositions(p);
       s.stones.forEach((h, i) => {
-        const kind = p.stones[i]; h.anchor.visible = !!kind; if (!kind) return;
-        if (h.kind !== kind || !h.orb) { if (h.orb) { h.anchor.remove(h.orb.root); h.orb.dispose(); } h.orb = makeOrb(kind, { halo: false }); h.anchor.add(h.orb.root); h.kind = kind; }
-        h.orb.update(this.time);
-        const a = this.time * 2.2 + i * 2.09;
-        h.anchor.position.set(p.px + Math.cos(a) * 1.05 * scale, y + (c.height + .45) * scale + Math.sin(a * 2) * .12, p.pz + Math.sin(a) * 1.05 * scale); h.anchor.scale.setScalar(.3 * scale);
+        const stack = p.stones[i]; h.anchor.visible = !!stack; if (!stack) { h.placed = false; return; }
+        if (h.kind !== stack.kind || h.level !== stack.level || !h.view) {
+          if (h.view) { h.anchor.remove(h.view.root); h.view.dispose(); }
+          h.view = makeHeldStack(stack.kind, stack.level); h.anchor.add(h.view.root);
+          if (h.kind !== null && live) this.sparkle(h.anchor.position, ITEMS[stack.kind].color, 10 + stack.level * 6);
+          h.kind = stack.kind; h.level = stack.level;
+        }
+        h.view.update(this.time + i * 1.3);
+        const bob = Math.sin(this.time * 3 + i * 1.7) * .12, size = (.36 + stack.level * .07) * scale * (stack.level === 3 ? 1 + Math.sin(this.time * 7) * .04 : 1);
+        v2.set(at[i].x, y + (1.15 + stack.level * .1) * scale + bob, at[i].z);
+        // Ease toward the target so the line sways through corners, but snap on the first frame and after respawns.
+        if (!h.placed || h.anchor.position.distanceTo(v2) > 8) h.anchor.position.copy(v2); else h.anchor.position.lerp(v2, 1 - Math.exp(-dt * 18));
+        h.placed = true; h.anchor.scale.setScalar(size);
+        if (!live || stack.level < 2) return;
+        const color = ITEMS[stack.kind].color, o = h.anchor.position;
+        if (stack.level === 2) { if (Math.random() < .8 * this.density) { const a = rand(0, 6.28), r = rand(.5, .9); this.glow.emit({ x: o.x + Math.cos(a) * r, y: o.y + rand() * .4, z: o.z + Math.sin(a) * r, vx: -fwd.x * 2, vy: rand(.6, 1.4), vz: -fwd.z * 2, life: rand(.3, .5), size: rand(.22, .35), endSize: .05, color: '#ffffff', endColor: color, drag: 1.5, shape: Shape.Star }); } return; }
+        this.spray(this.glow, 2, () => { const a = rand(0, 6.28), r = rand(.6, 1.1); return { x: o.x + Math.cos(a) * r, y: o.y + rand() * .6, z: o.z + Math.sin(a) * r, vx: -Math.sin(a) * 2 - fwd.x * 3, vy: rand(1, 2.4), vz: Math.cos(a) * 2 - fwd.z * 3, life: rand(.35, .6), size: rand(.25, .45), endSize: .05, color: '#ffffff', endColor: color, drag: 1.5, shape: Shape.Star }; });
+        if (Math.random() < .5 * this.density) this.glow.emit({ x: o.x, y: o.y, z: o.z, vx: -fwd.x * 5 + rand() * .5, vy: rand(-.2, .4), vz: -fwd.z * 5 + rand() * .5, life: rand(.25, .4), size: rand(.7, 1.1), endSize: .2, color, endColor: color, drag: 2, stretch: .04 });
       });
     }
     for (const [id, s] of this.status) if (!alive.has(id)) { disposeStatus(this.group, s); this.status.delete(id); }
