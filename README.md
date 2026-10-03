@@ -54,7 +54,7 @@ For internet play, deploy the Node server on a reachable HTTPS host with WebSock
 
 ## Studio
 
-The studio is an internal viewer for single game elements: racers, Magic Stones, spell effects and stage objects.
+The studio is an internal viewer for game elements: racers, Magic Stones, spell effects, stage objects and whole courses.
 
 ```sh
 npm run studio
@@ -74,7 +74,23 @@ The address bar always holds the full comparison, so "Copy link" shares exactly 
 "Save image" downloads all panes as one PNG with each pane's letter, element and variant, ready to post for a decision.
 Quality switches between the game's High and Low settings.
 
+The Courses category builds a complete course in a pane, lit by its own sky, fog and sun.
+"Race camera lap" drives a Chocobo round the course behind the game's chase camera; drag to look around it and scroll to pull back.
+"Aerial overview", "Start line" and the six "Trackside" views orbit fixed points of the course.
+"Prop sheet" lays out the course's named props side by side with labels, for working on one prop at a time.
+Course files hot-reload, so scenery can be built and judged here without starting a race.
+
 To register a new element, add an entry under `studio/elements/` and list it in `studio/registry.ts`.
+
+## Course scenery
+
+Each course's look lives in one file under `src/gfx/stage/courses/`: its sky, fog and light, terrain shape and colour, road surface, start gate colours, ambient particles, a `build` function that places everything else, and a catalog of props for the studio's prop sheet.
+`src/gfx/stage/kit.ts` collects props in world space and merges them per 128 m chunk and material layer, so the camera culls whole sections and a course draws in a few hundred calls.
+Props are authored as `Parts`: geometry painted per vertex with baked ambient occlusion, on a solid, wind-swayed foliage or glowing layer.
+Small dressing marked `detail` disappears on Low quality.
+
+`npx tsx tests/stage-report.ts [ids] [--props]` prints build time and triangle counts per course, and with `--props` the cost of every catalog prop.
+`tests/stage.test.ts` builds every course headless and checks budgets, disposal, Low-quality detail hiding, and that nothing stands on the road between the surface and 9 m overhead, where the chase camera rides.
 
 ## Production
 
@@ -122,7 +138,7 @@ Reports are in `output/playwright-report/`; screenshots are in `output/testing/`
   Race setup is in `setup.ts`, spell hits in `combat.ts`, item and ability use in `actions.ts`, and the bot driver in `bot.ts`.
   `step/` runs one tick: per-racer physics, projectiles, racer contacts and standings.
 - `server/index.ts`: authoritative room server, sessions and input validation.
-- `src/scene.ts`: scenery, chase camera, shadows, bloom post-processing and 3D-rendered portraits.
+- `src/scene.ts`: chase camera, course loading, pickups, shadows, bloom post-processing and 3D-rendered portraits.
 - `src/gfx/characters/`: the eight rigged racers and vehicles, built in code with cel shading and outlines, with running, flapping, blinking and spring animations.
   `index.ts` builds a racer by index, `rig.ts` batches parts into few draw calls, `parts/` holds shared pieces (bird body, eyes, wheels, carpet texture) and `racers/` has one file per racer.
 - `src/gfx/effects/`: spell and race effects: fireballs, ice traps, lightning, Ultima, Reflect bubbles, Doom runes, boost trails, drift sparks and status auras.
@@ -130,7 +146,8 @@ Reports are in `output/playwright-report/`; screenshots are in `output/testing/`
 - `src/gfx/particles/`: instanced billboard particle pools and their shaders.
 - `src/gfx/orbs/`: Magic Stone orbs. Each stone is a glass sphere with its element ray-marched inside it: a flame, a tumbling ice cube, plasma-globe lightning, a whirlwind, a mirror ball, shrinking rings, a Doom clock in smoke, a star core and a rainbow question mark.
   `interiors.ts` holds one shader per stone, `glass.ts` the shell and `index.ts` builds an orb. Track pickups, held stones and HUD slots all use them.
-- `src/gfx/stage/`: boost pads, trackside props and the scenery primitives and materials they are built from.
+- `src/gfx/stage/`: course scenery.
+  `course.ts` assembles a course; `kit.ts` places and merges props; `terrain.ts` builds the ground heightfield and textured road; `sky.ts` the sky dome and distant mountains; `liquid.ts` water, lava and cloud seas; `ambient.ts` drifting particles; `textures.ts` procedural road and ground textures; `props/` shared props; `courses/` one file per course.
 - `src/gfx/pipeline.ts`: renderer settings, bloom composer and lights shared by the game and the studio.
 - `src/gfx/materials/`: toon, glow, outline, ghost, fresnel shell, crystal and ground decal materials, one per file.
 - `src/gfx/geometry/`: the geometry helpers used to sculpt the models (baked transforms, primitives, rocks and swept tubes).

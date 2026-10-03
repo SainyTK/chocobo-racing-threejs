@@ -94,12 +94,9 @@ export function banner(cloth: string, trim: string, emblem: string, w = 1.6, h =
   const p = new Parts();
   p.add(cyl(.06, .06, w + .5, [0, h, 0], [0, 0, Math.PI / 2], 6), trim, { ao: false });
   for (const s of [-1, 1]) p.add(ball(.12, [s * (w / 2 + .25), h, 0], .5), trim, { ao: false });
-  const cut = .45, g = new THREE.BufferGeometry(), v = [-w / 2, h, 0, w / 2, h, 0, w / 2, cut, 0, 0, 0, 0, -w / 2, cut, 0];
-  g.setAttribute('position', new THREE.Float32BufferAttribute(v, 3)); g.setIndex([0, 4, 1, 1, 4, 2, 4, 3, 2]); g.computeVertexNormals();
-  const ce = new THREE.Color(emblem), cc = new THREE.Color(cloth), ct = new THREE.Color(trim);
-  const fine = new THREE.ShapeGeometry(new THREE.Shape([new THREE.Vector2(-w / 2, h), new THREE.Vector2(w / 2, h), new THREE.Vector2(w / 2, cut), new THREE.Vector2(0, 0), new THREE.Vector2(-w / 2, cut)]), 1);
-  g.dispose();
-  const sub = subdivide(fine, 3);
+  // Swallow-tail cloth, subdivided so the trim, emblem and wind weights follow its shape.
+  const cut = .45, ce = new THREE.Color(emblem), cc = new THREE.Color(cloth), ct = new THREE.Color(trim);
+  const sub = subdivide(new THREE.ShapeGeometry(new THREE.Shape([new THREE.Vector2(-w / 2, h), new THREE.Vector2(w / 2, h), new THREE.Vector2(w / 2, cut), new THREE.Vector2(0, 0), new THREE.Vector2(-w / 2, cut)]), 1), 3);
   p.add(sub, (x, y, _z, out) => { const edge = Math.min(w / 2 - Math.abs(x), h - y, y - (cut - Math.abs(x) * cut * 2 / w)); const em = Math.hypot(x, (y - h * .58) * .8) < w * .28; out.copy(edge < .12 ? ct : em ? ce : cc); }, { layer: 'foliage', sway: 0, ao: false });
   const back = p.layers.get('foliage')!.at(-1)!, sw = back.attributes.sway as THREE.BufferAttribute, gp = back.attributes.position as THREE.BufferAttribute;
   for (let i = 0; i < sw.count; i++) sw.setX(i, Math.max(0, (h - gp.getY(i)) / h) * .5);
@@ -182,7 +179,7 @@ export function bunting(kit: Kit, a: THREE.Vector3, b: THREE.Vector3, colors: st
   kit.place(p, 0, 0, 0); p.dispose();
 }
 
-/** Glowing save point: a rotating ring of light the racers pass by. Static here; the course animates nothing. */
+/** Glowing save point: a ring of light on a stone dais with floating crystals, a nod to the series' save spots. */
 export function savePoint(color = '#9fe8ff') {
   const p = new Parts();
   p.add(cyl(1.3, 1.5, .25, [0, .12, 0], [0, 0, 0], 16), '#d9dce8', { ao: false });

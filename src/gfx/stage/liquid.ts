@@ -25,17 +25,17 @@ export function makeLiquid(kit: Kit, o: LiquidSpec) {
   const mat = kit.own(new THREE.ShaderMaterial({
     transparent: (o.opacity ?? 1) < 1, depthWrite: (o.opacity ?? 1) >= 1, fog: true,
     uniforms: THREE.UniformsUtils.merge([THREE.UniformsLib.fog, { uNoise: { value: null }, uDeep: { value: new THREE.Color(o.deep) }, uShallow: { value: new THREE.Color(o.shallow) }, uFoam: { value: new THREE.Color(o.foam) }, uSky: { value: new THREE.Color(o.sky ?? o.shallow) },
-      uGlow: { value: o.glow ?? 0 }, uScale: { value: o.scale ?? 1 }, uSpeed: { value: o.speed ?? 1 }, uSwell: { value: o.swell ?? 0 }, uOpacity: { value: o.opacity ?? 1 } }]),
+      uGlow: { value: o.glow ?? 0 }, uScale: { value: o.scale ?? 1 }, uSpeed: { value: o.speed ?? 1 }, uSwell: { value: o.swell ?? 0 }, uOpacity: { value: o.opacity ?? 1 }, uLite: { value: 0 } }]),
     vertexShader: `uniform float uTime, uSwell; varying vec3 vW;
       #include <fog_pars_vertex>
       void main(){ vec4 w = modelMatrix * vec4(position, 1.); w.y += sin(uTime * .6 + w.x * .02) * cos(uTime * .5 + w.z * .025) * uSwell; vW = w.xyz; vec4 mvPosition = viewMatrix * w; gl_Position = projectionMatrix * mvPosition;
         #include <fog_vertex>
       }`,
-    fragmentShader: `uniform float uTime, uGlow, uScale, uSpeed, uOpacity; uniform sampler2D uNoise; uniform vec3 uDeep, uShallow, uFoam, uSky; varying vec3 vW;
+    fragmentShader: `uniform float uLite, uTime, uGlow, uScale, uSpeed, uOpacity; uniform sampler2D uNoise; uniform vec3 uDeep, uShallow, uFoam, uSky; varying vec3 vW;
       #include <fog_pars_fragment>
       void main(){
         vec2 p = vW.xz * .012 * uScale; float t = uTime * .01 * uSpeed;
-        float a = texture2D(uNoise, p + vec2(t, t * .6)).r, b = texture2D(uNoise, p * 2.3 - vec2(t * 1.3, -t)).g, n = a * .6 + b * .4;
+        float a = texture2D(uNoise, p + vec2(t, t * .6)).r, b = uLite > .5 ? .5 : texture2D(uNoise, p * 2.3 - vec2(t * 1.3, -t)).g, n = a * .6 + b * .4;
         vec3 c = mix(uDeep, uShallow, smoothstep(.38, .62, n));
         float lines = smoothstep(.035, .0, abs(fract(n * 7. + t * 3.) - .5) - .44);
         c = mix(c, uFoam, lines * .55 + smoothstep(.7, .74, n) * .5);
@@ -50,6 +50,9 @@ export function makeLiquid(kit: Kit, o: LiquidSpec) {
   }));
   mat.uniforms.uNoise.value = noise; mat.uniforms.uTime = stageTime;
   const g = new THREE.PlaneGeometry(size, size, 48, 48).rotateX(-Math.PI / 2), mesh = new THREE.Mesh(g, mat);
-  mesh.position.set(kit.bounds.cx, o.y, kit.bounds.cz); mesh.name = 'liquid'; mesh.receiveShadow = false; kit.add(mesh);
+  mesh.position.set(kit.bounds.cx, o.y, kit.bounds.cz); mesh.name = 'liquid'; mesh.receiveShadow = false;
+  // After the opaque ground, so only the visible parts of a sheet under the terrain get shaded.
+  mesh.renderOrder = 1;
+  kit.add(mesh);
   return mesh;
 }

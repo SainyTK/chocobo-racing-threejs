@@ -93,7 +93,7 @@ function create(id: TrackId, variant: string): Instance {
   root.add(course.root);
   // The aerial view looks across the whole course, so its fog starts further out.
   const env = variant === 'aerial' ? { ...course.env, fog: { ...course.env.fog, near: course.env.fog.far * .9, far: course.env.fog.far * 2.4 } } : course.env;
-  const base: Instance = { object: root, env, dispose() { objects.dispose(); course.dispose(); } };
+  const base: Instance = { object: root, env, setQuality: q => course.setQuality(q), dispose() { objects.dispose(); course.dispose(); } };
   if (variant === 'drive') {
     const c = chase(id, course, root);
     return { ...base, camera: c.camera, update(t, dt) { objects.update(t); c.update!(t, dt); }, dispose() { c.dispose!(); base.dispose!(); } };

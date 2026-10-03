@@ -60,6 +60,7 @@ export class Viewport {
 
   setOptions(o: PaneOptions) {
     this.options = o; const env = this.instance?.env;
+    if (this.instance?.setQuality && this.instance.quality !== o.quality) { this.instance.setQuality(o.quality); this.instance.quality = o.quality; if (env) applyEnvironment(env, this.scene, this.lights.hemi, this.lights.sun); }
     const bg = new THREE.Color(BACKGROUNDS[o.background]); if (!env) this.scene.background = bg; this.ground.visible = o.ground && !env; this.bloom = o.quality === 'high'; this.fx.density = o.quality === 'high' ? 1 : .5;
     const light = bg.r * .3 + bg.g * .59 + bg.b * .11 > .5; this.gridMat.color.set(light ? '#000000' : '#ffffff'); this.gridMat.opacity = light ? .12 : .08;
   }

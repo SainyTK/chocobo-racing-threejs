@@ -51,6 +51,12 @@ export class Parts {
     if (!this.layers.has(key)) this.layers.set(key, []); this.layers.get(key)!.push(g);
     return this;
   }
+  /** Copies another prop into this one, already painted, under a transform. Lets props be assembled from props. */
+  include(other: Parts, pos: V3 = [0, 0, 0], yaw = 0, scale = 1) {
+    const m = new THREE.Matrix4().compose(new THREE.Vector3(...pos), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), yaw), new THREE.Vector3(scale, scale, scale));
+    for (const [k, list] of other.layers) { if (!this.layers.has(k)) this.layers.set(k, []); for (const g of list) this.layers.get(k)!.push(g.clone().applyMatrix4(m)); }
+    return this;
+  }
   /** Merges each layer once. Placing the prop many times then only clones a few buffers. */
   bake() {
     for (const [k, list] of this.layers) if (list.length > 1) { const m = mergeGeometries(list)!; list.forEach(g => g.dispose()); this.layers.set(k, [m]); }
@@ -79,12 +85,12 @@ export interface ExtrudeOptions {
   mirror?: boolean;
 }
 
-const CHUNK = 72;
+const CHUNK = 128;
 const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), vp = new THREE.Vector3(), vs = new THREE.Vector3();
 
 /**
  * Course construction kit. Props, extrusions and custom meshes are collected in world space, then merged per
- * 72 m chunk and layer, so the camera culls whole sections of scenery and a course draws in a few dozen calls.
+ * 128 m chunk and layer, so the camera culls whole sections of scenery and a course draws in a couple of hundred calls at most.
  */
 export class Kit {
   readonly def: TrackDefinition; readonly len: number; readonly w: number; readonly r: Rng;
@@ -144,7 +150,12 @@ export class Kit {
       for (let i = p0; i <= Math.min(steps, p0 + piece); i++) pts.push(this.at(s0 + i * ds));
       for (let i = 0; i < pts.length - 1; i++) for (let k = 0; k < profile.length - 1; k++) {
         const a = pts[i], b = pts[i + 1], [x0, y0] = profile[k], [x1, y1] = profile[k + 1];
-        const v = (p: TrackPoint, x: number, y: number) => [p.x + p.nx * side * (base + x), p.y + y, p.z + p.nz * side * (base + x)];
+        // On the inside of a bend tighter than the profile's reach, points fold across another stretch of road.
+        // Those sink below the surface so walls and curbs never stand on the track.
+        const v = (p: TrackPoint, x: number, y: number) => {
+          const o = base + x, px = p.x + p.nx * side * o, pz = p.z + p.nz * side * o, r = this.road(px, pz);
+          return [px, r.d < Math.min(o - .6, this.w - .2) ? Math.min(p.y + y, r.y - 3) : p.y + y, pz];
+        };
         const A = v(a, x0, y0), B = v(a, x1, y1), C = v(b, x0, y0), D = v(b, x1, y1);
         if (side > 0) pos.push(...A, ...C, ...B, ...B, ...C, ...D); else pos.push(...A, ...B, ...C, ...B, ...D, ...C);
         if (typeof o.paint === 'function') o.paint(s0 + (p0 + i) * ds, k, p0 + i, c); else c.set(o.paint);

@@ -9,7 +9,7 @@ import { boulder, bush, grass, flowers, lampPost, flagPole, bunting, savePoint, 
 import type { CourseArt } from '../types.ts';
 
 const C = {
-  grass: '#62a83e', grassLight: '#8cc65a', grassDark: '#3f7a32', dirt: '#a8834e', moss: '#7fae4a',
+  grass: '#57993a', grassLight: '#8fc653', grassDark: '#356d2e', dirt: '#a8834e', moss: '#7fae4a',
   leaf: '#78bd45', leafLight: '#a9da62', leafDark: '#2f6e34', pine: '#2f7448', pineLight: '#57a160', bark: '#7a5236', barkDark: '#4f3524',
   cap: '#e0473f', capSpot: '#fff4e2', stem: '#f3e3c4', wood: '#b37a48', woodDark: '#7c5132', thatch: '#d9a752', thatchDark: '#a8762e', plaster: '#f4e9d2', pompom: '#ff4a5e',
 };
@@ -73,6 +73,27 @@ function moogleHouse(r: Rng) {
   const top = H + R * 1.6 - .1;
   p.add(tube([[0, top, 0], [.25, top + 1, 0], [.1, top + 1.9, 0]], .05, 5), '#3b2a22', { ao: false }); p.add(ball(.42, [.1, top + 2.25, 0], .7), C.pompom, { layer: 'glow', ao: false });
   p.add(block(.6, 1.2, .6, [R * .55, H + R * .3, -.4]), '#8a6a5a', { flat: true, ao: false });
+  return p;
+}
+
+/** The Great Tree: a giant gnarled trunk with buttress roots, a moogle treehouse on a ring platform and a vast canopy. */
+function greatTree(r: Rng) {
+  const p = new Parts(), H = 34;
+  p.add(sweep([[0, 0, 0], [1.5, H * .4, .6], [-.8, H * .75, 0], [0, H, 0]], t => 4.2 - t * 2.4, { radial: 12, segments: 10 }), grad(C.barkDark, C.bark, 0, H), { ao: [0, 8, .5] });
+  for (let i = 0; i < 7; i++) { const a = i / 7 * 6.28 + r() * .3; p.add(sweep([[Math.cos(a) * 2, 7, Math.sin(a) * 2], [Math.cos(a) * 5, 2, Math.sin(a) * 5], [Math.cos(a) * 9, -.3, Math.sin(a) * 9]], t => 1.6 - t * 1.2, { radial: 6, segments: 6 }), C.barkDark, { ao: [0, 2, .6] }); }
+  for (let i = 0; i < 5; i++) { const a = i / 5 * 6.28 + .4; p.add(sweep([[0, H * .8, 0], [Math.cos(a) * 7, H * .9, Math.sin(a) * 7], [Math.cos(a) * 12, H * .98, Math.sin(a) * 12]], t => 1.3 - t * .9, { radial: 6, segments: 5 }), C.bark, { ao: false }); }
+  for (let i = 0; i < 14; i++) {
+    const a = i / 14 * 6.28 + r(), d = i < 3 ? r.range(0, 5) : r.range(8, 15), sz = r.range(5.5, 8);
+    p.add(blob(sz, [Math.cos(a) * d, H + r.range(-1, 6), Math.sin(a) * d], r() * 9, .22), grad(C.leafDark, C.leafLight, H - 6, H + 10), { layer: 'foliage', sway: .05, ao: false });
+  }
+  // Ring platform with a railing, a treehouse and glowing lanterns.
+  const y = H * .5;
+  p.add(prism(7.5, 7.5, .6, 16, [0, y, 0]), C.wood, { ao: false });
+  for (let i = 0; i < 16; i++) { const a = i / 16 * 6.28; p.add(cyl(.12, .12, 1.4, [Math.cos(a) * 7.3, y + 1.3, Math.sin(a) * 7.3], [0, 0, 0], 5), C.woodDark, { ao: false }); if (i % 4 === 0) p.add(ellipsoid([.35, .45, .35], [Math.cos(a) * 7.6, y - .7, Math.sin(a) * 7.6], [0, 0, 0], .5), '#ffcf6a', { layer: 'glow', ao: false }); }
+  p.add(torus(7.3, .1, [0, y + 2, 0], [Math.PI / 2, 0, 0]), C.woodDark, { ao: false });
+  const hut = moogleHouse(r); p.include(hut, [3.6, y + .3, 3.2], .8, .8); hut.dispose();
+  // Spiral steps up the trunk.
+  for (let i = 0; i < 18; i++) { const a = i * .55, yy = 1 + i * (y - 1) / 18; p.add(block(2.2, .25, 1, [Math.cos(a) * 4.4, yy, Math.sin(a) * 4.4], [0, -a, 0]), C.wood, { ao: false }); }
   return p;
 }
 
@@ -144,9 +165,11 @@ export const forest: CourseArt = {
   terrain: {
     height: (() => { const h = hills({ amp: 42, ridge: 18, scale: 1.1, rise: 60, seed: 4 }); return (p: Parameters<typeof h>[0]) => { const base = h(p), lake = smoothstep(.36, .28, fbm2(p.x / 260 + 4, p.z / 260 - 2, 3, 12)) * smoothstep(p.drive + 10, p.drive + 45, p.d); return base - lake * 14; }; })(),
     color(p, h, slope, out) {
-      const n = fbm2(p.x * .03, p.z * .03, 3, 2), m = fbm2(p.x * .006, p.z * .006, 2, 5);
-      out.set(C.grass).lerp(new THREE.Color(C.grassLight), smoothstep(.45, .7, n) * .7).lerp(new THREE.Color(C.grassDark), smoothstep(.55, .3, m) * .6);
-      out.lerp(new THREE.Color(C.dirt), smoothstep(p.w + 3.2, p.w + .8, p.d) * .85);
+      const n = fbm2(p.x * .035, p.z * .035, 3, 2), m = fbm2(p.x * .008, p.z * .008, 3, 5), clover = fbm2(p.x * .09, p.z * .09, 2, 7);
+      out.set(C.grass).lerp(new THREE.Color(C.grassLight), smoothstep(.48, .72, n) * .75).lerp(new THREE.Color(C.grassDark), smoothstep(.5, .28, m) * .7);
+      out.lerp(new THREE.Color('#a9c24a'), smoothstep(.66, .78, clover) * .45);
+      // Packed earth beside the path, ragged where the grass creeps in.
+      out.lerp(new THREE.Color(C.dirt), smoothstep(p.w + 2.6 + n * 2.2, p.w + .3, p.d) * .9);
       out.lerp(new THREE.Color('#8d8670'), smoothstep(.55, .9, slope) * .8);
       out.lerp(new THREE.Color('#c9b98a'), smoothstep(5.2, 4.2, h) * .8);
     },
@@ -161,7 +184,7 @@ export const forest: CourseArt = {
     { color: '#86c04f', endColor: '#c99a3a', rate: 7, size: .22, life: 5, height: [6, 12], drift: [1.1, -.9, .4], wander: .6, shape: Shape.Shard, radius: 30, alpha: .95 },
   ],
   catalog: {
-    'Broadleaf tree': broadleaf, Pine: pine, 'Far tree': farTree, Mushroom: r => mushroom(r), 'Giant mushroom': r => mushroom(r, true), 'Moogle house': moogleHouse, Log: log, Stump: stump,
+    'Broadleaf tree': broadleaf, Pine: pine, 'Far tree': farTree, 'Great tree': greatTree, Mushroom: r => mushroom(r), 'Giant mushroom': r => mushroom(r, true), 'Moogle house': moogleHouse, Log: log, Stump: stump,
     Bush: r => bush(r, C.leaf, C.leafDark, 1.1, '#e04a6a'), Grass: r => grass(r, C.grassDark, C.grassLight), Flowers: r => flowers(r, ['#ff7aa8', '#ffffff', '#ffd84a', '#9a8cff']), Boulder: r => boulder(r, '#9a9486', 1.4, C.moss), 'Forest arch': () => forestArch(12),
   },
   build(kit) {
@@ -201,11 +224,14 @@ export const forest: CourseArt = {
       kit.onTrack(kit.prop('moogle house', moogleHouse, i % 3), s, off, { faceRoad: true, onGround: true, yaw: r.range(-.3, .3) });
       kit.onTrack(kit.prop('lamp', () => lampPost('#4a3a30', '#ffcf73', 3.6)), s + 5, side * (w + 3), { faceRoad: true, onGround: true });
     }
+    // The Great Tree stands on the outside of the course's sharpest bend, visible from much of the lap.
+    let best = 0, bestS = 0; for (let s = 100; s < kit.len - 100; s += 10) { const c = Math.abs(kit.at(s).curve); if (c > best) { best = c; bestS = s; } }
+    { const side = kit.at(bestS).curve > 0 ? -1 : 1; for (const off of [48, 60, 75, 90]) { const p = kit.at(bestS, side * (w + off)); if (kit.road(p.x, p.z).d > w + 30) { kit.place(kit.prop('great tree', greatTree), p.x, kit.groundAt(p.x, p.z) - .5, p.z, { yaw: 1.2 }); break; } } }
     for (const s of [190, kit.len * .55, kit.len * .82]) kit.onTrack(kit.prop('arch', () => forestArch(w)), s, 0);
     // Festival dressing around the start: flags, bunting and a save point.
     const a = kit.at(-24, -w - 3.4), b = kit.at(-24, w + 3.4), c = kit.at(-42, -w - 3.4), d = kit.at(-42, w + 3.4);
-    bunting(kit, new THREE.Vector3(a.x, a.y + 7, a.z), new THREE.Vector3(b.x, b.y + 7, b.z), ['#e0473f', '#ffd84a', '#3d8a4a', '#4a8fe0', '#ffffff']);
-    bunting(kit, new THREE.Vector3(c.x, c.y + 7, c.z), new THREE.Vector3(d.x, d.y + 7, d.z), ['#ff8ab8', '#ffffff', '#8ad8ff']);
+    bunting(kit, new THREE.Vector3(a.x, a.y + 11.5, a.z), new THREE.Vector3(b.x, b.y + 11.5, b.z), ['#e0473f', '#ffd84a', '#3d8a4a', '#4a8fe0', '#ffffff']);
+    bunting(kit, new THREE.Vector3(c.x, c.y + 11.5, c.z), new THREE.Vector3(d.x, d.y + 11.5, d.z), ['#ff8ab8', '#ffffff', '#8ad8ff']);
     kit.onTrack(kit.prop('save', () => savePoint()), -30, -(w + 9), { onGround: true });
     kit.onTrack(kit.prop('flag', () => flagPole('#3d8a4a', '#ffd84a', 9)), 12, w + 5, { onGround: true });
     sunbeams(kit);

@@ -69,18 +69,19 @@ export function roadTexture(kind: RoadKind, p: RoadPalette, size = 512) {
       // Scattered pebbles of varied size and tone, more of them near the edges where wheels do not reach.
       const edge = smoothstep(.25, .02, Math.min(u, 1 - u)), pick = hash2(pebble.id * 1e4 | 0, 3);
       if (pick < .35 + edge * .4) c = mix(c, mix(light, mul(dark, .9), hash2(pebble.id * 999 | 0, 1)), smoothstep(.2, .12, pebble.f1) * .75);
-      if (hash2(big.id * 1e4 | 0, 5) < .18) c = mix(c, mix(rgb('#9a958a'), rgb('#c9c2b0'), big.id), smoothstep(.2, .14, big.f1) * .9);
+      if (hash2(big.id * 1e4 | 0, 5) < .1) { const k = smoothstep(.13, .08, big.f1); c = mix(c, mul(mix(dark, light, .35 + big.id * .3), .95 + (1 - big.f1 / .13) * .12), k * .85); c = mix(c, mul(dark, .7), smoothstep(.15, .13, big.f1) * (1 - k) * .5); }
       c = mix(c, mul(dark, .8), edge * .35 * (.5 + fine));
       set(out, c);
     },
     cobble(u, v, out) {
-      const w = worley(u, v, 18, 7), mortar = smoothstep(.05, .13, w.f2 - w.f1), n = tileNoise(u, v, 8, 3, 2);
-      let c = mix(dark, mix(base, light, w.id * .7), mortar);
-      c = mul(c, .86 + n * .28 + (1 - w.f1) * .08);
+      // Hand-laid setts: small stones with thin, soft joints and a worn sheen down the racing lines.
+      const w = worley(u, v, 30, 7), mortar = smoothstep(.02, .09, w.f2 - w.f1), n = tileNoise(u, v, 8, 3, 2), lines = Math.min(Math.abs(u - .33), Math.abs(u - .67));
+      let c = mix(mix(dark, base, .45), mix(base, light, w.id * .7), mortar);
+      c = mul(c, .88 + n * .24 + (1 - w.f1) * .06 + smoothstep(.12, 0, lines) * .05);
       set(out, c);
     },
     flagstone(u, v, out) {
-      const w = worley(u, v, 7, 11, 1.4), mortar = smoothstep(.03, .08, w.f2 - w.f1), n = tileNoise(u, v, 10, 4, 5), crack = smoothstep(.012, 0, Math.abs(noise2(u * 40, v * 40, 3) - .5)) * (hash2(w.id * 1e3 | 0, 2) > .6 ? 1 : 0);
+      const w = worley(u, v, 12, 11, 1.4), mortar = smoothstep(.025, .07, w.f2 - w.f1), n = tileNoise(u, v, 10, 4, 5), crack = smoothstep(.012, 0, Math.abs(noise2(u * 40, v * 40, 3) - .5)) * (hash2(w.id * 1e3 | 0, 2) > .6 ? 1 : 0);
       let c = mix(dark, mix(base, light, w.id * .6 + n * .3), mortar); c = mix(c, dark, crack * .5);
       set(out, c);
     },

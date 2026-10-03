@@ -34,12 +34,12 @@ export function makeSky(spec: SkySpec, sunDir: THREE.Vector3) {
     uMoonDir: { value: new THREE.Vector3(...(spec.moon?.dir ?? [0, 1, 0])).normalize() }, uMoon: { value: c(spec.moon?.color ?? '#000000') }, uMoonSize: { value: spec.moon?.size ?? .07 },
     uCloudLit: { value: c(spec.clouds?.lit ?? '#ffffff') }, uCloudShade: { value: c(spec.clouds?.shade ?? '#ffffff') }, uCover: { value: spec.clouds ? spec.clouds.cover ?? .45 : -1 }, uCloudScale: { value: spec.clouds?.scale ?? 1 }, uCloudSpeed: { value: spec.clouds?.speed ?? 1 },
     uCumLit: { value: c(spec.cumulus?.lit ?? '#ffffff') }, uCumShade: { value: c(spec.cumulus?.shade ?? '#ffffff') }, uCumH: { value: spec.cumulus?.height ?? .2 }, uCumK: { value: spec.cumulus ? spec.cumulus.amount ?? .5 : -1 },
-    uStars: { value: spec.stars ?? 0 }, uAurora: { value: c(spec.aurora ?? '#000000') }, uAuroraK: { value: spec.aurora ? 1 : 0 },
+    uLite: { value: 0 }, uStars: { value: spec.stars ?? 0 }, uAurora: { value: c(spec.aurora ?? '#000000') }, uAuroraK: { value: spec.aurora ? 1 : 0 },
   };
   const mat = new THREE.ShaderMaterial({
     uniforms: u, side: THREE.BackSide, depthWrite: false, fog: false,
     vertexShader: `varying vec3 vDir; void main(){ vDir = position; vec4 p = projectionMatrix * modelViewMatrix * vec4(position, 1.); gl_Position = p.xyww; }`,
-    fragmentShader: `uniform float uTime, uBandH, uBandK, uSunSize, uSunGlow, uMoonSize, uCover, uCloudScale, uCloudSpeed, uCumH, uCumK, uStars, uAuroraK;
+    fragmentShader: `uniform float uLite, uTime, uBandH, uBandK, uSunSize, uSunGlow, uMoonSize, uCover, uCloudScale, uCloudSpeed, uCumH, uCumK, uStars, uAuroraK;
       uniform vec3 uTop, uHorizon, uBelow, uBand, uSunDir, uSun, uMoonDir, uMoon, uCloudLit, uCloudShade, uCumLit, uCumShade, uAurora; uniform sampler2D uNoise; varying vec3 vDir;
       float n(vec2 p){ return texture2D(uNoise, p).r; }
       float hash(vec3 p){ return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453); }
@@ -49,9 +49,9 @@ export function makeSky(spec: SkySpec, sunDir: THREE.Vector3) {
         col = mix(col, uBand, uBandK * exp(-max(y, 0.) / max(uBandH, .001)) * step(-.02, y));
         col = mix(col, uBelow, smoothstep(0., -.08, y));
         // Stars twinkle slowly and fade near the horizon haze.
-        if (uStars > 0.) { vec3 g = floor(d * 160.); float h = hash(g); vec3 f = fract(d * 160.) - .5; float s = step(1. - uStars * .02, h) * smoothstep(.22, .0, length(f)) * smoothstep(.05, .3, y);
+        if (uStars > 0. && uLite < .5) { vec3 g = floor(d * 160.); float h = hash(g); vec3 f = fract(d * 160.) - .5; float s = step(1. - uStars * .02, h) * smoothstep(.22, .0, length(f)) * smoothstep(.05, .3, y);
           col += vec3(1., .95, .9) * s * (.6 + .4 * sin(uTime * 2. + h * 60.)) * 1.6; }
-        if (uAuroraK > 0.) { float cur = n(vec2(az * 3. + uTime * .006, .3)) ; float a = smoothstep(.5, .9, n(vec2(az * 6. + cur, uTime * .01))) * smoothstep(.12, .35, y) * smoothstep(.8, .4, y);
+        if (uAuroraK > 0. && uLite < .5) { float cur = n(vec2(az * 3. + uTime * .006, .3)) ; float a = smoothstep(.5, .9, n(vec2(az * 6. + cur, uTime * .01))) * smoothstep(.12, .35, y) * smoothstep(.8, .4, y);
           col += uAurora * a * (.6 + .4 * sin(az * 90. + uTime)) * 1.3; }
         // Sun: hot disc with a soft halo that tints the sky around it.
         float sd = dot(d, uSunDir); col += uSun * (pow(max(sd, 0.), 6.) * uSunGlow * .55 + pow(max(sd, 0.), 64.) * uSunGlow);
@@ -61,19 +61,19 @@ export function makeSky(spec: SkySpec, sunDir: THREE.Vector3) {
         col += uMoon * pow(max(md, 0.), 40.) * .5;
         if (moon > 0.) { vec3 mx = normalize(cross(uMoonDir, vec3(0., 1., 0.))); vec3 my = cross(mx, uMoonDir); vec2 mp = vec2(dot(d, mx), dot(d, my)) / uMoonSize; float maria = smoothstep(.45, .6, n(mp * .35 + .2)); col = mix(col, uMoon * (1.9 - maria * .55), moon); }
         // Cumulus banks: flat bottoms on the horizon, billowing tops, lit rims facing the sun.
-        if (uCumK > 0. && y > -.01) {
-          float h = y / uCumH, puff = n(vec2(az * 4., h * .35 + .1)) * .62 + n(vec2(az * 11., h * .9)) * .38;
+        if (uCumK > 0. && y > .0 && uLite < .5) {
+          float base = .06, h = (y - base) / uCumH, puff = n(vec2(az * 4., h * .35 + .1)) * .62 + n(vec2(az * 11., h * .9)) * .38;
           float thresh = mix(.3, 1.05, smoothstep(0., 1., h)) + (1. - uCumK) * .4;
-          float body = smoothstep(thresh, thresh + .015, puff) * smoothstep(-.01, .015, y);
+          float body = smoothstep(thresh, thresh + .015, puff) * smoothstep(base - .04, base + .02, y);
           float lit = smoothstep(.0, .06, puff - thresh - .02 + h * .05) ;
           float rim = smoothstep(.92, 1., dot(normalize(vec3(d.x, 0., d.z)), normalize(vec3(uSunDir.x, 0., uSunDir.z))) * .5 + .5);
           vec3 cc = mix(uCumShade, uCumLit, lit) + uSun * rim * .25 * lit;
-          col = mix(col, mix(cc, uHorizon, .25 * (1. - h)), body);
+          col = mix(col, mix(cc, uHorizon, .25 * (1. - clamp(h, 0., 1.))), body);
         }
         // Cloud deck projected on a plane high above the course, drifting with the wind.
-        if (uCover >= 0. && y > .02) {
+        if (uCover >= 0. && y > .02 && uLite < .5) {
           vec2 p = d.xz / (y + .08) * .07 * uCloudScale + vec2(uTime * .0025, uTime * .001) * uCloudSpeed;
-          float c = n(p) * .65 + n(p * 2.7 + 3.1) * .35, t = 1. - uCover * .55;
+          float c = n(p) * .65 + n(p * 2.7 + 3.1) * .35, t = .74 - uCover * .42;
           float body = smoothstep(t, t + .02, c) * smoothstep(.02, .2, y);
           float lit = smoothstep(t + .015, t + .07, n(p - uSunDir.xz * .015) * .65 + n((p - uSunDir.xz * .015) * 2.7 + 3.1) * .35);
           col = mix(col, mix(uCloudShade, uCloudLit, lit), body * .96);
@@ -83,8 +83,11 @@ export function makeSky(spec: SkySpec, sunDir: THREE.Vector3) {
         #include <colorspace_fragment>
       }`,
   });
-  const mesh = new THREE.Mesh(new THREE.SphereGeometry(RADIUS, 48, 24), mat); mesh.frustumCulled = false; mesh.renderOrder = -10; mesh.name = 'sky';
-  return { mesh, dispose() { mesh.geometry.dispose(); mat.dispose(); tex.dispose(); } };
+  const mesh = new THREE.Mesh(new THREE.SphereGeometry(RADIUS, 48, 24), mat); mesh.frustumCulled = false; mesh.name = 'sky';
+  // Drawn after the opaque scene: it sits at the far plane, so the depth test skips every pixel the course already covers.
+  mesh.renderOrder = 1000;
+  /** Low quality keeps the gradient, sun and moon and skips the cloud, star and aurora layers. */
+  return { mesh, setLite(on: boolean) { u.uLite.value = on ? 1 : 0; }, dispose() { mesh.geometry.dispose(); mat.dispose(); tex.dispose(); } };
 }
 
 export interface MountainLayer {
@@ -129,7 +132,7 @@ export function makeMountains(layers: MountainLayer[], center: THREE.Vector2, ho
       }
     }
     const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
-    const m = new THREE.Mesh(g, mat); m.renderOrder = -5 + li; m.name = `mountains ${li}`; group.add(m);
+    const m = new THREE.Mesh(g, mat); m.renderOrder = 990 + li; m.name = `mountains ${li}`; group.add(m);
   });
   return { group, dispose() { group.traverse(o => { if (o instanceof THREE.Mesh) o.geometry.dispose(); }); mat.dispose(); } };
 }

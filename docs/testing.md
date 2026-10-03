@@ -125,3 +125,28 @@ A slightly negative base produced NaN pixels, which the bloom pass spread into l
 Orca only delivers animation frames while its browser pane is on screen.
 For background checks, `requestAnimationFrame` was replaced from the test side with a 16 ms timer.
 This changes frame scheduling only, never race state.
+
+## Course scenery rebuild (2026-10-04)
+
+Every course's scenery was rebuilt on a shared stage kit, with one art file per course, and the studio gained a Courses category for building them.
+
+- `npm test`: 98 passed, including the new `tests/stage.test.ts`.
+  It builds all eight courses headless and checks their triangle budgets, Low-quality detail hiding and geometry disposal.
+  It also checks that no scenery stands on the road between 0.3 m and 9 m above the surface.
+- `npx tsx tests/stage-report.ts` reports 394k to 585k triangles per course and 250 to 800 ms build time, depending on course and texture cache.
+- The road-clearance test found real problems while the courses were built, and all of them are fixed:
+  - Manor's start line sits on a corner apex, so the start gate became a cantilever and the inner fence was cut back.
+  - Volcano's edge chains reached across a hairpin.
+  - Swept curbs and walls folded across the road on the inside of tight bends; such points now sink below the surface.
+- Headless Chromium (SwiftShader) measured 17 to 18 fps on Moogle Forest at first, against 50 to 59 fps for the old flat-coloured scenery at the same settings.
+  The cost was pixel fill from the textured terrain, sky and liquids.
+  The sky, mountains and liquids now draw after the opaque scene, so the depth test skips covered pixels.
+  Low quality skips the cloud and star layers, shortens the view distance, and renders at 0.75 resolution on software renderers.
+  Software rendering now runs at 26 to 55 fps across the courses checked: Moogle Forest, Mythril Mines and Floating Gardens.
+- `tests/compatibility-smoke.mjs` (WebKit) passes.
+  Its resource check now compares a second lap of all eight courses against the first, and requires zero growth in geometries and textures.
+  This replaces a fixed allowance of three geometries and one texture.
+  The stricter check found a real leak: the slowing-puddle shader cloned its noise texture when merging uniforms, leaking one texture per course switch. That is fixed.
+  WebKit showed 500 draw calls on Cid's Test Track, so scenery chunks grew from 72 m to 128 m, roughly halving the mesh count.
+  The test's driving steps now wait on race time, not wall time, because on a busy machine the capped frame step lets the race clock lag behind.
+- The full Playwright suite was not re-run for this change.

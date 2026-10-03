@@ -21,6 +21,10 @@ export interface Instance {
    * `view`, so dragging still looks around. Returns the point the sun's shadows should centre on.
    */
   camera?(camera: THREE.PerspectiveCamera, view: ViewState, t: number, dt: number): THREE.Vector3;
+  /** Follows the studio's quality setting the way the game does. May change `env`, which the pane then re-applies. */
+  setQuality?(q: 'high' | 'low'): void;
+  /** The quality last applied through `setQuality`, kept by the pane. */
+  quality?: 'high' | 'low';
 }
 
 export interface Variant { id: string; label: string; /** Marks the variant the game currently uses. */ inGame?: boolean }

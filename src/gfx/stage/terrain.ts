@@ -86,12 +86,13 @@ export function buildTerrain(kit: Kit, field: TrackField, spec: TerrainSpec) {
   return heightAt;
 }
 
-export interface RoadSpec { kind: RoadKind; palette: RoadPalette; glow?: boolean }
+/** `glow` lights the road's cracks (basalt only) at the given strength, 1 being a gentle ember glow. */
+export interface RoadSpec { kind: RoadKind; palette: RoadPalette; glow?: number }
 /** Textured road ribbon, slightly above the ground under it and split into culled sections. */
 export function buildRoad(kit: Kit, spec: RoadSpec) {
   const w = kit.w, tex = kit.own(roadTexture(spec.kind, spec.palette)), glow = spec.glow ? kit.own(basaltGlow()) : null;
   const mat = kit.own(stageMaterial({ ground: true, map: tex, vertexColors: false, rim: 0 }));
-  if (glow) { mat.emissiveMap = glow; mat.emissive.set('#ffffff'); mat.emissiveIntensity = 2.2; }
+  if (glow) { mat.emissiveMap = glow; mat.emissive.set('#ffffff'); mat.emissiveIntensity = spec.glow!; }
   mat.polygonOffset = true; mat.polygonOffsetFactor = -1; mat.polygonOffsetUnits = -2;
   const step = 2, rows = Math.round(kit.len / step), per = 40, across = 6, tiles = Math.max(1, Math.round(kit.len / (2 * w)));
   for (let r0 = 0; r0 < rows; r0 += per) {

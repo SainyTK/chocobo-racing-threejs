@@ -5,7 +5,7 @@ import { STAGE, stageTime } from './materials.ts';
 import { makeSky, makeMountains } from './sky.ts';
 import { TrackField, buildTerrain, buildRoad } from './terrain.ts';
 import { Ambient } from './ambient.ts';
-import { chevronSign, block, rbox, cyl, ball, cone, flagPole, xf } from './props/common.ts';
+import { chevronSign, block, rbox, cyl, ball, cone, tube, flagPole, xf } from './props/common.ts';
 import { noiseTexture } from './textures.ts';
 import type { CourseArt, Environment, HazardKind, StartGateStyle } from './types.ts';
 import { COURSE_ART } from './courses/index.ts';
@@ -31,7 +31,7 @@ export function applyEnvironment(env: Environment, scene: THREE.Scene, hemi: THR
 export const sunOffset = (env: Environment, out = new THREE.Vector3()) => out.set(...env.sun.dir).normalize().multiplyScalar(75);
 
 export function buildCourse(id: TrackId): Course {
-  const art = COURSE_ART[id], kit = new Kit(id), field = new TrackField(id), env = art.env;
+  const art = COURSE_ART[id], kit = new Kit(id), field = new TrackField(id), env: Environment = structuredClone(art.env), fullFog = { ...art.env.fog };
   const sunDir = new THREE.Vector3(...env.sun.dir).normalize();
   kit.road = (x, z) => field.sample(x, z); kit.bounds = { cx: field.cx, cz: field.cz, extent: field.extent };
   if (art.terrain) buildTerrain(kit, field, art.terrain); else kit.groundAt = (x, z) => field.sample(x, z).y - 1;
@@ -49,7 +49,7 @@ export function buildCourse(id: TrackId): Course {
 
   // Chunks beyond the fog are invisible anyway; skipping them saves draw calls on the far side of the course.
   const chunks = kit.root.children.filter(c => c.name.startsWith('chunk')).map(c => { const b = new THREE.Box3().setFromObject(c), s = b.getBoundingSphere(new THREE.Sphere()); return { o: c, c: s.center, r: s.radius }; });
-  const reach = env.fog.far + 40;
+  let reach = env.fog.far + 40;
   let detail = true;
   return {
     id, root: kit.root, env, art, groundAt: (x, z) => kit.groundAt(x, z),
@@ -59,12 +59,17 @@ export function buildCourse(id: TrackId): Course {
       kit.update(t, dt, camera); ambient.update(dt, camera);
     },
     setQuality(q) {
-      detail = q === 'high'; ambient.density = q === 'high' ? 1 : q === 'low' ? .5 : .3;
+      // Lower settings see less far: the fog closes in and chunks beyond it are skipped. Callers re-apply `env` after this.
+      env.fog.far = q === 'high' ? fullFog.far : Math.min(fullFog.far, 430); env.fog.near = Math.min(fullFog.near, env.fog.far * .35); reach = env.fog.far + 40;
+      detail = q === 'high'; sky.setLite(!detail);
+      kit.root.traverse(o => { if (o instanceof THREE.Mesh && o.name === 'liquid') (o.material as THREE.ShaderMaterial).uniforms.uLite.value = detail ? 0 : 1; }); ambient.density = q === 'high' ? 1 : q === 'low' ? .5 : .3;
       kit.root.traverse(o => { if (o instanceof THREE.Mesh && o.userData.detail) o.visible = detail; });
     },
     dispose() {
-      const keep = new Set<THREE.Material>(Object.values(STAGE));
-      kit.root.traverse(o => { if (o instanceof THREE.Mesh && o.name !== 'sky' && !o.name.startsWith('mountains')) { o.geometry.dispose(); for (const m of [o.material].flat()) if (!keep.has(m) && !kit.owned.includes(m)) m.dispose(); } });
+      const keep = new Set<THREE.Material>(Object.values(STAGE)), self = new Set<THREE.Object3D>([sky.mesh, ambient.group, ...(mountains ? [mountains.group] : [])]);
+      // Sky, mountains and ambient particles dispose themselves; everything else is course geometry.
+      const walk = (o: THREE.Object3D) => { if (self.has(o)) return; if (o instanceof THREE.Mesh) { o.geometry.dispose(); for (const m of [o.material].flat()) if (!keep.has(m) && !kit.owned.includes(m)) m.dispose(); } o.children.forEach(walk); };
+      walk(kit.root);
       kit.owned.forEach(x => x.dispose()); sky.dispose(); mountains?.dispose(); ambient.dispose();
     },
   };
@@ -73,7 +78,7 @@ export function buildCourse(id: TrackId): Course {
 /** Checkered start line, grid boxes and the start gate with its banner. */
 function startLine(kit: Kit, st: StartGateStyle) {
   const w = kit.w, a = new THREE.Color('#f7f4ee'), b = new THREE.Color('#25243a'), pos: number[] = [], col: number[] = [];
-  const quad = (s0: number, s1: number, o0: number, o1: number, c: THREE.Color, lift = .045) => {
+  const quad = (s0: number, s1: number, o0: number, o1: number, c: THREE.Color, lift = .09) => {
     const p = [kit.at(s0, o0), kit.at(s0, o1), kit.at(s1, o0), kit.at(s1, o1)];
     pos.push(p[0].x, p[0].y + lift, p[0].z, p[2].x, p[2].y + lift, p[2].z, p[1].x, p[1].y + lift, p[1].z, p[1].x, p[1].y + lift, p[1].z, p[2].x, p[2].y + lift, p[2].z, p[3].x, p[3].y + lift, p[3].z);
     for (let i = 0; i < 6; i++) col.push(c.r, c.g, c.b);
@@ -83,23 +88,28 @@ function startLine(kit: Kit, st: StartGateStyle) {
   // Grid boxes for the six starting slots, matching the race setup.
   for (let g = 0; g < 6; g++) {
     const s = -8 - Math.floor(g / 2) * 6, x = (g % 2 - .5) * 6;
-    quad(s + 1.6, s + 1.85, x - 1.6, x + 1.6, a, .04); quad(s - 1.4, s + 1.85, x - 1.6, x - 1.4, a, .04); quad(s - 1.4, s + 1.85, x + 1.4, x + 1.6, a, .04);
+    quad(s + 1.6, s + 1.85, x - 1.6, x + 1.6, a); quad(s - 1.4, s + 1.85, x - 1.6, x - 1.4, a); quad(s - 1.4, s + 1.85, x + 1.4, x + 1.6, a);
   }
   const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.computeVertexNormals(); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
   kit.addWorld(g, '#ffffff', { ao: false });
   // Gate: twin towers and a truss carrying the banner. Rebuilt per course from its palette.
-  const gate = new Parts(), span = w + 1.8, h = 9;
-  for (const x of [-span, span]) {
+  // Towers step outward until they clear every stretch of road, since some courses start on a bend.
+  // A side that cannot clear (a start on a corner apex) gets no tower; the truss is cantilevered from the other one.
+  const reach = (side: number) => { let o = w + 1.8; while (o < w + 14 && [-1.5, 0, 1.5].some(ds => { const q = kit.at(ds, side * o); return kit.road(q.x, q.z).d < w + 1.6; })) o += .5; return o; };
+  const rl = reach(-1), rr = reach(1), left = rl < w + 14 ? rl : w + 1.8, right = rr < w + 14 ? rr : w + 1.8, mid = (right - left) / 2, span = (left + right) / 2, gate = new Parts(), h = 13;
+  const towers = [...(rl < w + 14 ? [-left] : []), ...(rr < w + 14 ? [right] : [])];
+  if (towers.length === 1) { const x0 = towers[0], x1 = -x0; gate.add(tube([[x0, h + .6, 0], [(x0 + x1) * .25, h + 3.2, 0], [x1, h + .2, 0]], .16, 6), st.trim, { ao: false }); gate.add(rbox(.9, 1.3, .9, .1, [x1, h - 1.7, 0]), st.pillar, { ao: false }); }
+  for (const x of towers) {
     gate.add(rbox(2.2, 1, 2.2, .15, [x, .5, 0]), st.trim); gate.add(block(1.6, h, 1.6, [x, .8, 0]), st.pillar, { flat: true });
     gate.add(rbox(2, .5, 2, .12, [x, h + .9, 0]), st.trim); gate.add(cone(1.25, 1.6, 4, [x, h + 1.15, 0], [0, Math.PI / 4, 0]), st.banner, { flat: true });
     gate.add(ball(.3, [x, h + 2.9, 0], .6), st.light ?? '#ffe28a', { layer: 'glow', ao: false });
     for (const y of [3, 5.5]) gate.add(xf(new THREE.BoxGeometry(1.7, .28, 1.7), [x, y, 0]), st.trim, { ao: false });
   }
-  gate.add(rbox(span * 2 + 1.6, .55, .7, .1, [0, h - .2, 0]), st.trim); gate.add(rbox(span * 2 + 1.6, .55, .7, .1, [0, h - 3.2, 0]), st.trim);
-  for (let i = 0; i < 12; i++) { const x = -span + (i + .5) * span * 2 / 12; gate.add(cyl(.06, .06, 3.1, [x, h - 1.7, 0], [0, 0, (i % 2 ? 1 : -1) * .55], 5), st.trim, { ao: false }); }
-  for (let i = 0; i < 9; i++) { const x = -span + .8 + i * (span * 2 - 1.6) / 8; gate.add(ball(.16, [x, h - 3.55, .38], .5), i % 2 ? (st.light ?? '#ffe28a') : '#ffffff', { layer: 'glow', ao: false }); }
+  gate.add(rbox(span * 2 + 1.6, .55, .7, .1, [mid, h - .2, 0]), st.trim); gate.add(rbox(span * 2 + 1.6, .55, .7, .1, [mid, h - 3.2, 0]), st.trim);
+  for (let i = 0; i < 12; i++) { const x = mid - span + (i + .5) * span * 2 / 12; gate.add(cyl(.06, .06, 3.1, [x, h - 1.7, 0], [0, 0, (i % 2 ? 1 : -1) * .55], 5), st.trim, { ao: false }); }
+  for (let i = 0; i < 9; i++) { const x = mid - span + .8 + i * (span * 2 - 1.6) / 8; gate.add(ball(.16, [x, h - 3.55, .38], .5), i % 2 ? (st.light ?? '#ffe28a') : '#ffffff', { layer: 'glow', ao: false }); }
   kit.onTrack(gate.bake(), 0, 0); gate.dispose();
-  if (st.flags) for (let i = 0; i < 4; i++) for (const side of [-1, 1]) kit.onTrack(kit.prop(`flag${i}`, () => flagPole(st.flags![i % st.flags!.length], '#ffffff', 7.5)), -14 - i * 9, side * (w + 3.4), { yaw: side > 0 ? Math.PI : 0 });
+  if (st.flags) for (let i = 0; i < 4; i++) for (const side of [-1, 1]) if (kit.road(kit.at(-14 - i * 9, side * (w + 3.4)).x, kit.at(-14 - i * 9, side * (w + 3.4)).z).d > w + 2) kit.onTrack(kit.prop(`flag${i}`, () => flagPole(st.flags![i % st.flags!.length], '#ffffff', 7.5)), -14 - i * 9, side * (w + 3.4), { yaw: side > 0 ? Math.PI : 0 });
   if (typeof document === 'undefined') return;
   const c = document.createElement('canvas'); c.width = 1024; c.height = 160; const x = c.getContext('2d')!;
   x.fillStyle = st.banner; x.fillRect(0, 0, 1024, 160); x.strokeStyle = st.trim; x.lineWidth = 10; x.strokeRect(8, 8, 1008, 144);
@@ -107,7 +117,7 @@ function startLine(kit: Kit, st: StartGateStyle) {
   x.shadowColor = '#00000066'; x.shadowOffsetY = 5; x.fillText('CHOCOBO RACING', 512, 84);
   const tex = kit.own(new THREE.CanvasTexture(c)); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 8;
   const mat = kit.own(new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide, fog: true }));
-  const p = kit.at(0), board = new THREE.Mesh(new THREE.PlaneGeometry(span * 2 - .6, 2.4), mat);
+  const p = kit.at(0, mid), board = new THREE.Mesh(new THREE.PlaneGeometry(span * 2 - .6, 2.4), mat);
   board.position.set(p.x, p.y + h - 1.7, p.z); board.rotation.y = p.yaw + Math.PI; board.name = 'start banner'; kit.add(board);
 }
 
@@ -132,7 +142,7 @@ function hazards(kit: Kit, kind: HazardKind) {
   const [deep, mid, hi, glow] = palette[kind], noise = kit.own(noiseTexture(128));
   const mat = kit.own(new THREE.ShaderMaterial({
     transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3, fog: true,
-    uniforms: THREE.UniformsUtils.merge([THREE.UniformsLib.fog, { uTime: { value: 0 }, uNoise: { value: noise }, uDeep: { value: new THREE.Color(deep) }, uMid: { value: new THREE.Color(mid) }, uHi: { value: new THREE.Color(hi) }, uGlow: { value: glow } }]),
+    uniforms: THREE.UniformsUtils.merge([THREE.UniformsLib.fog, { uTime: { value: 0 }, uNoise: { value: null }, uDeep: { value: new THREE.Color(deep) }, uMid: { value: new THREE.Color(mid) }, uHi: { value: new THREE.Color(hi) }, uGlow: { value: glow } }]),
     vertexShader: `varying vec2 vUv; varying vec3 vW;
       #include <fog_pars_vertex>
       void main(){ vUv = uv; vec4 w = modelMatrix * vec4(position, 1.); vW = w.xyz; vec4 mvPosition = viewMatrix * w; gl_Position = projectionMatrix * mvPosition;
@@ -146,12 +156,15 @@ function hazards(kit: Kit, kind: HazardKind) {
         vec3 c = mix(uMid, uDeep, smoothstep(.85, .2, edge) * .8 + swirl * .3);
         c = mix(c, uHi, smoothstep(.6, .75, swirl) * .5 + smoothstep(.85, .92, edge) * .35 + step(.72, bub) * .3);
         c *= 1. + uGlow * (.6 + .4 * sin(uTime * 2. + swirl * 9.)) * smoothstep(.9, .3, edge);
-        gl_FragColor = vec4(c, smoothstep(.92, .82, edge));
+        // The quad's own border always fades out, so a ragged edge never shows a straight cut.
+        gl_FragColor = vec4(c, smoothstep(.92, .82, edge) * smoothstep(1., .86, max(abs(p.x), abs(p.y))));
         #include <tonemapping_fragment>
         #include <colorspace_fragment>
         #include <fog_fragment>
       }`,
   }));
+  // Set after the merge: merging clones texture uniforms, and the clone would never be disposed.
+  mat.uniforms.uNoise.value = noise;
   const pos: number[] = [], uv: number[] = [], idx: number[] = [];
   courseObjects(kit.id).hazards.forEach((h, i) => {
     for (let j = 0; j <= 1; j++) for (let k = 0; k <= 1; k++) { const p = kit.at(h.s + (j - .5) * 6.4, h.x + (k - .5) * 6); pos.push(p.x, p.y + .05, p.z); uv.push(k, j); }

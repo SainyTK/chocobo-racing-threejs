@@ -46,15 +46,26 @@ describe('studio registry', () => {
   it('marks the orb as the in-game Magic Stone look', () => {
     for (const e of ELEMENTS.filter(e => e.category === 'Items')) expect(e.variants.filter(v => v.inGame).map(v => v.id), e.id).toEqual(['orb']);
   });
-  // Characters need a DOM canvas for some textures; the browser covers them. Everything else builds headless.
+  // Characters need a DOM canvas for some textures, and course race cameras carry a character; the browser covers them.
+  // Courses themselves are built and disposed headless in stage.test.ts. Everything else builds here.
   it('creates, animates and disposes every item, effect and stage variant', () => {
     const scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(), fx = new Effects(scene);
-    for (const e of ELEMENTS.filter(e => e.category !== 'Characters')) for (const v of e.variants) {
+    for (const e of ELEMENTS.filter(e => e.category !== 'Characters' && e.category !== 'Courses')) for (const v of e.variants) {
       const inst = e.create(v.id, { scene, fx, camera });
       if (inst.object) scene.add(inst.object);
       for (let i = 0; i <= 90; i++) { inst.update?.(i / 30, 1 / 30); fx.preview(1 / 30, camera); }
       inst.dispose?.(); if (inst.object) scene.remove(inst.object); fx.reset();
     }
     expect(fx.stats()).toEqual({ particles: 0, fireballs: 0, ice: 0 });
+  });
+  it('offers every course with a race camera, sections and a prop sheet', () => {
+    const courses = ELEMENTS.filter(e => e.category === 'Courses');
+    expect(courses.map(e => e.id).sort()).toEqual(['course.forest', 'course.gardens', 'course.gate', 'course.gingerbread', 'course.manor', 'course.mines', 'course.test', 'course.volcano']);
+    for (const e of courses) expect(e.variants.map(v => v.id)).toEqual(expect.arrayContaining(['drive', 'aerial', 'start', 's1', 'props']));
+  });
+  it('builds and disposes a prop sheet headless', () => {
+    const e = elementById.get('course.forest')!, inst = e.create('props', { scene: new THREE.Scene(), fx: new Effects(new THREE.Scene()), camera: new THREE.PerspectiveCamera() });
+    let meshes = 0; inst.object!.traverse(o => { if (o instanceof THREE.Mesh) meshes++; });
+    expect(meshes).toBeGreaterThan(10); expect(inst.env).toBeDefined(); inst.dispose?.();
   });
 });
