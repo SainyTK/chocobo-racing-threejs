@@ -12,7 +12,23 @@ export const ITEMS: Record<Item, { name: string; names: string[]; symbol: string
   ultima: { name: 'Ultima', names: ['Ultima', 'Ultima II', 'Ultima III'], symbol: '✦', color: '#f4f0ff', help: 'Crash every rival. More stones cause a longer crash.' },
 };
 
-/** Weighted pool a random Magic Stone draws from. */
-export const RANDOM_STONES: Item[] = ['fire', 'fire', 'ice', 'haste', 'haste', 'thunder', 'shield', 'mini', 'doom', 'ultima'];
+/**
+ * Relative strength of one stone, judged at level one.
+ * Fire can miss, Ice waits behind you, Haste only helps yourself and Reflect blocks one spell.
+ * Thunder always hits the rival ahead; Doom gives a 3.5 s crash but can be passed back.
+ * Mini slows every rival for 9 s; Ultima crashes every rival and cannot be reflected.
+ */
+export const STONE_POWER: Record<Item, number> = { fire: 1, ice: 1, haste: 1, shield: 1.25, thunder: 2, doom: 2.5, mini: 4, ultima: 6 };
+/** A random Magic Stone's chance is inversely proportional to its power. */
+export const RANDOM_STONE_CHANCE = (() => {
+  const weights = Object.entries(STONE_POWER).map(([kind, power]) => [kind, 1 / power] as const), total = weights.reduce((sum, [, w]) => sum + w, 0);
+  return Object.fromEntries(weights.map(([kind, w]) => [kind, w / total])) as Record<Item, number>;
+})();
+/** Maps a uniform roll in [0, 1) to a stone using RANDOM_STONE_CHANCE. */
+export function drawStone(roll: number): Item {
+  let acc = 0;
+  for (const kind of Object.keys(RANDOM_STONE_CHANCE) as Item[]) if (roll < (acc += RANDOM_STONE_CHANCE[kind])) return kind;
+  return 'fire';
+}
 
 export const spellName = (kind: Item, level: number) => ITEMS[kind].names[Math.min(ITEMS[kind].names.length - 1, Math.max(0, level - 1))];

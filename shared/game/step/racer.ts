@@ -4,7 +4,7 @@ import { pointAt, projectOnTrack, trackLength } from '../../track/sampling.ts';
 import { courseObjects } from '../../track/objects.ts';
 import { ABILITIES } from '../abilities.ts';
 import { RACERS } from '../racers.ts';
-import { ITEMS, RANDOM_STONES } from '../items.ts';
+import { ITEMS, drawStone } from '../items.ts';
 import { addStone } from '../inventory.ts';
 import { aboveGround, crash, hit } from '../combat.ts';
 import { recover, useAbility, useItem } from '../actions.ts';
@@ -78,7 +78,7 @@ export function stepRacer(r: Race, p: Racer, dt: number) {
   if (r.mode !== 'time' && p.pickupCooldown <= 0) for (const stone of objects.stones) {
     if (r.pickups[stone.id] > 0 || p.stones.length >= 3) continue;
     if (Math.abs(mod(stone.s - p.routeS + len / 2, len) - len / 2) > 2.8 || Math.abs(stone.x - p.x) > 2.1) continue;
-    const kind = stone.kind === 'random' ? RANDOM_STONES[Math.floor(random(r) * RANDOM_STONES.length)] : stone.kind;
+    const kind = stone.kind === 'random' ? drawStone(random(r)) : stone.kind;
     addStone(p, kind); r.pickups[stone.id] = 1.1; p.pickupCooldown = .25; event(r, p, 'pickup', `${ITEMS[kind].name} Stone`); break;
   }
   if (!aboveGround(p) && p.invincible <= 0) {

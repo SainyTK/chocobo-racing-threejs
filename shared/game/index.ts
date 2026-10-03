@@ -1,7 +1,7 @@
 export { TICK, GRID_SIZE } from './constants.ts';
 export { ABILITIES, ABILITY_IDS, type AbilityId } from './abilities.ts';
 export { RACERS, type RacerProfile } from './racers.ts';
-export { ITEMS, RANDOM_STONES, spellName, type Item } from './items.ts';
+export { ITEMS, RANDOM_STONE_CHANCE, STONE_POWER, drawStone, spellName, type Item } from './items.ts';
 export { neutralInput, cleanInput, type Input } from './input.ts';
 export type { Racer, GameEvent, Trap, Projectile, RaceMode, Race } from './types.ts';
 export { makeRacer, createRace, placeRacer } from './setup.ts';
