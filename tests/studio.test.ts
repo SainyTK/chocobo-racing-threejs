@@ -44,7 +44,10 @@ describe('studio registry', () => {
     for (const e of ELEMENTS) expect(new Set(e.variants.map(v => v.id)).size, e.id).toBe(e.variants.length);
   });
   it('marks the orb as the in-game Magic Stone look', () => {
-    for (const e of ELEMENTS.filter(e => e.category === 'Items')) expect(e.variants.filter(v => v.inGame).map(v => v.id), e.id).toEqual(['orb']);
+    for (const e of ELEMENTS.filter(e => e.id.startsWith('item.'))) expect(e.variants.filter(v => v.inGame).map(v => v.id), e.id).toEqual(['orb']);
+  });
+  it('shows every stack level the game can hold, and only one for Reflect and Doom', () => {
+    for (const e of ELEMENTS.filter(e => e.id.startsWith('stack.'))) expect(e.variants.map(v => v.id), e.id).toEqual(['stack.shield', 'stack.doom'].includes(e.id) ? ['1'] : ['1', '2', '3']);
   });
   // Characters need a DOM canvas for some textures; the browser covers them. Everything else builds headless.
   it('creates, animates and disposes every item, effect and stage variant', () => {

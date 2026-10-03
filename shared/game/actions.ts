@@ -2,7 +2,7 @@ import { mod } from '../math.ts';
 import { pointAt, trackLength } from '../track/sampling.ts';
 import { ABILITIES } from './abilities.ts';
 import { spellName } from './items.ts';
-import { addStone, syncInventory } from './inventory.ts';
+import { addStone, canAddStone, syncInventory, takeStack } from './inventory.ts';
 import { hit } from './combat.ts';
 import { event } from './events.ts';
 import { placeRacer } from './setup.ts';
@@ -11,7 +11,7 @@ import type { Race, Racer } from './types.ts';
 function ahead(r: Race, p: Racer) { const len = trackLength(r.track); return r.racers.filter(q => q !== p && q.finishTime === null).sort((a, b) => mod(a.s - p.s, len) - mod(b.s - p.s, len))[0]; }
 export function useItem(r: Race, p: Racer) {
   syncInventory(p); if (!p.item) return;
-  const kind = p.item, level = p.itemLevel; p.stones.splice(-level, level); syncInventory(p);
+  const { kind, level } = takeStack(p)!;
   if (kind === 'haste') p.boost = Math.max(p.boost, 1.5 + level * 1.1);
   else if (kind === 'shield') p.shield = 5;
   else if (kind === 'fire') {
@@ -29,7 +29,7 @@ export function useAbility(r: Race, p: Racer) {
   if (p.ability < 100 || ABILITIES[p.abilityId].passive) return;
   if (p.abilityId === 'mug') {
     const target = r.racers.filter(q => q !== p && q.stones.length && Math.hypot(q.px - p.px, q.pz - p.pz) < 150).sort((a, b) => Math.hypot(a.px - p.px, a.pz - p.pz) - Math.hypot(b.px - p.px, b.pz - p.pz))[0];
-    if (!target || p.stones.length >= 3) return; addStone(p, target.stones.pop()!); syncInventory(target);
+    if (!target || !canAddStone(p, target.item!)) return; const stack = takeStack(target)!; addStone(p, stack.kind, stack.level);
   }
   if (p.abilityId === 'dash') p.boost = 3;
   if (p.abilityId === 'flap') p.flying = 5;

@@ -5,7 +5,7 @@ import { glassMaterial } from './glass.ts';
 import { INTERIORS } from './interiors.ts';
 import { vertex, fragment } from './glsl.ts';
 
-export const RANDOM_COLOR = '#fff6d6';
+export const RANDOM_COLOR = '#ffffff';
 /** The interior only needs to cover the sphere's silhouette, so it is coarse and slightly oversized; the glass needs smooth normals. */
 const glassGeo = new THREE.SphereGeometry(1, 28, 18), interiorGeo = new THREE.SphereGeometry(1.04, 18, 12);
 export const ORB_GEOMETRIES = [glassGeo, interiorGeo];
@@ -23,7 +23,7 @@ export interface OrbOptions { /** Rim of the glass in the stone's colour. Clear 
 export interface Orb { root: THREE.Group; update(t: number): void; dispose(): void }
 
 /** Soft radial falloff shared by every orb's outer glow. Built from data, so orbs can be created without a DOM. */
-const glowMap = (() => {
+export const glowMap = (() => {
   const n = 64, px = new Uint8Array(n * n * 4);
   for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) { const r = Math.min(1, Math.hypot(x + .5 - n / 2, y + .5 - n / 2) / (n / 2)), i = (y * n + x) * 4; px.set([255, 255, 255, Math.round(255 * (1 - r) ** 2.2)], i); }
   const t = new THREE.DataTexture(px, n, n); t.magFilter = t.minFilter = THREE.LinearFilter; t.needsUpdate = true; t.userData.shared = true; return t;
@@ -37,7 +37,7 @@ export function makeOrb(kind: PickupKind, o: OrbOptions = {}): Orb {
     uniforms: { uTime: { value: 0 } }, vertexShader: vertex, fragmentShader: fragment(INTERIORS[kind]),
   });
   const interior = new THREE.Mesh(interiorGeo, interiorMat); interior.scale.setScalar(.94); interior.renderOrder = 1;
-  const glass = new THREE.Mesh(glassGeo, glassMaterial(tint ? color : '#cfe6ff', tint && kind === 'random')); glass.renderOrder = 2;
+  const glass = new THREE.Mesh(glassGeo, glassMaterial(tint ? color : '#cfe6ff')); glass.renderOrder = 2;
   root.add(interior, glass);
   const materials: THREE.ShaderMaterial[] = [interiorMat, glass.material];
   let glow: THREE.Sprite | null = null;

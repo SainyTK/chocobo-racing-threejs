@@ -8,6 +8,7 @@ import { Effects } from './gfx/effects/index.ts';
 import { makePickup, type Pickup } from './gfx/effects/pickup.ts';
 import { makeOrb, setOrbDetail, ORB_GEOMETRIES } from './gfx/orbs/index.ts';
 import { FX_GEOMETRIES } from './gfx/effects/geometries.ts';
+import { AURA_GEOMETRIES } from './gfx/orbs/stack.ts';
 import { ghostMaterial } from './gfx/materials/ghost.ts';
 import { Shape } from './gfx/particles/particles.ts';
 import { configureRenderer, createComposer, createLights } from './gfx/pipeline.ts';
@@ -15,7 +16,7 @@ import { sphere, box, cone, STAGE_GEOMETRIES } from './gfx/stage/geometries.ts';
 import { sceneryMaterial as mat, sceneryMaterials } from './gfx/stage/materials.ts';
 import { makeBoostPad, padGeo, padMaterial } from './gfx/stage/boost-pad.ts';
 import { courseProp, PROP_SLOTS } from './gfx/stage/props.ts';
-const shared: THREE.BufferGeometry[] = [...STAGE_GEOMETRIES, padGeo, ...FX_GEOMETRIES, ...ORB_GEOMETRIES];
+const shared: THREE.BufferGeometry[] = [...STAGE_GEOMETRIES, padGeo, ...FX_GEOMETRIES, ...ORB_GEOMETRIES, ...AURA_GEOMETRIES];
 function part(parent: THREE.Object3D, geo: THREE.BufferGeometry, color: string, x: number, y: number, z: number, sx: number, sy: number, sz: number) { const m = new THREE.Mesh(geo, mat(color)); m.position.set(x, y, z); m.scale.set(sx, sy, sz); parent.add(m); return m; }
 function batch(group: THREE.Group) { const batches = new Map<THREE.Material, THREE.Mesh[]>(); for (const o of group.children) if (o instanceof THREE.Mesh) { const m = o.material as THREE.Material; if (!batches.has(m)) batches.set(m, []); batches.get(m)!.push(o); } for (const [m, parts] of batches) if (parts.length > 1) { const gs = parts.map(p => { p.updateMatrix(); return p.geometry.clone().applyMatrix4(p.matrix); }); const g = mergeGeometries(gs); gs.forEach(g => g.dispose()); if (g) { parts.forEach(p => group.remove(p)); group.add(new THREE.Mesh(g, m)); } } }
 export interface GhostPoint { t: number; x: number; z: number; yaw: number; s: number }

@@ -27,7 +27,7 @@ These describe this repository's behavior, not a claim of exact original code.
 | Driving | World position, heading, velocity, lateral grip, acceleration, braking, reverse, drifting, wall response, falls and recovery | Hand-tuned arcade solver, no bit-for-bit physics match |
 | Race validation | Twelve sequential gates per lap, reverse-crossing rejection, split times, finish ordering | Newly authored track layouts and gate locations |
 | Racers | Eight distinct handmade low-poly character/vehicle models, with different driving stats | No ripped meshes, original animations or textures; simplified silhouettes |
-| Inventory | Three physical slots, trailing stones, LIFO use, matching groups up to level three, contact theft | Numeric timing and some defensive interactions are interpretations |
+| Inventory | Three slots trailing behind the racer, LIFO use, matching stones merged into one stack up to level three, theft by driving into a trailing stack | A merged stack frees slots, which the original does not do. Numeric timing and some defensive interactions are interpretations |
 | Magic | All eight main spell families, level-dependent effects, aimed and homing fireballs, physical ice traps, Doom transfer | Simplified visuals and attack targeting; no original effect assets |
 | Abilities | Dash, Flap, Grip-Up, Mug, Magic Plus, Barrier, Receive and Charge; independent selection | Recharge durations and effects are hand-tuned; Mug targets a nearby rival |
 | Grand Prix | Four local rounds, cumulative points, next grid follows finishing order, final champion | Courses proceed from the selected course through the next three; no difficulty-class unlocks |

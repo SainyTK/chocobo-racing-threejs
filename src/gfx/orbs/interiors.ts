@@ -32,36 +32,48 @@ export const INTERIORS: Record<PickupKind, string> = {
     return vec4(col, 1. - T * .9);
   }`,
 
-  // A tumbling ice cube with frosted edges, inner cracks and bubbles, refracting snow that drifts down behind it.
+  // A cluster of clear ice crystals: pointed hexagonal spires grow from a frosted root, splitting light into rainbow edges.
   ice: /* glsl */ `
   mat3 R;
-  float cube(vec3 p) { vec3 q = abs(R * p) - vec3(.42) + .08; return length(max(q, 0.)) + min(max(q.x, max(q.y, q.z)), 0.) - .08; }
-  vec3 cubeNormal(vec3 p) { vec2 e = vec2(.002, -.002); return normalize(e.xyy * cube(p + e.xyy) + e.yyx * cube(p + e.yyx) + e.yxy * cube(p + e.yxy) + e.xxx * cube(p + e.xxx)); }
-  vec3 env(vec3 d) { return mix(vec3(.04, .12, .24), vec3(1., 1.08, 1.15), smoothstep(-.4, .9, d.y)) + vec3(5.) * pow(max(dot(d, normalize(vec3(-.4, .8, .5))), 0.), 70.); }
+  float hexR(vec2 p) { p = abs(p); return max(p.x * .866 + p.y * .5, p.y); }
+  /** One spire along local +y from the root: hexagonal column of radius r, length L, with a six-sided point. h is its height in 0..1. */
+  float spire(vec3 q, float r, float L, out float h) {
+    float hx = hexR(q.xz); h = clamp(q.y / L, 0., 1.);
+    return max(max(hx - r, -q.y), (hx + (q.y - L + r * 1.8) * .55 - r) * .88);
+  }
+  /** Root, tilt, yaw, radius and length of each spire. */
+  const vec4 SP[7] = vec4[7](vec4(.08, 0., .2, 1.2), vec4(.62, .4, .16, .92), vec4(.7, 2.5, .15, .86), vec4(.58, 4.3, .15, .8), vec4(1.1, 1.4, .11, .62), vec4(1.15, 3.4, .11, .6), vec4(1.05, 5.5, .1, .56));
+  float crystals(vec3 p, out float h) {
+    vec3 q = R * p - vec3(0., -.62, 0.); float d = 1e9; h = 0.;
+    for (int i = 0; i < 7; i++) { float hi, di = spire(rotX(-SP[i].x) * rotY(SP[i].y) * q, SP[i].z, SP[i].w, hi); if (di < d) { d = di; h = hi; } }
+    return d;
+  }
+  float crystals(vec3 p) { float h; return crystals(p, h); }
+  vec3 crystalNormal(vec3 p) { vec2 e = vec2(.0015, -.0015); return normalize(e.xyy * crystals(p + e.xyy) + e.yyx * crystals(p + e.yyx) + e.yxy * crystals(p + e.yxy) + e.xxx * crystals(p + e.xxx)); }
+  vec3 env(vec3 d) { return mix(vec3(.04, .12, .26), vec3(1., 1.08, 1.18), smoothstep(-.4, .9, d.y)) + vec3(6.) * pow(max(dot(d, normalize(vec3(-.4, .8, .5))), 0.), 60.) + vec3(2.5, 3., 3.5) * pow(max(dot(d, normalize(vec3(.6, .3, -.7))), 0.), 30.); }
   float snow(vec3 ro, vec3 rd, float tmax) {
     float s = 0., tq;
-    for (int k = 0; k < int(20. * DETAIL); k++) { float fk = float(k); vec3 h = hash31(fk * 5.3); vec3 pos = vec3((h.x - .5) * 1.3 + sin(uTime + fk) * .05, .8 - 1.6 * fract(h.y + uTime * .11), (h.z - .5) * 1.3); if (length(pos) > .92) continue; float d = rayPoint(ro, rd, pos, tq); s += step(0., tq) * step(tq, tmax) * exp(-d * d / .00045); }
+    for (int k = 0; k < int(16. * DETAIL); k++) { float fk = float(k); vec3 h = hash31(fk * 5.3); vec3 pos = vec3((h.x - .5) * 1.3 + sin(uTime + fk) * .05, .8 - 1.6 * fract(h.y + uTime * .08), (h.z - .5) * 1.3); if (length(pos) > .92) continue; float d = rayPoint(ro, rd, pos, tq); s += step(0., tq) * step(tq, tmax) * exp(-d * d / .0004); }
     return s;
   }
   vec4 interior(vec3 ro, vec3 rd, float t0, float t1) {
-    R = rotX(.55 + sin(uTime * .5) * .25) * rotY(uTime * .7);
-    vec3 haze = vec3(.25, .5, .75) * (t1 - t0) * .06;
-    float t = t0; bool hit = false;
-    for (int i = 0; i < 48; i++) { float d = cube(ro + rd * t); if (d < .0015) { hit = true; break; } t += d; if (t > t1) break; }
-    if (!hit) { vec3 c = vec3(1.7, 2., 2.3) * snow(ro, rd, t1) + haze; return vec4(c, clamp(c.b * .4, 0., .5)); }
-    vec3 p = ro + rd * t, n = cubeNormal(p), rIn = refract(rd, n, 1. / 1.31);
-    float fres = .04 + .96 * pow(1. - max(dot(-rd, n), 0.), 5.), ti = 0.; vec3 veins = vec3(0.);
-    for (int k = 0; k < int(16. * DETAIL); k++) {
-      ti += .05 / DETAIL; vec3 q = R * (p + rIn * ti); if (cube(p + rIn * ti) > 0.) break;
-      float crack = smoothstep(.04, 0., abs(noise(q * 6.5) - .5)) * smoothstep(.2, .45, noise(q * 2.3 + 4.));
-      float bubble = smoothstep(.82, .9, noise(q * 17. + 3.));
-      veins += (vec3(.85, .95, 1.) * crack * 1.6 + bubble * .9) * .05 / DETAIL;
-    }
-    vec3 pe = p + rIn * ti, ne = -cubeNormal(pe), rOut = refract(rIn, ne, 1.31); if (dot(rOut, rOut) < .01) rOut = reflect(rIn, ne);
-    vec3 behind = vec3(1.7, 2., 2.3) * snow(pe, rOut, 2.) + env(rOut) * .25;
-    vec3 q = abs(R * p); float edge = smoothstep(.3, .4, min(max(q.x, q.y), min(max(q.y, q.z), max(q.x, q.z))));
-    vec3 col = (behind + vec3(.4, .75, 1.) * .45 + veins) * exp(-ti * vec3(2.4, .95, .45)) + env(reflect(rd, n)) * fres + vec3(.85, .95, 1.) * edge * .55;
-    return vec4(col + haze, .94);
+    R = rotX(sin(uTime * .45) * .1) * rotY(uTime * .5);
+    vec3 haze = vec3(.2, .45, .75) * (t1 - t0) * .05;
+    float t = t0, h; bool hit = false;
+    for (int i = 0; i < 64; i++) { float d = crystals(ro + rd * t); if (d < .0012) { hit = true; break; } t += d * .85; if (t > t1) break; }
+    if (!hit) { vec3 c = vec3(1.6, 1.9, 2.2) * snow(ro, rd, t1) + haze; return vec4(c, clamp(c.b * .4, 0., .5)); }
+    vec3 p = ro + rd * t, n = crystalNormal(p); crystals(p, h);
+    vec3 rIn = refract(rd, n, 1. / 1.31);
+    float fres = .05 + .95 * pow(1. - max(dot(-rd, n), 0.), 5.), ti = 0.;
+    for (int k = 0; k < int(18. * DETAIL); k++) { ti += .04 / DETAIL; if (crystals(p + rIn * ti) > 0.) break; }
+    vec3 pe = p + rIn * ti, ne = -crystalNormal(pe);
+    // Dispersion: each colour leaves the crystal at its own angle, so facet edges fringe into rainbows.
+    vec3 behind = vec3(0.);
+    for (int c = 0; c < 3; c++) { vec3 o = refract(rIn, ne, 1.29 + float(c) * .025); if (dot(o, o) < .01) o = reflect(rIn, ne); vec3 e = env(o) * .55 + vec3(1.6, 1.9, 2.2) * snow(pe, o, 2.); behind[c] = e[c]; }
+    float frost = smoothstep(.3, 0., h) * (.6 + .4 * noise(R * p * 16.)), glint = pow(max(dot(reflect(rd, n), normalize(vec3(-.3, .7, .65))), 0.), 400.);
+    vec3 col = (behind + vec3(.35, .7, 1.) * .25) * exp(-ti * vec3(1.8, .7, .3)) + env(reflect(rd, n)) * fres + vec3(7.) * glint;
+    col = mix(col, vec3(1.1, 1.2, 1.3), frost * .7);
+    return vec4(col + haze, .93);
   }`,
 
   // A plasma globe: jagged filaments crawl from a hot electrode to the glass and flicker many times a second.
@@ -86,25 +98,35 @@ export const INTERIORS: Record<PickupKind, string> = {
     return vec4(col, clamp(max(col.g, col.r) * .4, 0., .85));
   }`,
 
-  // A whirlwind: three wind bands spiral up a funnel, spinning fast.
+  // A speed dash: a forward-pointing wedge trailing flame-like spikes, with streaks rushing past. It always points right on screen.
   haste: /* glsl */ `
-  float funnel(float y) { return .12 + .5 * pow(smoothstep(-.8, .8, y), 1.4); }
+  // Outline traced from the design sketch: the right tip, the flat base, four swept spikes with deep notches, a hook, and the curved back.
+  const int NV = 14;
+  const vec2 OUTLINE[14] = vec2[14](vec2(.75, -.195), vec2(-.75, -.195), vec2(-.37, -.1), vec2(-.68, -.05), vec2(-.14, -.03), vec2(-.54, .045), vec2(-.12, .1),
+    vec2(-.36, .19), vec2(.13, .095), vec2(-.08, .25), vec2(.02, .245), vec2(.22, .19), vec2(.42, .1), vec2(.6, -.03));
+  float dash(vec2 p) {
+    vec2 v[14]; for (int i = 0; i < NV; i++) v[i] = OUTLINE[i];
+    // The spike tips flicker like flames.
+    for (int i = 1; i < 10; i += 2) v[i].x -= (.5 + .5 * sin(uTime * 14. + float(i) * 1.3)) * .06;
+    float d = dot(p - v[0], p - v[0]), s = 1.;
+    for (int i = 0, j = NV - 1; i < NV; j = i, i++) {
+      vec2 e = v[j] - v[i], w = p - v[i], b = w - e * clamp(dot(w, e) / dot(e, e), 0., 1.); d = min(d, dot(b, b));
+      bvec3 c = bvec3(p.y >= v[i].y, p.y < v[j].y, e.x * w.y > e.y * w.x); if (all(c) || all(not(c))) s = -s;
+    }
+    return s * sqrt(d);
+  }
   vec4 interior(vec3 ro, vec3 rd, float t0, float t1) {
-    const int N = int(34. * DETAIL); float dt = (t1 - t0) / float(N), j = hash13(vec3(gl_FragCoord.xy, 2.)), T = 1., tq; vec3 col = vec3(0.);
-    for (int i = 0; i < N; i++) {
-      vec3 p = ro + rd * (t0 + (float(i) + j) * dt);
-      float r = length(p.xz), a = atan(p.z, p.x), f = funnel(p.y), wall = exp(-pow((r - f) / (.05 + .06 * f), 2.));
-      float bands = pow(.5 + .5 * sin(a * 2. + p.y * 15. - uTime * 14.), 4.);
-      float gusts = smoothstep(.35, .75, noise(vec3(a * 1.5 - uTime * 4., p.y * 3., 1.)));
-      float d = wall * (bands * (.5 + gusts) + .08) * smoothstep(.97, .82, length(p)) * smoothstep(-.88, -.7, p.y);
-      col += T * mix(vec3(.08, .65, .55), vec3(1.7, 2.7, 2.5), bands * gusts) * d * 4.5 * dt; T *= exp(-d * 1.1 * dt);
+    float tp; vec2 q = billboard(ro, rd, tp) / 1.12; q.y += sin(uTime * 9.) * .012 - .02;
+    float d = dash(q), ink = smoothstep(.012, -.004, d);
+    float heat = smoothstep(-.7, .6, q.x);
+    float edge = smoothstep(.05, .012, d) * (1. - ink);
+    vec3 col = mix(vec3(.1, .75, .68), vec3(1.15, 1.45, 1.4), heat) * ink + vec3(.15, .7, .62) * exp(-max(d, 0.) * 22.) * .25 * (1. - ink);
+    for (int k = 0; k < 9; k++) {
+      float fk = float(k), y = (hash11(fk * 3.1) - .5) * 1.4, x = 1. - 2.4 * fract(hash11(fk * 7.7) + uTime * (1.4 + hash11(fk) * .8)), len = .2 + hash11(fk * 1.3) * .25;
+      col += vec3(.4, 1.2, 1.1) * smoothstep(.012, .0, segment2(q, vec2(x, y), vec2(x + len, y))) * smoothstep(.95, .6, length(q)) * .6 * step(.02, d);
     }
-    for (int k = 0; k < 12; k++) {
-      float fk = float(k), life = fract(uTime * .45 + hash11(fk * 1.9)), y = -.72 + life * 1.45, a = fk * 2.4 + uTime * 9. * (1.2 - life * .5);
-      vec3 pos = vec3(cos(a), 0., sin(a)) * funnel(y) * 1.1 + vec3(0., y, 0.);
-      float d = rayPoint(ro, rd, pos, tq); col += vec3(1.5, 2.6, 2.3) * exp(-d * d / .0003) * sin(life * 3.1416);
-    }
-    return vec4(col, 1. - T);
+    col += vec3(.04, .2, .18) * (t1 - t0) * .3;
+    return vec4(col, clamp(max(max(ink, edge * .6), max(col.g, col.b) * .3), 0., 1.));
   }`,
 
   // A mirror ball inside a hexagonal barrier: the ball reflects a pink-lit room, the barrier turns slowly.
@@ -145,26 +167,37 @@ export const INTERIORS: Record<PickupKind, string> = {
     return vec4(col, clamp(col.b * .35, 0., .7));
   }`,
 
-  // A ten-second clock face glowing in churning curse smoke. The hand completes one turn per countdown.
+  // A grinning skull glowing in churning curse smoke. Its eyes burn and its jaw chatters.
   doom: /* glsl */ `
-  vec3 clock(vec2 q) {
-    float r = length(q), a = atan(q.x, q.y), hand = -uTime * TAU / 10.;
-    float ring = smoothstep(.022, 0., abs(r - .5)) + smoothstep(.012, 0., abs(r - .44)) * .6;
-    float arc = abs(fract(a / TAU * 10. + .5) - .5) * TAU / 10. * r, tick = smoothstep(.022, .01, arc) * step(.36, r) * step(r, .44);
-    float needle = smoothstep(.024, .008, segment2(q, vec2(0.), vec2(sin(-hand), cos(-hand)) * .38)) + smoothstep(.06, .03, r);
-    return vec3(2.6, 1.6, .55) * (ring + tick) + vec3(3.4, 2.2, .9) * needle;
+  float box2(vec2 p, vec2 b, float r) { vec2 d = abs(p) - b + r; return length(max(d, 0.)) + min(max(d.x, d.y), 0.) - r; }
+  float smin(float a, float b, float k) { float h = clamp(.5 + .5 * (b - a) / k, 0., 1.); return mix(b, a, h) - k * h * (1. - h); }
+  /** Premultiplied colour and coverage of the skull at billboard point q. */
+  vec4 skull(vec2 q) {
+    q.y -= sin(uTime * 1.6) * .02; vec2 e = vec2(abs(q.x), q.y);
+    float chew = abs(sin(uTime * 5.)) * .035, cranium = length((q - vec2(0., .1)) * vec2(1., 1.06)) - .34;
+    float cheeks = box2(q - vec2(0., -.12), vec2(.24, .1), .08), jaw = box2(q - vec2(0., -.27 - chew), vec2(.155, .065), .05);
+    float head = min(smin(cranium, cheeks, .06), jaw);
+    float eye = length((e - vec2(.13, .02)) * vec2(1., 1.18)) - .085;
+    float nose = max(abs(q.x) * 1.8 - (q.y + .15) * .9, q.y + .07);
+    float teeth = step(abs(fract(q.x / .052 + .5) - .5) * .052, .008) * step(abs(q.y + .21 + (q.y < -.215 ? -chew : 0.)), .035) * step(abs(q.x), .13);
+    float mouth = smoothstep(.006, 0., abs(q.y + .215 - chew * .5) - chew * .5) * step(abs(q.x), .15);
+    float cover = smoothstep(.01, -.01, head), hole = max(smoothstep(.01, -.01, min(eye, nose)), max(teeth, mouth) * cover);
+    vec3 bone = mix(vec3(1.1, .95, .8), vec3(1.9, 1.75, 1.45), smoothstep(-.3, .35, q.y + .25 * (1. - length(q))));
+    float pulse = .7 + .3 * sin(uTime * 6.), burn = exp(-dot(e - vec2(.13, .02), e - vec2(.13, .02)) / .0016) * pulse;
+    vec3 c = bone * cover * (1. - hole) + vec3(3.2, .5, 2.6) * burn + vec3(.9, .2, 1.5) * exp(-max(head, 0.) * 22.) * .55 * (1. - cover);
+    return vec4(c, cover * (1. - hole * .1));
   }
   vec4 interior(vec3 ro, vec3 rd, float t0, float t1) {
     const int N = int(26. * DETAIL); float dt = (t1 - t0) / float(N), j = hash13(vec3(gl_FragCoord.xy, 3.)), T = 1., tp; vec3 col = vec3(0.);
-    vec2 q = billboard(ro, rd, tp); bool drawn = false;
+    vec2 q = billboard(ro, rd, tp); bool drawn = false; vec4 sk = skull(q * .82);
     for (int i = 0; i < N; i++) {
       float t = t0 + (float(i) + j) * dt; vec3 p = ro + rd * t;
-      if (!drawn && t >= tp) { col += T * clock(q); drawn = true; }
+      if (!drawn && t >= tp) { col += T * sk.rgb; T *= 1. - sk.a * .92; drawn = true; }
       float n = fbm(rotY(uTime * .4) * p * 2.4 + vec3(0., -uTime * .35, 0.));
       float d = smoothstep(.42, .72, n) * smoothstep(1., .55, length(p)) * 5.;
       col += T * vec3(.32, .06, .5) * d * (.15 + .85 * smoothstep(.5, -.8, p.y)) * dt * .8; T *= exp(-d * dt);
     }
-    if (!drawn) col += T * clock(q);
+    if (!drawn) { col += T * sk.rgb; T *= 1. - sk.a * .92; }
     return vec4(col, 1. - T * .82);
   }`,
 
@@ -183,7 +216,7 @@ export const INTERIORS: Record<PickupKind, string> = {
     return vec4(col, 1. - T * .8);
   }`,
 
-  // Rainbow mist around a glowing question mark: the stone could become anything.
+  // Only a white question mark floating in clear glass: the stone could become anything.
   random: /* glsl */ `
   float glyph(vec2 q) {
     q = q / 1.35 - vec2(0., .04); vec2 c = vec2(0., .14); float r = .17, d = abs(length(q - c) - r);
@@ -193,17 +226,11 @@ export const INTERIORS: Record<PickupKind, string> = {
     return d;
   }
   vec4 interior(vec3 ro, vec3 rd, float t0, float t1) {
-    const int N = int(24. * DETAIL); float dt = (t1 - t0) / float(N), j = hash13(vec3(gl_FragCoord.xy, 5.)), T = 1., tp; vec3 col = vec3(0.);
-    vec2 q = billboard(ro, rd, tp);
-    float g = glyph(q), ink = smoothstep(.04, .028, g), outline = smoothstep(.075, .05, g) - ink;
-    vec3 mark = vec3(2.4, 2.3, 2.1) * ink;
-    for (int i = 0; i < N; i++) {
-      vec3 p = ro + rd * (t0 + (float(i) + j) * dt);
-      float n = fbm(rotY(uTime * .8) * p * 2.6 + uTime * .25), d = smoothstep(.5, .78, n) * smoothstep(1., .6, length(p)) * 2.;
-      col += T * hue(n * 1.6 + p.y * .4 + uTime * .1) * d * 2.4 * dt; T *= exp(-d * .8 * dt);
-    }
-    // The mark floats in front of the mist so it reads at a glance.
-    float cover = max(ink, outline * .8);
-    return vec4(col * (1. - cover) + mark, max(1. - T * .85, cover));
+    float tp; vec2 q = billboard(ro, rd, tp);
+    q.y -= sin(uTime * 1.8) * .025;
+    // A soft shadow behind the mark keeps it legible against the white glass.
+    float g = glyph(q), ink = smoothstep(.034, .026, g), shadow = smoothstep(.1, .03, g) * (1. - ink);
+    vec3 c = vec3(2.6) * ink + vec3(.04, .06, .1) * (t1 - t0);
+    return vec4(c, max(ink, shadow * .55));
   }`,
 };

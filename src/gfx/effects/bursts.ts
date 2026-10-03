@@ -16,7 +16,7 @@ export class Bursts {
   spawn(kind: BurstKind, at: THREE.Vector3, color: string, size: number, life: number, o: BurstOptions = {}) {
     let b = this.pool.find(x => x.kind === kind && x.age >= x.life && (x.mesh.material as THREE.ShaderMaterial).uniforms.uColor.value.equals(new THREE.Color(color)));
     if (!b) {
-      const mat = kind === 'ring' ? decalMaterial('ring', color) : kind === 'pillar' ? shell(color, '#ffffff', { power: 1, intensity: 1.6 }) : shell(color, '#ffffff', { power: 1.6, intensity: 2.2 });
+      const mat = kind === 'ring' ? decalMaterial('ring', color) : kind === 'pillar' ? shell(color, '#ffffff', { power: 2.2, intensity: .85 }) : shell(color, '#ffffff', { power: 1.6, intensity: 2.2 });
       if (kind === 'sphere') mat.side = THREE.DoubleSide;
       if (kind === 'pillar') { mat.side = THREE.DoubleSide; mat.uniforms.uColor = mat.uniforms.uInner; } if (kind === 'sphere') mat.uniforms.uColor = mat.uniforms.uInner;
       b = { mesh: new THREE.Mesh(kind === 'ring' ? ringGeo : kind === 'pillar' ? pillarGeo : sphereGeo, mat), age: 0, life, size, grow: 1, kind }; b.mesh.frustumCulled = false; b.mesh.renderOrder = 3; this.group.add(b.mesh); this.pool.push(b);
