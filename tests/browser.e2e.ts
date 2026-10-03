@@ -21,7 +21,7 @@ async function pilot(page: Page) {
         const curve = Math.max(...[12, 25, 40].map(v => Math.abs(point(p.s + v).curve)));
         const brake = p.speed > Math.max(13, Math.min(34, Math.sqrt(14 / Math.max(.001, curve))) + 1);
         if (r.time > -.16 && !brake) desired.add('KeyW'); if (brake) desired.add('KeyS');
-        const steer = Math.max(-1, Math.min(1, delta * 2.1)); if (Math.sign(steer) !== lastDirection) density = 0; lastDirection = Math.sign(steer); density += Math.abs(steer); if (density >= .7) { desired.add(steer > 0 ? 'KeyD' : 'KeyA'); density -= 1; }
+        const steer = Math.max(-1, Math.min(1, delta * 2.1)); if (Math.sign(steer) !== lastDirection) density = 0; lastDirection = Math.sign(steer); density += Math.abs(steer); if (density >= .7) { desired.add(steer > 0 ? 'KeyA' : 'KeyD'); density -= 1; }
         if (p.item && Math.sin(r.time * 3) > .5) desired.add('Space'); if (p.ability >= 100 && curve < .013) desired.add('KeyE');
         if (Math.abs(p.x) > 9 && p.speed < 3 && r.time > 6 || p.s > (p.gates + 1) * len / 12 + 15) desired.add('KeyR');
         for (const e of r.events) if (e.player === d.playerId || e.target === d.playerId) seen.add(e.type); maxSpeed = Math.max(maxSpeed, p.speed);

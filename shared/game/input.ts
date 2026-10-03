@@ -1,5 +1,6 @@
 import { clamp } from '../math.ts';
 
+// steer is in yaw space: +1 increases yaw, which is a left turn from the chase camera.
 export interface Input { steer: number; throttle: boolean; brake: boolean; reverse: boolean; drift: boolean; item: boolean; ability: boolean; rescue: boolean }
 export const neutralInput = (): Input => ({ steer: 0, throttle: false, brake: false, reverse: false, drift: false, item: false, ability: false, rescue: false });
 export function cleanInput(value: unknown): Input {

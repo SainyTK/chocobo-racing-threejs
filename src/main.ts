@@ -66,9 +66,9 @@ function hud() {
 function readInput(): Input {
   if (screen !== 'race' || modalOpen || document.hidden) return neutralInput();
   const is = (...codes: string[]) => codes.some(c => keys.has(c));
-  let steer = (is('KeyD', 'ArrowRight') || touch.has('right') ? 1 : 0) - (is('KeyA', 'ArrowLeft') || touch.has('left') ? 1 : 0);
+  let steer = (is('KeyA', 'ArrowLeft') || touch.has('left') ? 1 : 0) - (is('KeyD', 'ArrowRight') || touch.has('right') ? 1 : 0);
   let throttle = autoThrottle || is('KeyW', 'ArrowUp') || touch.has('throttle'), brake = is('KeyS', 'ArrowDown') || touch.has('brake'), reverse = is('KeyX') || touch.has('reverse'), drift = is('ShiftLeft', 'ShiftRight') || touch.has('drift'), item = is('Space') || touch.has('item') || performance.now() < itemPulse, ability = is('KeyE') || touch.has('ability') || performance.now() < abilityPulse;
-  const pad = navigator.getGamepads?.()[0]; if (pad) { if (Math.abs(pad.axes[0]) > .12) steer = pad.axes[0]; throttle ||= pad.buttons[7]?.pressed; brake ||= pad.buttons[6]?.pressed; reverse ||= pad.buttons[1]?.pressed; drift ||= pad.buttons[0]?.pressed; item ||= pad.buttons[2]?.pressed; ability ||= pad.buttons[3]?.pressed; }
+  const pad = navigator.getGamepads?.()[0]; if (pad) { if (Math.abs(pad.axes[0]) > .12) steer = -pad.axes[0]; throttle ||= pad.buttons[7]?.pressed; brake ||= pad.buttons[6]?.pressed; reverse ||= pad.buttons[1]?.pressed; drift ||= pad.buttons[0]?.pressed; item ||= pad.buttons[2]?.pressed; ability ||= pad.buttons[3]?.pressed; }
   return { steer, throttle, brake, reverse, drift, item, ability, rescue: is('KeyR') || touch.has('rescue') || performance.now() < rescuePulse };
 }
 function clearInput() { keys.clear(); touch.clear(); itemPulse = abilityPulse = rescuePulse = 0; if (online) net.sendInput(neutralInput(), true); }
