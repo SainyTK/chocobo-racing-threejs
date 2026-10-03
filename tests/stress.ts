@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { mkdirSync, writeFileSync } from 'node:fs';
-import { createRace, makeRacer, stepRace } from '../shared/game.ts';
-import { TRACK_IDS } from '../shared/track.ts';
+import { createRace, makeRacer, stepRace } from '../shared/game/index.ts';
+import { TRACK_IDS } from '../shared/track/index.ts';
 const report = [];
 for (const id of TRACK_IDS) {
   let dnf = 0, maxSeconds = 0;

@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { io, type Socket } from 'socket.io-client';
 import { createGameServer } from '../server/index.ts';
-import { stepRace } from '../shared/game.ts';
+import { stepRace } from '../shared/game/index.ts';
 let server: Awaited<ReturnType<typeof createGameServer>>, url: string;
 const clients: Socket[] = [];
 const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));

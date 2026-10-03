@@ -1,0 +1,12 @@
+export { TICK, GRID_SIZE } from './constants.ts';
+export { ABILITIES, ABILITY_IDS, type AbilityId } from './abilities.ts';
+export { RACERS, type RacerProfile } from './racers.ts';
+export { ITEMS, RANDOM_STONES, spellName, type Item } from './items.ts';
+export { neutralInput, cleanInput, type Input } from './input.ts';
+export type { Racer, GameEvent, Trap, Projectile, RaceMode, Race } from './types.ts';
+export { makeRacer, createRace, placeRacer } from './setup.ts';
+export { syncInventory, addStone } from './inventory.ts';
+export { aboveGround, hit } from './combat.ts';
+export { useItem, useAbility, recover } from './actions.ts';
+export { botInput } from './bot.ts';
+export { stepRace } from './step/index.ts';

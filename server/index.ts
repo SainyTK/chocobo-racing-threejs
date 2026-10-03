@@ -4,8 +4,8 @@ import { randomBytes, randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { Server } from 'socket.io';
-import { cleanInput, createRace, makeRacer, neutralInput, stepRace, TICK, RACERS, ABILITY_IDS, GRID_SIZE, type AbilityId, type Race } from '../shared/game.ts';
-import { TRACKS, type TrackId } from '../shared/track.ts';
+import { cleanInput, createRace, makeRacer, neutralInput, stepRace, TICK, RACERS, ABILITY_IDS, GRID_SIZE, type AbilityId, type Race } from '../shared/game/index.ts';
+import { TRACKS, type TrackId } from '../shared/track/index.ts';
 
 interface Member { id: string; name: string; character: number; abilityId: AbilityId; connected: boolean }
 interface Room { code: string; host: string; track: TrackId; laps: number; members: Member[]; race: Race | null; lastActive: number }

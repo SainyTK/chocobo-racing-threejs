@@ -1,6 +1,6 @@
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
-import { pointAt, trackLength, type TrackId } from '../shared/track.ts';
+import { pointAt, trackLength, type TrackId } from '../shared/track/index.ts';
 // Pass the Orca browser page id from `orca tab list --json`.
 const page = process.env.ORCA_PAGE;
 if (!page) throw new Error('Set ORCA_PAGE to the Orca browserPageId running the game.');

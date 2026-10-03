@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { TRACK_IDS, TRACKS, courseObjects, pointAt, projectOnTrack, trackLength, angleDelta, type TrackId } from '../shared/track.ts';
-import { createRace, makeRacer, neutralInput, cleanInput, stepRace, placeRacer, addStone, useItem, useAbility, hit, recover, syncInventory, RACERS, ABILITY_IDS, type Item, type Race } from '../shared/game.ts';
+import { TRACK_IDS, TRACKS, courseObjects, pointAt, projectOnTrack, trackLength, type TrackId } from '../shared/track/index.ts';
+import { angleDelta } from '../shared/math.ts';
+import { createRace, makeRacer, neutralInput, cleanInput, stepRace, placeRacer, addStone, useItem, useAbility, hit, recover, syncInventory, RACERS, ABILITY_IDS, type Item, type Race } from '../shared/game/index.ts';
 const tick = (r: Race, seconds: number) => { for (let i = 0; i < seconds * 60; i++) stepRace(r); };
 function solo(track: TrackId = 'test') { const r = createRace(track, [makeRacer('you', 'Test')], 1, 42, 'time'); r.time = .1; r.phase = 'racing'; return r; }
 function duel() { const r = createRace('test', [makeRacer('a', 'A'), makeRacer('b', 'B', 1)], 1, 42, 'versus'); r.time = .1; r.phase = 'racing'; placeRacer(r.track, r.racers[0], 0); placeRacer(r.track, r.racers[1], 14); return r; }

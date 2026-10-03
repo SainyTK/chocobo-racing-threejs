@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { pointAt, trackLength, TRACK_IDS, type TrackId } from '../shared/track.ts';
+import { pointAt, trackLength, TRACK_IDS, type TrackId } from '../shared/track/index.ts';
 const debug = (page: Page) => page.evaluate(() => (window as any).__raceDebug);
 async function ready(page: Page) { await page.goto('/'); await expect(page.getByRole('button', { name: 'START RACE', exact: true })).toBeVisible(); }
 /** Black-box pilot: reads a cloned telemetry snapshot, sends DOM keyboard events.

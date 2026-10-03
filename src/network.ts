@@ -1,10 +1,11 @@
 import { io, type Socket } from 'socket.io-client';
-import type { AbilityId, Input, Race } from '../shared/game.ts';
-import { angleDelta, type TrackId } from '../shared/track.ts';
+import type { AbilityId, Input, Race } from '../shared/game/index.ts';
+import type { TrackId } from '../shared/track/index.ts';
+import { angleDelta } from '../shared/math.ts';
 export interface RoomView { code: string; host: string; track: TrackId; laps: number; members: { id: string; name: string; character: number; abilityId: AbilityId; connected: boolean }[]; phase: string }
 export class Network {
   socket: Socket; id = ''; connected = false; latency = 0; room: RoomView | null = null;
-  onRoom: (room: RoomView) => void = () => {}; onState: (race: Race) => void = () => {}; onStatus: (online: boolean) => void = () => {}; onExpired: () => void = () => {};
+  onRoom: (room: RoomView) => void = () => { }; onState: (race: Race) => void = () => { }; onStatus: (online: boolean) => void = () => { }; onExpired: () => void = () => { };
   private snapshots: { time: number; race: Race }[] = []; private lastSend = 0;
   constructor() {
     let token = ''; try { token = sessionStorage.getItem('cbr-session') || ''; } catch { /* Private browsing may disable storage. */ }
@@ -13,7 +14,7 @@ export class Network {
     this.socket.on('disconnect', () => { this.connected = false; this.onStatus(false); });
     this.socket.on('welcome', data => {
       const lostRoom = this.room !== null && !data.room;
-      this.id = data.id; this.socket.auth = { token: data.token }; try { sessionStorage.setItem('cbr-session', data.token); } catch {}
+      this.id = data.id; this.socket.auth = { token: data.token }; try { sessionStorage.setItem('cbr-session', data.token); } catch { }
       if (lostRoom) { this.clear(); this.onExpired(); }
     });
     this.socket.on('room', (room: RoomView) => { this.room = room; this.onRoom(room); });
@@ -51,15 +52,17 @@ export class Network {
     let before = this.snapshots[0], after = latest;
     for (let i = 1; i < this.snapshots.length; i++) if (this.snapshots[i].time >= at) { before = this.snapshots[i - 1]; after = this.snapshots[i]; break; }
     const t = Math.max(0, Math.min(1, (at - before.time) / Math.max(1, after.time - before.time)));
-    return { ...latest.race, racers: latest.race.racers.map(p => {
-      if (p.id === this.id) {
-        const ahead = Math.min(.1, Math.max(0, (performance.now() - latest.time) / 1000));
-        const moving = p.finishTime === null && latest.race.phase === 'racing' && p.falling <= 0 ? ahead : 0;
-        return { ...p, px: p.px + p.vx * moving, pz: p.pz + p.vz * moving }; 
-      }
-      const a = before.race.racers.find(q => q.id === p.id) || p, b = after.race.racers.find(q => q.id === p.id) || p;
-      if (Math.hypot(b.px - a.px, b.pz - a.pz) > 25) return { ...p };
-      return { ...p, px: a.px + (b.px - a.px) * t, pz: a.pz + (b.pz - a.pz) * t, yaw: a.yaw + angleDelta(b.yaw, a.yaw) * t, s: a.s + (b.s - a.s) * t, x: a.x + (b.x - a.x) * t };
-    }) };
+    return {
+      ...latest.race, racers: latest.race.racers.map(p => {
+        if (p.id === this.id) {
+          const ahead = Math.min(.1, Math.max(0, (performance.now() - latest.time) / 1000));
+          const moving = p.finishTime === null && latest.race.phase === 'racing' && p.falling <= 0 ? ahead : 0;
+          return { ...p, px: p.px + p.vx * moving, pz: p.pz + p.vz * moving };
+        }
+        const a = before.race.racers.find(q => q.id === p.id) || p, b = after.race.racers.find(q => q.id === p.id) || p;
+        if (Math.hypot(b.px - a.px, b.pz - a.pz) > 25) return { ...p };
+        return { ...p, px: a.px + (b.px - a.px) * t, pz: a.pz + (b.pz - a.pz) * t, yaw: a.yaw + angleDelta(b.yaw, a.yaw) * t, s: a.s + (b.s - a.s) * t, x: a.x + (b.x - a.x) * t };
+      })
+    };
   }
 }

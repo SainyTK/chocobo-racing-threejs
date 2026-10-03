@@ -91,14 +91,21 @@ Reports are in `output/playwright-report/`; screenshots are in `output/testing/`
 
 ## Code
 
-- `shared/track.ts`: eight closed circuits, road sampling, world-to-road projection and pickups.
-- `shared/game.ts`: 60 Hz free driving, bots, spells, abilities, collisions and validated laps.
+- `shared/math.ts`: clamp, modulo and angle helpers shared by the simulation and the client.
+- `shared/track/`: eight closed circuits (`tracks.ts`), road sampling and world-to-road projection (`sampling.ts`), and stones, boost pads and hazards (`objects.ts`).
+- `shared/game/`: 60 Hz free driving, bots, spells, abilities, collisions and validated laps.
+  Settings and data live in `constants.ts`, `abilities.ts`, `items.ts` and `racers.ts`.
+  Race setup is in `setup.ts`, spell hits in `combat.ts`, item and ability use in `actions.ts`, and the bot driver in `bot.ts`.
+  `step/` runs one tick: per-racer physics, projectiles, racer contacts and standings.
 - `server/index.ts`: authoritative room server, sessions and input validation.
 - `src/scene.ts`: scenery, chase camera, shadows, bloom post-processing and 3D-rendered portraits.
-- `src/gfx/characters.ts`: the eight rigged racers and vehicles, built in code with cel shading and outlines, with running, flapping, blinking and spring animations.
-- `src/gfx/effects.ts`: spell and race effects: fireballs, ice traps, lightning, Ultima, Reflect bubbles, Doom runes, boost trails, drift sparks and status auras.
-- `src/gfx/particles.ts`: instanced billboard particle pools.
-- `src/gfx/materials.ts` and `src/gfx/shapes.ts`: toon, outline and ghost materials, and the geometry helpers used to sculpt the models.
+- `src/gfx/characters/`: the eight rigged racers and vehicles, built in code with cel shading and outlines, with running, flapping, blinking and spring animations.
+  `index.ts` builds a racer by index, `rig.ts` batches parts into few draw calls, `parts/` holds shared pieces (bird body, eyes, wheels, carpet texture) and `racers/` has one file per racer.
+- `src/gfx/effects/`: spell and race effects: fireballs, ice traps, lightning, Ultima, Reflect bubbles, Doom runes, boost trails, drift sparks and status auras.
+  `index.ts` holds the `Effects` controller; `bolt.ts`, `trail.ts`, `bursts.ts`, `status.ts` and `pickup.ts` each hold one effect component.
+- `src/gfx/particles/`: instanced billboard particle pools and their shaders.
+- `src/gfx/materials/`: toon, glow, outline, ghost, fresnel shell, crystal and ground decal materials, one per file.
+- `src/gfx/geometry/`: the geometry helpers used to sculpt the models (baked transforms, primitives, rocks and swept tubes).
 - `src/main.ts`: modes, menus, HUD, input, local race loop and ghost recording.
 - `src/network.ts`: reconnects, world-space interpolation and bounded extrapolation.
 - `src/audio.ts`: original synthesized music and effects.
