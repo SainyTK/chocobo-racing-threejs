@@ -2,10 +2,12 @@ import { io, type Socket } from 'socket.io-client';
 import type { AbilityId, Input, Race } from '../shared/game/index.ts';
 import type { TrackId } from '../shared/track/index.ts';
 import { angleDelta } from '../shared/math.ts';
+import { NetDiagnostics, Delivery } from './net-diagnostics.ts';
 export interface RoomView { code: string; host: string; track: TrackId; laps: number; members: { id: string; name: string; character: number; abilityId: AbilityId; connected: boolean }[]; phase: string }
 export class Network {
   socket: Socket; id = ''; connected = false; latency = 0; room: RoomView | null = null;
   onRoom: (room: RoomView) => void = () => { }; onState: (race: Race) => void = () => { }; onStatus: (online: boolean) => void = () => { }; onExpired: () => void = () => { };
+  diagnostics = new NetDiagnostics(); private delivery = new Delivery(); private receivedAt = 0;
   private snapshots: { time: number; race: Race }[] = []; private lastSend = 0;
   constructor() {
     let token = ''; try { token = sessionStorage.getItem('cbr-session') || ''; } catch { /* Private browsing may disable storage. */ }
@@ -18,11 +20,15 @@ export class Network {
       if (lostRoom) { this.clear(); this.onExpired(); }
     });
     this.socket.on('room', (room: RoomView) => { this.room = room; this.onRoom(room); });
-    this.socket.on('state', (race: Race) => {
+    this.socket.on('state', (race: Race) => this.delivery.run('down', () => {
+      const now = performance.now();
+      if (this.receivedAt) this.diagnostics.sample('snapshotIntervalMs', now - this.receivedAt); this.receivedAt = now;
+      if (this.diagnostics.enabled) this.diagnostics.sample('stateBytes', new TextEncoder().encode(JSON.stringify(race)).length);
+      this.diagnostics.count('snapshots');
       if (this.snapshots.at(-1)?.race.id !== race.id) this.snapshots = [];
-      this.snapshots.push({ time: performance.now(), race }); if (this.snapshots.length > 12) this.snapshots.shift(); this.onState(race);
-    });
-    setInterval(() => { if (this.connected) { const start = performance.now(); this.socket.timeout(2000).emit('latency', {}, (err: unknown) => { if (!err) this.latency = Math.round(performance.now() - start); }); } }, 2500);
+      this.snapshots.push({ time: now, race }); if (this.snapshots.length > 12) this.snapshots.shift(); this.onState(race);
+    }));
+    setInterval(() => { if (this.connected) { const start = performance.now(); this.socket.timeout(2000).emit('latency', {}, (err: unknown) => { if (!err) { this.latency = Math.round(performance.now() - start); this.diagnostics.sample('transportRttMs', this.latency); } }); } }, 2500);
   }
   async connect() {
     if (this.connected && this.id) return;
@@ -43,12 +49,15 @@ export class Network {
   }
   sendInput(input: Input, force = false) {
     const now = performance.now(); if (!this.connected || (!force && now - this.lastSend < 32)) return; this.lastSend = now;
-    this.socket.volatile.emit('input', input);
+    const copy = { ...input }; this.diagnostics.count('inputs'); if (this.diagnostics.enabled) this.diagnostics.sample('inputBytes', JSON.stringify(copy).length);
+    this.delivery.run('up', () => { if (this.connected) this.socket.volatile.emit('input', copy); });
   }
-  clear() { this.room = null; this.snapshots = []; }
+  clear() { this.delivery.clear(); this.room = null; this.snapshots = []; }
   interpolated(): Race | null {
     const latest = this.snapshots.at(-1); if (!latest) return null;
+    this.diagnostics.sample('snapshotArrivalAgeMs', performance.now() - latest.time);
     const at = performance.now() - 85;
+    if (at > latest.time) this.diagnostics.count('interpolationUnderrunFrames');
     let before = this.snapshots[0], after = latest;
     for (let i = 1; i < this.snapshots.length; i++) if (this.snapshots[i].time >= at) { before = this.snapshots[i - 1]; after = this.snapshots[i]; break; }
     const t = Math.max(0, Math.min(1, (at - before.time) / Math.max(1, after.time - before.time)));

@@ -145,6 +145,7 @@ document.addEventListener('pointerdown', e => { const b = e.target instanceof El
 for (const type of ['pointerup', 'pointercancel', 'lostpointercapture']) document.addEventListener(type, e => { const b = e.target instanceof Element ? e.target.closest<HTMLElement>('[data-touch]') : null; if (b) { touch.delete(b.dataset.touch!); b.classList.remove('pressed'); } });
 let previous = performance.now(), hudAt = 0, fps = 60;
 function frame(now: number) {
+  net.diagnostics.sample('frameMs', now - previous);
   const elapsed = (now - previous) / 1000, dt = Math.min(.1, elapsed); previous = now; fps += ((1 / Math.max(.001, elapsed)) - fps) * .02; const input = readInput();
   if (autoQuality && quality === 'high' && screen === 'race' && !paused) { if (fps < 28) { slowSince ||= now; if (now - slowSince > 4000) { quality = 'low'; autoQuality = false; world.setQuality(quality); toast('Graphics set to Low to keep the race smooth. Change it in Options.', 5000); } } else slowSince = 0; }
   if (race) {
@@ -156,6 +157,10 @@ function frame(now: number) {
   if (race && savedGhost && race.time >= 0 && race.time <= savedGhost.time) { const ps = savedGhost.points; while (ghostIndex < ps.length - 2 && ps[ghostIndex + 1].t < race.time) ghostIndex++; const a = ps[ghostIndex], b = ps[ghostIndex + 1] || a; if (a && b) { const t = clamp((race.time - a.t) / Math.max(.001, b.t - a.t), 0, 1); ghost = { t: race.time, x: a.x + (b.x - a.x) * t, z: a.z + (b.z - a.z) * t, yaw: a.yaw + angleDelta(b.yaw, a.yaw) * t, s: a.s + (b.s - a.s) * t }; } }
   world.render(dt, race, playerId, input.steer, keys.has('KeyB'), ghost, paused && !online); audio.update(screen === 'race' && !paused); requestAnimationFrame(frame);
 }
-Object.defineProperty(window, '__raceDebug', { get: () => JSON.parse(JSON.stringify({ screen, race, playerId, room: net.room, online, paused, connected: net.connected, settings: { autoThrottle, quality, character, abilityId, mode }, cup, ghost: savedGhost ? { time: savedGhost.time, samples: savedGhost.points.length } : null, recordingSamples: recording.length, graphics: world.stats(), fps: Math.round(fps) })) });
+Object.defineProperty(window, '__raceDebug', { get: () => JSON.parse(JSON.stringify({ screen, race, playerId, room: net.room, online, paused, connected: net.connected, settings: { autoThrottle, quality, character, abilityId, mode }, cup, ghost: savedGhost ? { time: savedGhost.time, samples: savedGhost.points.length } : null, recordingSamples: recording.length, graphics: world.stats(), fps: Math.round(fps), network: { transport: net.socket.io.engine?.transport.name, samples: net.diagnostics.samples, counters: net.diagnostics.counters } })) });
+if (net.diagnostics.enabled) {
+  Object.assign(window, { __resetNetPerf: () => net.diagnostics.reset() });
+  Object.defineProperty(window, '__perfPose', { get: () => { const p = race?.racers.find(p => p.id === playerId); return p ? { speed: p.speed, yaw: p.yaw } : null; } });
+}
 home(); requestAnimationFrame(frame);
 if ((net.socket.auth as { token?: string }).token) void net.connect().catch(() => {});

@@ -10,7 +10,7 @@ import { TRACKS, type TrackId } from '../shared/track/index.ts';
 interface Member { id: string; name: string; character: number; abilityId: AbilityId; connected: boolean }
 interface Room { code: string; host: string; track: TrackId; laps: number; members: Member[]; race: Race | null; lastActive: number }
 interface Session { id: string; token: string; socket: string | null; room: string | null; seen: number; inputAt: number }
-export async function createGameServer({ development = false } = {}) {
+export async function createGameServer({ development = false, diagnostics = false } = {}) {
   const app = express(), http = createServer(app);
   app.disable('x-powered-by');
   const origins = (process.env.ALLOWED_ORIGINS || '').split(',').filter(Boolean);
@@ -127,14 +127,19 @@ export async function createGameServer({ development = false } = {}) {
       }
     });
   });
+  const metrics = { tickMs: [] as number[], loopLagMs: [] as number[], snapshotsPerLoop: [] as number[] };
+  const sample = (a: number[], v: number) => { if (diagnostics && a.length < 20000) a.push(v); };
   let previousTime = performance.now(), accumulator = 0, ticks = 0;
   const timer = setInterval(() => {
-    const now = performance.now(); accumulator += Math.min((now - previousTime) / 1000, .25); previousTime = now;
+    const now = performance.now(); sample(metrics.loopLagMs, Math.max(0, now - previousTime - 1000 / 60)); let snapshots = 0; accumulator += Math.min((now - previousTime) / 1000, .25); previousTime = now;
     while (accumulator >= TICK) {
+      const start = diagnostics ? performance.now() : 0;
       for (const room of rooms.values()) if (room.race) stepRace(room.race);
+      sample(metrics.tickMs, performance.now() - start);
       accumulator -= TICK; ticks++;
-      if (ticks % 3 === 0) for (const room of rooms.values()) if (room.race) io.to(room.code).volatile.emit('state', room.race);
+      if (ticks % 3 === 0) for (const room of rooms.values()) if (room.race) { io.to(room.code).volatile.emit('state', room.race); snapshots++; }
     }
+    sample(metrics.snapshotsPerLoop, snapshots);
   }, 1000 / 60);
   const cleanup = setInterval(() => {
     for (const s of sessions.values()) {
@@ -147,7 +152,7 @@ export async function createGameServer({ development = false } = {}) {
   let vite: Awaited<ReturnType<typeof import('vite')['createServer']>> | undefined;
   if (development) { const { createServer } = await import('vite'); vite = await createServer({ server: { middlewareMode: true }, appType: 'spa' }); app.use(vite.middlewares); }
   else { const dir = fileURLToPath(new URL('../dist', import.meta.url)); app.use(express.static(dir)); app.get('/{*path}', (_req, res) => res.sendFile(path.join(dir, 'index.html'))); }
-  return { app, http, io, rooms, close: async () => { clearInterval(timer); clearInterval(cleanup); await vite?.close(); await new Promise<void>(resolve => io.close(() => resolve())); } };
+  return { app, http, io, rooms, metrics, close: async () => { clearInterval(timer); clearInterval(cleanup); await vite?.close(); await new Promise<void>(resolve => io.close(() => resolve())); } };
 }
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const server = await createGameServer({ development: process.env.NODE_ENV !== 'production' });
