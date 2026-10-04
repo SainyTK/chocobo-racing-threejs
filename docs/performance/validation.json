@@ -1,0 +1,27 @@
+{
+  "implementationRevision": "c73b9d0",
+  "baseRevision": "6e6e35984866d0138894329594153e70d7079717",
+  "baselineCheckpoint": "7888fc2",
+  "environment": { "node": "v22.23.2", "platform": "darwin arm64", "cpu": "Apple M5", "benchmarkPort": 3219, "e2ePort": 3218, "productionSmokePort": 3107 },
+  "checks": [
+    { "command": "npm test", "stage": "baseline", "passed": true, "files": 4, "tests": 104 },
+    { "command": "npm test", "stage": "final", "passed": true, "files": 5, "tests": 113 },
+    { "command": "npm run check", "stage": "final", "passed": true },
+    { "command": "npm run build", "stage": "final", "passed": true, "warnings": ["Existing Three.js chunk exceeds 500 KB"] },
+    { "command": "npm run test:production", "stage": "final", "passed": true, "checks": ["production bundle", "room creation", "authoritative movement", "reload/rejoin", "server restart expires room", "new room after restart", "local mode after leaving"] },
+    { "command": "npm run test:e2e", "stage": "final", "passed": false, "reason": "Shell timeout after 1200 seconds", "testsPassedBeforeTimeout": 12, "coverage": ["setup/options", "all eight courses", "Time Attack persistence", "four-round Grand Prix", "two-client multiplayer finish/reload/rematch"] },
+    { "command": "npm run test:e2e -- --grep 'Versus drives|mobile portrait|impaired two-human'", "stage": "final", "passed": true, "tests": 3, "coverage": ["Versus", "mobile", "impaired two-client WebSocket, one-shot rescue, reload, reconnect"] },
+    { "command": "node tests/compatibility-smoke.mjs", "stage": "final, against port 3218", "passed": true, "engine": "WebKit", "coverage": ["WebGL2", "16 course replacements without GPU object growth", "manual controls", "reverse", "pause", "immutable diagnostics"] },
+    { "command": "Orca version-matched local browser smoke", "passed": true, "orcaVersion": "1.4.217", "observed": { "online": true, "racers": 6, "transport": "websocket", "instantaneousFps": 97, "consoleMessages": 0 }, "cleanup": "Explicit leave, tab closed, local /health reported rooms=0 and players=0" }
+  ],
+  "earlierFailures": [
+    "Initial E2E run collided with another worktree's default Vite HMR port and reported WebSocket closed without opened. Fixed by serving HMR on the branch's HTTP server.",
+    "Initial WebKit smoke used old hardcoded port 3000, not this branch's port, and reported an HMR page error. Updated URL parameter/default and reran on 3218.",
+    "Offline regression expected Playwright offline toggle to immediately close an established WebSocket. It did not. Test now explicitly closes the transport while offline and checks reconnection.",
+    "Per-25ms-window snapshot assertion was flaky because the window could span two callbacks. Corrected to assert per-callback emission count; final unit suite passed.",
+    "An after benchmark ran concurrently with E2E and was discarded. Final reports after.json and final.json were measured with that suite stopped."
+  ],
+  "reports": ["baseline.json", "compact.json", "prediction.json", "after.json", "final.json"],
+  "limitations": ["Synthetic application-delivery delay/drop is not actual Thailand routing or TCP packet loss", "Automated DOM keyboard control of two human racer slots, not two actual people", "Software-rendered browser frames are slow and variable", "Ten response trials per client/scenario; p95/p99 are sample maxima", "No demonstrated FPS or interpolation-underrun improvement", "One local room is not a free Railway capacity test", "Prediction replays held-input client durations approximately and does not predict race side effects"],
+  "safety": { "publicConnections": 0, "hostingOrBillingChanges": false, "paidServicesAdded": false, "pushed": false, "merged": false, "deployed": false, "localServicesStopped": true }
+}
