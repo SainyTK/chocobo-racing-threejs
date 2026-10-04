@@ -6,7 +6,9 @@ This playable, unofficial fan interpretation of the 1999 PlayStation racer has f
 
 [Repository](https://github.com/SainyTK/chocobo-racing-threejs) · [MIT license](LICENSE)
 
-There is no public deployment yet. Follow the instructions below to play locally.
+[Play in your browser](https://chocobo-racing-threejs-production.up.railway.app/), or follow the instructions below to play locally.
+
+The public server uses Railway's free credits. It can sleep when idle and may be unavailable when credits run out. Rooms disappear when the server sleeps, restarts or deploys.
 
 This is not an identical port. Models, music, animations, maps and physics tuning are newly authored. Character and course names reference Square Enix's game. No original game files are bundled or required. The project is not affiliated with Square Enix.
 
@@ -137,9 +139,13 @@ docker run --rm -p 3000:3000 \
 
 `GET /health` reports health, rooms and connections. The server is a single process with in-memory rooms. Restarting it clears rooms. Do not run unsynchronized replicas. Public hosting also needs infrastructure rate limiting and monitoring.
 
-## Deployment plan
+## Deployment
 
-Deployment is planned for later. The recommended first deployment is a single Railway service that serves both `dist/` and the authoritative multiplayer server. The existing Dockerfile builds and starts both. No database is required.
+The public deployment is a single Railway service in Singapore that serves both `dist/` and the authoritative multiplayer server. The existing Dockerfile builds and starts both. No database is required.
+
+The Railway project is `hearty-analysis`, service `chocobo-racing-threejs`, environment `production`. GitHub auto-deployment is connected to `main`. It uses one replica, `/health` for deployment checks, and idle sleeping. `ALLOWED_ORIGINS` is `https://chocobo-racing-threejs-production.up.railway.app`.
+
+Hosting stays on the free Trial, which automatically reverts to the Free plan with $1 monthly credit [3]. No paid subscription was created. Uptime depends on available credits. Idle sleeping reduces usage but active multiplayer connections can keep the server awake.
 
 Railway detects a repository Dockerfile automatically [1]. Use the repository root, branch `main`, one replica, a public HTTPS domain and healthcheck path `/health`. The server listens on `0.0.0.0` and reads Railway's `PORT` variable [2]. Set `ALLOWED_ORIGINS` to the exact public page origin, without a trailing slash. Add any custom-domain origin as another comma-separated value. Rooms live in memory and disappear on restart or deployment.
 
@@ -153,7 +159,7 @@ Vercel can host the Vite frontend with build command `npm run build` and output 
 - Specify the region nearest your players, an approved monthly hosting budget, and whether pushes to `main` should deploy automatically.
 - Choose a provider-generated domain or supply your custom domain and confirm you can edit its DNS.
 - If using Vercel, also supply the team/account scope and project name or existing project ID. Run `vercel login` locally and authorize GitHub access if using Git-based deployments.
-- Explicitly approve creating services and deploying when ready. No deployment has been performed as part of this README update.
+- Explicitly approve creating services or additional deployments. Do not upgrade the existing deployment to a paid plan without approval.
 
 Do not paste account passwords, API tokens or session cookies into chat. Sign in locally or store required credentials through the provider's secure settings. This game currently needs no third-party API keys.
 
@@ -162,6 +168,8 @@ Do not paste account passwords, API tokens or session cookies into chat. Sign in
 [1] [Railway services and Dockerfile detection](https://docs.railway.com/services)
 
 [2] [Railway healthchecks and the PORT variable](https://docs.railway.com/deployments/healthchecks)
+
+[3] [Railway Free Trial and transition to the Free plan](https://docs.railway.com/pricing/free-trial)
 
 ## Tests
 
