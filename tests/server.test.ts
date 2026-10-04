@@ -14,7 +14,7 @@ async function connect(token?: string, origin?: string, wire?: number) {
   return { socket, ...welcome };
 }
 function request(socket: Socket, event: string, data: unknown = {}) { return new Promise<any>((resolve, reject) => socket.timeout(2000).emit(event, data, (e: unknown, result: unknown) => e ? reject(e) : resolve(result))); }
-beforeEach(async () => { server = await createGameServer(); await new Promise<void>(resolve => server.http.listen(0, '127.0.0.1', resolve)); url = `http://127.0.0.1:${(server.http.address() as any).port}`; });
+beforeEach(async () => { server = await createGameServer({ diagnostics: true }); await new Promise<void>(resolve => server.http.listen(0, '127.0.0.1', resolve)); url = `http://127.0.0.1:${(server.http.address() as any).port}`; });
 afterEach(async () => { clients.splice(0).forEach(s => s.disconnect()); await server.close(); });
 describe('real multiplayer server', () => {
   it('creates a private lobby, joins a second human, synchronizes movement and finishes a rematch lifecycle', async () => {
@@ -95,8 +95,11 @@ describe('real multiplayer server', () => {
     for(let i=0;i<5;i++) { const b=await connect(undefined, undefined, 2); await request(b.socket,'join',{code}); }
     const states: Snapshot[]=[]; a.socket.on('snapshot',s=>states.push(s)); await request(a.socket,'start'); await until(()=>states.length>1);
     expect(server.rooms.get(code)!.race!.racers.filter(p=>!p.bot)).toHaveLength(6);
-    states.length=0; const end=performance.now()+180; while(performance.now()<end) {} await wait(25);
-    expect(states.length).toBeLessThanOrEqual(1); expect(states.length).toBeGreaterThan(0);
+    states.length=0; server.metrics.snapshotsPerLoop.length=0;
+    const end=performance.now()+180; while(performance.now()<end) {} await until(()=>states.length>0);
+    // A 25ms delivery window can straddle two independent scheduled callbacks.
+    // Assert per callback emission, not the number delivered in that window.
+    expect(Math.max(...server.metrics.snapshotsPerLoop)).toBe(1);
     expect(a.socket.io.engine.transport.name).toBe('websocket');
   });
   it('rejects cross-origin WebSocket handshakes', async () => { await expect(connect(undefined, 'https://untrusted.example')).rejects.toThrow(); });
