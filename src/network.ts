@@ -1,34 +1,46 @@
 import { io, type Socket } from 'socket.io-client';
 import type { AbilityId, Input, Race } from '../shared/game/index.ts';
 import type { TrackId } from '../shared/track/index.ts';
-import { angleDelta } from '../shared/math.ts';
+import { Interpolation } from './interpolation.ts';
+import { decodeSnapshot, type Snapshot } from '../shared/wire.ts';
+import { Prediction } from './prediction.ts';
 import { NetDiagnostics, Delivery } from './net-diagnostics.ts';
 export interface RoomView { code: string; host: string; track: TrackId; laps: number; members: { id: string; name: string; character: number; abilityId: AbilityId; connected: boolean }[]; phase: string }
 export class Network {
   socket: Socket; id = ''; connected = false; latency = 0; room: RoomView | null = null;
   onRoom: (room: RoomView) => void = () => { }; onState: (race: Race) => void = () => { }; onStatus: (online: boolean) => void = () => { }; onExpired: () => void = () => { };
-  diagnostics = new NetDiagnostics(); private delivery = new Delivery(); private receivedAt = 0;
-  private snapshots: { time: number; race: Race }[] = []; private lastSend = 0;
+  diagnostics = new NetDiagnostics(); private delivery = new Delivery(); private receivedAt = 0; private metadata: Race | null = null; private latestTick = -1; prediction = new Prediction();
+  private actionSeq = 0; private actionHeld = { item: false, ability: false, rescue: false }; private pendingActions = new Map<number, ReturnType<typeof setTimeout>>();
+  private interpolation = new Interpolation(); private lastSend = 0;
   constructor() {
     let token = ''; try { token = sessionStorage.getItem('cbr-session') || ''; } catch { /* Private browsing may disable storage. */ }
-    this.socket = io({ autoConnect: false, auth: { token }, reconnectionDelay: 500, reconnectionDelayMax: 2500, timeout: 6000 });
+    this.socket = io({ autoConnect: false, auth: { token, wire: 2 }, transports: ['websocket'], reconnectionDelay: 500, reconnectionDelayMax: 2500, timeout: 6000 });
     this.socket.on('connect', () => { this.connected = true; this.onStatus(true); });
-    this.socket.on('disconnect', () => { this.connected = false; this.onStatus(false); });
+    this.socket.on('disconnect', () => { this.connected = false; this.delivery.clear(); this.clearActions(); this.onStatus(false); });
     this.socket.on('welcome', data => {
       const lostRoom = this.room !== null && !data.room;
-      this.id = data.id; this.socket.auth = { token: data.token }; try { sessionStorage.setItem('cbr-session', data.token); } catch { }
+      this.id = data.id; this.socket.auth = { token: data.token, wire: 2 }; try { sessionStorage.setItem('cbr-session', data.token); } catch { }
       if (lostRoom) { this.clear(); this.onExpired(); }
     });
     this.socket.on('room', (room: RoomView) => { this.room = room; this.onRoom(room); });
-    this.socket.on('state', (race: Race) => this.delivery.run('down', () => {
+    this.socket.on('race', (race: Race) => { this.delivery.clear(); this.metadata = race; this.latestTick = -1; this.interpolation.reset(); this.prediction.reset(); this.clearActions(); this.actionSeq = 0; this.prediction.reconcile(race, this.id, 0); this.accept(race); });
+    this.socket.on('snapshot', (s: Snapshot) => this.delivery.run('down', () => {
+      if (!this.metadata || s.tick <= this.latestTick) { this.diagnostics.count('staleSnapshots'); return; }
+      const race = decodeSnapshot(this.metadata, s); if (!race) return;
+      this.latestTick = s.tick;
+      this.prediction.reconcile(race, this.id, s.ack[this.id] || 0);
+      this.diagnostics.sample('correctionMeters', this.prediction.correction);
+      if (this.diagnostics.enabled) this.diagnostics.sample('stateBytes', new TextEncoder().encode(JSON.stringify(s)).length);
+      this.accept(race);
+    }));
+    this.socket.on('state', (race: Race) => this.delivery.run('down', () => this.accept(race)));
+    setInterval(() => { if (this.connected) { const start = performance.now(); this.socket.timeout(2000).emit('latency', {}, (err: unknown) => { if (!err) { this.latency = Math.round(performance.now() - start); this.diagnostics.sample('transportRttMs', this.latency); } }); } }, 2500);
+  }
+  private accept(race: Race) {
       const now = performance.now();
       if (this.receivedAt) this.diagnostics.sample('snapshotIntervalMs', now - this.receivedAt); this.receivedAt = now;
-      if (this.diagnostics.enabled) this.diagnostics.sample('stateBytes', new TextEncoder().encode(JSON.stringify(race)).length);
       this.diagnostics.count('snapshots');
-      if (this.snapshots.at(-1)?.race.id !== race.id) this.snapshots = [];
-      this.snapshots.push({ time: now, race }); if (this.snapshots.length > 12) this.snapshots.shift(); this.onState(race);
-    }));
-    setInterval(() => { if (this.connected) { const start = performance.now(); this.socket.timeout(2000).emit('latency', {}, (err: unknown) => { if (!err) { this.latency = Math.round(performance.now() - start); this.diagnostics.sample('transportRttMs', this.latency); } }); } }, 2500);
+      this.interpolation.push(race, now); this.onState(race);
   }
   async connect() {
     if (this.connected && this.id) return;
@@ -47,31 +59,36 @@ export class Network {
       else if (result?.error) reject(Error(result.error)); else resolve(result);
     }));
   }
-  sendInput(input: Input, force = false) {
-    const now = performance.now(); if (!this.connected || (!force && now - this.lastSend < 32)) return; this.lastSend = now;
-    const copy = { ...input }; this.diagnostics.count('inputs'); if (this.diagnostics.enabled) this.diagnostics.sample('inputBytes', JSON.stringify(copy).length);
-    this.delivery.run('up', () => { if (this.connected) this.socket.volatile.emit('input', copy); });
+  drive(input: Input, dt: number) { this.prediction.advance(input, dt); this.sendInput(input); }
+  private clearActions() { for (const timer of this.pendingActions.values()) clearTimeout(timer); this.pendingActions.clear(); this.actionHeld = { item: false, ability: false, rescue: false }; }
+  private action(kind: 'item' | 'ability' | 'rescue') {
+    if (!this.metadata || this.pendingActions.size >= 16) return;
+    const packet = { race: this.metadata.id, seq: ++this.actionSeq, kind };
+    const send = () => {
+      if (!this.connected || this.metadata?.id !== packet.race) { this.pendingActions.delete(packet.seq); return; }
+      this.socket.timeout(1000).emit('action', packet, (err: unknown) => {
+        if (!this.pendingActions.has(packet.seq)) return;
+        if (!err) { clearTimeout(this.pendingActions.get(packet.seq)); this.pendingActions.delete(packet.seq); }
+      });
+      this.pendingActions.set(packet.seq, setTimeout(send, 1200));
+    }; send();
   }
-  clear() { this.delivery.clear(); this.room = null; this.snapshots = []; }
+  sendInput(input: Input, force = false) {
+    if (!this.connected || !this.metadata) return;
+    for (const kind of ['item','ability','rescue'] as const) { if (input[kind] && !this.actionHeld[kind]) this.action(kind); this.actionHeld[kind] = input[kind]; }
+    const now = performance.now(); if (!force && now - this.lastSend < 32) return; this.lastSend = now;
+    if (force) this.prediction.advance(input, 0);
+    const copy = { race: this.metadata.id, seq: this.prediction.seq, input: { ...input, item: false, ability: false, rescue: false } };
+    this.diagnostics.count('inputs'); if (this.diagnostics.enabled) this.diagnostics.sample('inputBytes', JSON.stringify(copy).length);
+    this.delivery.run('up', () => { if (this.connected && this.metadata?.id === copy.race) this.socket.volatile.emit('input', copy); });
+  }
+  clear() { this.delivery.clear(); this.clearActions(); this.prediction.reset(); this.room = null; this.interpolation.reset(); this.metadata = null; this.latestTick = -1; }
   interpolated(): Race | null {
-    const latest = this.snapshots.at(-1); if (!latest) return null;
-    this.diagnostics.sample('snapshotArrivalAgeMs', performance.now() - latest.time);
-    const at = performance.now() - 85;
-    if (at > latest.time) this.diagnostics.count('interpolationUnderrunFrames');
-    let before = this.snapshots[0], after = latest;
-    for (let i = 1; i < this.snapshots.length; i++) if (this.snapshots[i].time >= at) { before = this.snapshots[i - 1]; after = this.snapshots[i]; break; }
-    const t = Math.max(0, Math.min(1, (at - before.time) / Math.max(1, after.time - before.time)));
-    return {
-      ...latest.race, racers: latest.race.racers.map(p => {
-        if (p.id === this.id) {
-          const ahead = Math.min(.1, Math.max(0, (performance.now() - latest.time) / 1000));
-          const moving = p.finishTime === null && latest.race.phase === 'racing' && p.falling <= 0 ? ahead : 0;
-          return { ...p, px: p.px + p.vx * moving, pz: p.pz + p.vz * moving };
-        }
-        const a = before.race.racers.find(q => q.id === p.id) || p, b = after.race.racers.find(q => q.id === p.id) || p;
-        if (Math.hypot(b.px - a.px, b.pz - a.pz) > 25) return { ...p };
-        return { ...p, px: a.px + (b.px - a.px) * t, pz: a.pz + (b.pz - a.pz) * t, yaw: a.yaw + angleDelta(b.yaw, a.yaw) * t, s: a.s + (b.s - a.s) * t, x: a.x + (b.x - a.x) * t };
-      })
-    };
+    const now = performance.now(), view = this.interpolation.sample(now); if (!view) return null;
+    this.diagnostics.sample('snapshotArrivalAgeMs', now - this.receivedAt);
+    this.diagnostics.sample('estimatedSnapshotAgeMs', view.ageMs);
+    this.diagnostics.sample('interpolationBufferMs', this.interpolation.bufferMs);
+    if (view.underrun) this.diagnostics.count('interpolationUnderrunFrames');
+    return { ...view.race, racers: view.race.racers.map(p => p.id === this.id ? this.prediction.render(p) : p) };
   }
 }

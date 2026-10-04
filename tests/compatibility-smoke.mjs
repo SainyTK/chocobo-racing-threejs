@@ -4,7 +4,7 @@ import { writeFile, mkdir } from 'node:fs/promises';
 const browser = await webkit.launch();
 try {
   const page = await browser.newPage({ viewport: { width: 1280, height: 800 } }), errors = [];
-  page.on('pageerror', e => errors.push(e.message)); await page.goto('http://localhost:3000');
+  page.on('pageerror', e => errors.push(e.message)); await page.goto(process.env.TEST_BASE_URL || 'http://localhost:3218');
   await page.getByRole('button', { name: 'START RACE', exact: true }).waitFor();
   const stats = () => page.evaluate(() => window.__raceDebug);
   // Holds a key for a span of race time, not wall time, since a slow or busy machine makes the race clock lag.

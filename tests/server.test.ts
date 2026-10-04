@@ -1,14 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { io, type Socket } from 'socket.io-client';
 import { createGameServer } from '../server/index.ts';
+import { decodeSnapshot, type Snapshot } from '../shared/wire.ts';
 import { stepRace } from '../shared/game/index.ts';
 let server: Awaited<ReturnType<typeof createGameServer>>, url: string;
 const clients: Socket[] = [];
 const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 /** Polls until `ready` holds, so assertions do not depend on how fast the machine delivers socket messages. */
 async function until(ready: () => unknown, timeout = 4000) { const end = Date.now() + timeout; while (!ready()) { if (Date.now() > end) throw new Error(`Timed out waiting for ${ready}`); await wait(10); } }
-async function connect(token?: string, origin?: string) {
-  const socket = io(url, { auth: { token }, forceNew: true, reconnection: false, transports: ['websocket'], extraHeaders: origin ? { origin } : undefined }); clients.push(socket);
+async function connect(token?: string, origin?: string, wire?: number) {
+  const socket = io(url, { auth: { token, wire }, forceNew: true, reconnection: false, transports: ['websocket'], extraHeaders: origin ? { origin } : undefined }); clients.push(socket);
   const welcome = await new Promise<{ id: string; token: string }>((resolve, reject) => { socket.once('welcome', resolve); socket.once('connect_error', reject); });
   return { socket, ...welcome };
 }
@@ -61,5 +62,42 @@ describe('real multiplayer server', () => {
     for (const s of clients) await request(s, 'leave'); expect(server.rooms.size).toBe(0);
   });
   it('rate limits room actions', async () => { const a = await connect(); const answers = await Promise.all(Array.from({ length: 18 }, () => request(a.socket, 'join', { code: 'AAAAAA' }))); expect(answers.some(a => a.error?.includes('Too many'))).toBe(true); });
+  it('v2 acknowledges applied input, rejects reorder and resends actions without duplicate effects', async () => {
+    const a = await connect(undefined, undefined, 2), b = await connect(undefined, undefined, 2);
+    const { code } = await request(a.socket, 'create'); await request(b.socket, 'join', { code });
+    let meta: any, state: any, packet: Snapshot | undefined;
+    a.socket.on('race', r => { meta = r; state = r; });
+    a.socket.on('snapshot', s => { packet = s; state = decodeSnapshot(meta, s); });
+    await request(a.socket, 'start'); await until(() => meta);
+    const r = server.rooms.get(code)!.race!; r.time = 1; r.phase = 'racing';
+    a.socket.emit('input', { race: r.id, seq: 2, input: { throttle: true } });
+    a.socket.emit('input', { race: r.id, seq: 1, input: { reverse: true } });
+    await until(() => packet?.ack[a.id] === 2); expect(state.racers.find((p: any)=>p.id===a.id).speed).toBeGreaterThan(0);
+    const p = r.racers.find(p=>p.id===a.id)!; p.ability = 100;
+    const action = { race: r.id, seq: 1, kind: 'ability' };
+    expect((await request(a.socket, 'action', action)).ok).toBe(true);
+    await until(() => r.events.some(e=>e.player===a.id && e.type==='ability'));
+    await request(a.socket, 'action', action); await wait(100);
+    expect(r.events.filter(e=>e.player===a.id && e.type==='ability')).toHaveLength(1);
+    const rescue = { race: r.id, seq: 2, kind: 'rescue' }; await request(a.socket, 'action', rescue); await until(() => p.lastRescue>0);
+    const rescued = p.lastRescue; await request(a.socket, 'action', rescue); await wait(100); expect(p.lastRescue).toBe(rescued);
+    p.stones = [{ kind: 'haste', level: 1 }, { kind: 'haste', level: 2 }];
+    const item = { race: r.id, seq: 3, kind: 'item' }; await request(a.socket, 'action', item); await until(()=>p.stones.length===1);
+    await request(a.socket, 'action', item); await wait(100); expect(p.stones).toHaveLength(1);
+    expect(r.events.filter(e=>e.player===a.id && e.type==='haste')).toHaveLength(1);
+    expect((await request(a.socket, 'action', { ...action, race: 'old-race', seq: 4 })).error).toBeTruthy();
+    a.socket.disconnect(); await until(()=>!p.connected);
+    let initial: any; const socket = io(url, { autoConnect: false, auth: { token: a.token, wire: 2 }, transports: ['websocket'], reconnection: false }); clients.push(socket); socket.on('race', r => initial = r); socket.connect();
+    await until(()=>initial); expect(initial.id).toBe(r.id); expect(initial.racers.find((p:any)=>p.id===a.id).lastRescue).toBe(rescued);
+  });
+  it('v2 supports six human racers and emits at most one latest snapshot after a stall', async () => {
+    const a = await connect(undefined, undefined, 2), { code } = await request(a.socket, 'create');
+    for(let i=0;i<5;i++) { const b=await connect(undefined, undefined, 2); await request(b.socket,'join',{code}); }
+    const states: Snapshot[]=[]; a.socket.on('snapshot',s=>states.push(s)); await request(a.socket,'start'); await until(()=>states.length>1);
+    expect(server.rooms.get(code)!.race!.racers.filter(p=>!p.bot)).toHaveLength(6);
+    states.length=0; const end=performance.now()+180; while(performance.now()<end) {} await wait(25);
+    expect(states.length).toBeLessThanOrEqual(1); expect(states.length).toBeGreaterThan(0);
+    expect(a.socket.io.engine.transport.name).toBe('websocket');
+  });
   it('rejects cross-origin WebSocket handshakes', async () => { await expect(connect(undefined, 'https://untrusted.example')).rejects.toThrow(); });
 });
