@@ -1,14 +1,34 @@
 # Chocobo Racing browser remake
 
-A playable, unofficial fan interpretation of the 1999 PlayStation racer. Version 2 replaces the earlier track-guided bird game with free driving, eight character/vehicle models and the original-style Magic Stone system.
+A free, open-source racing game that aims to recreate the feel of old-school games like Chocobo Racing using modern web technologies. Built with TypeScript, Three.js, WebGL, Node.js and Socket.IO, it runs in the browser and supports local races and private online rooms.
+
+This playable, unofficial fan interpretation of the 1999 PlayStation racer has free driving, eight character/vehicle models and an original-style Magic Stone system.
+
+[Repository](https://github.com/SainyTK/chocobo-racing-threejs) · [MIT license](LICENSE)
+
+There is no public deployment yet. Follow the instructions below to play locally.
 
 This is not an identical port. Models, music, animations, maps and physics tuning are newly authored. Character and course names reference Square Enix's game. No original game files are bundled or required. The project is not affiliated with Square Enix.
+
+## Screenshots
+
+Captured from the running game with Orca's embedded browser.
+
+### Racer selection
+
+![Racer selection with Chocobo, eight characters and race setup](docs/screenshots/racer-selection.png)
+
+### Racing in Mythril Mines
+
+![Chocobo racing through Mythril Mines with rivals, Magic Stones and the race HUD](docs/screenshots/mythril-mines.png)
 
 ## Play
 
 Requires Node.js 22.12 or newer and WebGL 2.
 
 ```sh
+git clone https://github.com/SainyTK/chocobo-racing-threejs.git
+cd chocobo-racing-threejs
 npm ci
 npm run dev
 ```
@@ -117,6 +137,32 @@ docker run --rm -p 3000:3000 \
 
 `GET /health` reports health, rooms and connections. The server is a single process with in-memory rooms. Restarting it clears rooms. Do not run unsynchronized replicas. Public hosting also needs infrastructure rate limiting and monitoring.
 
+## Deployment plan
+
+Deployment is planned for later. The recommended first deployment is a single Railway service that serves both `dist/` and the authoritative multiplayer server. The existing Dockerfile builds and starts both. No database is required.
+
+Railway detects a repository Dockerfile automatically [1]. Use the repository root, branch `main`, one replica, a public HTTPS domain and healthcheck path `/health`. The server listens on `0.0.0.0` and reads Railway's `PORT` variable [2]. Set `ALLOWED_ORIGINS` to the exact public page origin, without a trailing slash. Add any custom-domain origin as another comma-separated value. Rooms live in memory and disappear on restart or deployment.
+
+Vercel can host the Vite frontend with build command `npm run build` and output directory `dist`. However, this is not a complete multiplayer deployment as written. `src/network.ts` currently connects to the page's own origin. A split Vercel/Railway deployment needs a configurable backend URL and cross-origin Socket.IO configuration on the server, including polling CORS. Vercel preview origins also need an explicit policy. Keep the current long-running simulation and room state on Railway unless the backend is redesigned.
+
+### What to provide before deployment
+
+- Choose Railway-only, or Vercel frontend plus Railway backend. Railway-only needs no frontend/backend split.
+- Confirm the Railway workspace, project, environment and service name. Say whether to create a new project or use an existing one, and provide its ID or dashboard URL if it exists.
+- Authenticate Railway locally through its CLI, or connect Railway to GitHub and authorize access to this repository. Registration alone does not grant deployment access.
+- Specify the region nearest your players, an approved monthly hosting budget, and whether pushes to `main` should deploy automatically.
+- Choose a provider-generated domain or supply your custom domain and confirm you can edit its DNS.
+- If using Vercel, also supply the team/account scope and project name or existing project ID. Run `vercel login` locally and authorize GitHub access if using Git-based deployments.
+- Explicitly approve creating services and deploying when ready. No deployment has been performed as part of this README update.
+
+Do not paste account passwords, API tokens or session cookies into chat. Sign in locally or store required credentials through the provider's secure settings. This game currently needs no third-party API keys.
+
+### Deployment sources
+
+[1] [Railway services and Dockerfile detection](https://docs.railway.com/services)
+
+[2] [Railway healthchecks and the PORT variable](https://docs.railway.com/deployments/healthchecks)
+
 ## Tests
 
 ```sh
@@ -163,6 +209,14 @@ Reports are in `output/playwright-report/`; screenshots are in `output/testing/`
 - `src/network.ts`: reconnects, world-space interpolation and bounded extrapolation.
 - `src/audio.ts`: original synthesized music and effects.
 - `docs/research.md`: original-game research, sources, technology choices and fidelity limits.
+
+## Contributing
+
+Bug reports and pull requests are welcome. Include the game mode, course, browser and reproduction steps when reporting a problem. For code changes, run `npm test` and `npm run build`. Use the studio to inspect changes to models, effects and scenery.
+
+## License
+
+This project's code and newly authored assets are released under the [MIT license](LICENSE). Chocobo Racing, its character names and other referenced trademarks belong to their respective owners. The MIT license does not grant rights to third-party characters or trademarks. This is an unofficial fan project, not affiliated with or endorsed by Square Enix.
 
 ## Limits
 

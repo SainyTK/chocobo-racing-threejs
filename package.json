@@ -2,6 +2,11 @@
   "name": "chocobo-racing",
   "version": "2.0.0",
   "private": true,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SainyTK/chocobo-racing-threejs.git"
+  },
   "type": "module",
   "engines": {
     "node": ">=22.12.0"
