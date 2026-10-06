@@ -5,6 +5,7 @@ import { BACKGROUNDS, MAX_PANES, SPEEDS, decodeState, encodeState, type Backgrou
 import { setOrbDetail } from '../src/gfx/orbs/index.ts';
 import { CATEGORIES, type StudioElement } from './types.ts';
 import { Viewport, defaultView, type ViewState } from './viewport.ts';
+import { StudioMusicPlayer } from './music-player.ts';
 
 const LETTERS = 'ABCD';
 const $ = <T extends HTMLElement>(sel: string, root: ParentNode = document) => root.querySelector<T>(sel)!;
@@ -19,6 +20,9 @@ const FALLBACK: StudioState = { panes: [{ element: ELEMENTS[0].id, variant: defa
 let state = decodeState(location.hash, FALLBACK, resolve);
 let paused = false, clock = 0, query = '', highlight = 0, captureNext = false;
 const sharedView = defaultView(), panes: { vp: Viewport; el: HTMLElement; own: ViewState }[] = [];
+const musicPlayer = new StudioMusicPlayer();
+let musicVolume = 1;
+Object.defineProperty(window, '__studioAudio', { get: () => musicPlayer.status });
 
 document.querySelector('#studio')!.innerHTML = `
   <header class="bar">
@@ -47,7 +51,10 @@ function commit() {
   document.querySelectorAll<HTMLButtonElement>('.toggle').forEach(b => { const on = state[b.dataset.flag as 'link' | 'spin' | 'ground']; b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); });
   $<HTMLSelectElement>('#bg').value = state.background; $<HTMLSelectElement>('#quality').value = state.quality; setOrbDetail(state.quality === 'high' ? 1 : .5); $<HTMLSelectElement>('#speed').value = String(state.speed);
   $('#play').textContent = paused ? 'Play' : 'Pause';
-  syncPanes(); renderResults();
+  syncPanes();
+  musicPlayer.select(elementById.get(state.panes[state.active].element)?.music ?? null);
+  musicPlayer.update(paused, document.hidden);
+  updateMusicPanels(); renderResults();
 }
 
 // ---- Panes ----
@@ -55,10 +62,33 @@ function syncPanes() {
   while (panes.length > state.panes.length) { const p = panes.pop()!; p.vp.dispose(); p.el.remove(); }
   while (panes.length < state.panes.length) {
     const own = { ...sharedView }, vp = new Viewport(state.link ? sharedView : own), el = document.createElement('section'); el.className = 'pane';
-    el.innerHTML = `<div class="pane-head"><span class="letter"></span><div class="title"><strong></strong><small></small></div><select class="variant" aria-label="Variant"></select><button class="all" title="Compare all variants of this element (V)">All variants</button><button class="close" title="Close pane" aria-label="Close pane">&times;</button></div><span class="badge">In game</span>`;
+    el.innerHTML = `<div class="pane-head"><span class="letter"></span><div class="title"><strong></strong><small></small></div><select class="variant" aria-label="Variant"></select><button class="all" title="Compare all variants of this element (V)">All variants</button><button class="close" title="Close pane" aria-label="Close pane">&times;</button></div><span class="badge">In game</span>
+      <section class="music-card" hidden aria-label="Music preview">
+        <span class="music-label">Original soundtrack preview</span><h2 class="music-title"></h2><p class="music-info"></p>
+        <div class="music-controls"><button class="music-play">Play music</button><button class="music-restart">Restart music</button></div>
+        <label class="music-volume">Volume<input type="range" min="0" max="100" value="100" aria-label="Music volume"></label>
+        <progress class="music-progress" value="0" max="1" aria-label="Music loop progress"></progress>
+        <p class="music-status"></p>
+        <p class="music-note">The same synthesized score and instruments used in the game. Only the active pane plays audio. Animation speed does not change music tempo.</p>
+      </section>`;
     el.prepend(vp.canvas); paneHost.append(el); panes.push({ vp, el, own });
     el.addEventListener('pointerdown', () => { if (state.active !== panes.findIndex(p => p.el === el)) { state.active = panes.findIndex(p => p.el === el); commit(); } });
     $<HTMLSelectElement>('.variant', el).addEventListener('change', e => { const i = panes.findIndex(p => p.el === el); state.panes[i] = { ...state.panes[i], variant: (e.target as HTMLSelectElement).value }; commit(); });
+    $('.music-play', el).addEventListener('pointerdown', e => e.stopPropagation());
+    $('.music-play', el).addEventListener('click', () => {
+      const index = panes.findIndex(p => p.el === el), wasActive = index === state.active;
+      state.active = index; commit();
+      if (wasActive ? !(paused && musicPlayer.status.playing) : !musicPlayer.status.playing) musicPlayer.toggle();
+      if (musicPlayer.status.playing) paused = false;
+      commit();
+    });
+    $('.music-restart', el).addEventListener('click', () => {
+      state.active = panes.findIndex(p => p.el === el); commit(); musicPlayer.restart(); updateMusicPanels();
+    });
+    $<HTMLInputElement>('.music-volume input', el).addEventListener('input', e => {
+      musicVolume = Number((e.target as HTMLInputElement).value) / 100;
+      musicPlayer.setVolume(musicVolume); updateMusicPanels();
+    });
     $('.all', el).addEventListener('click', () => compareVariants(panes.findIndex(p => p.el === el)));
     $('.close', el).addEventListener('click', e => { e.stopPropagation(); closePane(panes.findIndex(p => p.el === el)); });
   }
@@ -75,6 +105,28 @@ function syncPanes() {
     select.value = want.variant; select.hidden = e.variants.length < 2; $('.all', p.el).hidden = e.variants.length < 2;
     $('.close', p.el).hidden = panes.length < 2;
     $('.badge', p.el).hidden = !variant.inGame || e.variants.every(v => v.inGame);
+    p.el.classList.toggle('music-pane', !!e.music);
+    $('.music-card', p.el).hidden = !e.music;
+    if (e.music) {
+      $('.music-title', p.el).textContent = e.music.title;
+      $('.music-info', p.el).textContent = `${e.music.bpm} BPM · ${e.music.beats / 4} bars · ${(e.music.beats * 60 / e.music.bpm).toFixed(1)} second loop`;
+    }
+  });
+}
+
+function updateMusicPanels() {
+  const status = musicPlayer.status;
+  panes.forEach((p, i) => {
+    const score = p.vp.element?.music; if (!score) return;
+    const active = i === state.active;
+    $('.music-play', p.el).textContent = active && status.playing ? paused ? 'Resume music' : 'Pause music' : 'Play music';
+    $('.music-status', p.el).textContent = !active ? 'Select this pane to listen.'
+      : status.running ? `Playing · ${status.positionSeconds.toFixed(1)} s`
+      : status.playing && !paused && !document.hidden ? 'Audio is unavailable or blocked. Pause and play to retry.'
+      : status.playing ? 'Paused' : 'Ready. Press Play music to listen.';
+    const progress = $<HTMLProgressElement>('.music-progress', p.el);
+    progress.max = score.beats * 60 / score.bpm; progress.value = active ? status.positionSeconds : 0;
+    $<HTMLInputElement>('.music-volume input', p.el).value = String(Math.round(musicVolume * 100));
   });
 }
 
@@ -146,7 +198,7 @@ $<HTMLSelectElement>('#quality').addEventListener('change', e => { state.quality
 $<HTMLSelectElement>('#bg').addEventListener('change', e => { state.background = (e.target as HTMLSelectElement).value as Background; commit(); });
 $('#copy').addEventListener('click', async () => { try { await navigator.clipboard.writeText(location.href); toast('Link copied'); } catch { toast('Copy failed. Use the address bar.'); } });
 $('#save').addEventListener('click', () => { captureNext = true; });
-function restart() { clock = 0; panes.forEach(p => { const e = p.vp.element!; p.vp.load(e, p.vp.variant); }); }
+function restart() { clock = 0; musicPlayer.restart(); panes.forEach(p => { const e = p.vp.element!; p.vp.load(e, p.vp.variant); }); updateMusicPanels(); }
 
 addEventListener('keydown', e => {
   const typing = e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement;
@@ -162,6 +214,8 @@ addEventListener('keydown', e => {
   else if (k >= '1' && k <= '4' && Number(k) <= panes.length) { state.active = Number(k) - 1; commit(); }
 });
 addEventListener('hashchange', () => { if (location.hash !== encodeState(state)) { state = decodeState(location.hash, FALLBACK, resolve); commit(); } });
+document.addEventListener('visibilitychange', () => { musicPlayer.update(paused, document.hidden); updateMusicPanels(); });
+addEventListener('pagehide', () => musicPlayer.update(paused, true));
 
 let toastTimer = 0;
 function toast(text: string) { const t = $('#toast'); t.textContent = text; t.classList.add('show'); clearTimeout(toastTimer); toastTimer = window.setTimeout(() => t.classList.remove('show'), 1800); }
@@ -188,7 +242,9 @@ function frame(now: number) {
   const real = Math.min(.1, (now - last) / 1000); last = now;
   const dt = paused ? 0 : real * state.speed; clock += dt;
   if (state.spin && !paused) for (const v of new Set(panes.map(p => p.vp.view))) v.az += real * .5;
-  for (const p of panes) { p.vp.resize(p.el.clientWidth, p.el.clientHeight); p.vp.render(clock, dt); }
+  musicPlayer.update(paused, document.hidden);
+  updateMusicPanels();
+  for (const p of panes) { p.vp.resize(p.el.clientWidth, p.el.clientHeight); if (!p.vp.element?.music) p.vp.render(clock, dt); }
   if (captureNext) { captureNext = false; saveImage(); }
   requestAnimationFrame(frame);
 }

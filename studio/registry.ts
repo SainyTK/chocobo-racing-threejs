@@ -4,7 +4,8 @@ import { items } from './elements/items.ts';
 import { effects } from './elements/effects.ts';
 import { stage } from './elements/stage.ts';
 import { courses } from './elements/courses.ts';
+import { music } from './elements/music.ts';
 
 /** Everything the studio can show. Add a file under elements/ and list it here to register more. */
-export const ELEMENTS: StudioElement[] = [...characters, ...items, ...effects, ...stage, ...courses];
+export const ELEMENTS: StudioElement[] = [...characters, ...items, ...effects, ...stage, ...courses, ...music];
 export const elementById = new Map(ELEMENTS.map(e => [e.id, e]));

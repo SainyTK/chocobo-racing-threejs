@@ -19,6 +19,7 @@
     "build": "tsc --noEmit && vite build",
     "test": "vitest run",
     "test:e2e": "playwright test",
+    "test:studio": "playwright test --config tests/studio-playwright.config.ts",
     "test:production": "npm run build && node tests/production-smoke.mjs",
     "benchmark:multiplayer": "npm run build && node --import tsx tests/multiplayer-benchmark.ts",
     "check": "tsc --noEmit"

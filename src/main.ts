@@ -172,7 +172,10 @@ document.addEventListener('keydown', e => {
   if (e.target instanceof HTMLElement && e.target.matches('input,select,textarea')) return;
   if (screen === 'race' && ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyX', 'KeyE', 'KeyR', 'KeyB', 'Space', 'ShiftLeft', 'ShiftRight', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) { e.preventDefault(); keys.add(e.code); audio.unlock(); }
 });
-document.addEventListener('keyup', e => keys.delete(e.code)); addEventListener('blur', clearInput); document.addEventListener('visibilitychange', clearInput);
+document.addEventListener('keyup', e => keys.delete(e.code)); addEventListener('blur', clearInput); document.addEventListener('visibilitychange', () => {
+  clearInput();
+  audio.update(screen === 'race', race?.track ?? track, paused || document.hidden);
+});
 let previous = performance.now(), hudAt = 0, fps = 60;
 function frame(now: number) {
   net.diagnostics.sample('frameMs', now - previous);
@@ -185,9 +188,12 @@ function frame(now: number) {
   }
   let ghost: GhostPoint | undefined;
   if (race && savedGhost && race.time >= 0 && race.time <= savedGhost.time) { const ps = savedGhost.points; while (ghostIndex < ps.length - 2 && ps[ghostIndex + 1].t < race.time) ghostIndex++; const a = ps[ghostIndex], b = ps[ghostIndex + 1] || a; if (a && b) { const t = clamp((race.time - a.t) / Math.max(.001, b.t - a.t), 0, 1); ghost = { t: race.time, x: a.x + (b.x - a.x) * t, z: a.z + (b.z - a.z) * t, yaw: a.yaw + angleDelta(b.yaw, a.yaw) * t, s: a.s + (b.s - a.s) * t }; } }
-  world.render(dt, race, playerId, input.steer, keys.has('KeyB') || touch.has('behind'), ghost, paused && !online); audio.update(screen === 'race' && !paused); requestAnimationFrame(frame);
+  world.render(dt, race, playerId, input.steer, keys.has('KeyB') || touch.has('behind'), ghost, paused && !online);
+  // The authoritative race course can differ from the menu selection in online races and Grand Prix.
+  audio.update(screen === 'race', race?.track ?? track, paused || document.hidden);
+  requestAnimationFrame(frame);
 }
-Object.defineProperty(window, '__raceDebug', { get: () => JSON.parse(JSON.stringify({ screen, race, playerId, room: net.room, online, paused, connected: net.connected, settings: { autoThrottle, quality, character, abilityId, mode }, cup, ghost: savedGhost ? { time: savedGhost.time, samples: savedGhost.points.length } : null, recordingSamples: recording.length, graphics: world.stats(), fps: Math.round(fps), network: { transport: net.socket.io.engine?.transport.name, samples: net.diagnostics.samples, counters: net.diagnostics.counters } })) });
+Object.defineProperty(window, '__raceDebug', { get: () => JSON.parse(JSON.stringify({ screen, race, playerId, room: net.room, online, paused, connected: net.connected, settings: { autoThrottle, quality, character, abilityId, mode }, cup, ghost: savedGhost ? { time: savedGhost.time, samples: savedGhost.points.length } : null, recordingSamples: recording.length, graphics: world.stats(), audio: audio.playback, fps: Math.round(fps), network: { transport: net.socket.io.engine?.transport.name, samples: net.diagnostics.samples, counters: net.diagnostics.counters } })) });
 if (net.diagnostics.enabled) {
   Object.assign(window, { __resetNetPerf: () => net.diagnostics.reset(), __dropNetwork: () => net.socket.io.engine?.close() });
   Object.defineProperty(window, '__perfPose', { get: () => { const p = race?.racers.find(p => p.id === playerId); return p ? { speed: p.speed, yaw: p.yaw } : null; } });

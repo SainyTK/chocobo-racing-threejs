@@ -75,6 +75,12 @@ A collision can pass a Doom curse.
 
 Local menus pause the race. Online rooms continue running. Disconnected online racers get CPU control and can reconnect within 60 seconds, including after a page reload.
 
+### Music
+
+Each of the eight courses has its own newly composed, multi-part synthesized music loop inspired by the 1999 soundtrack's course themes. Menus use a separate tune. Local race pauses stop the music; online race menus do not pause it. The sound toggle controls both music and effects.
+
+Music starts after a click, tap or driving key because browsers require a user gesture. No original recordings or transcribed game melodies are bundled. See [stage music references and composition notes](docs/stage-music-reference.md).
+
 ## Play on another device
 
 The server listens on `0.0.0.0`. Use this computer's LAN IP on devices on the same network, for example `http://192.168.1.20:3000`. Open the LAN address before copying an invite. A localhost link cannot reach another computer. Allow the port through the host firewall.
@@ -113,7 +119,7 @@ Share the temporary URL only with the test team; anyone with it can access the l
 
 ## Studio
 
-The studio is an internal viewer for game elements: racers, Magic Stones, spell effects, stage objects and whole courses.
+The studio is an internal viewer for game elements: racers, Magic Stones, spell effects, stage objects, whole courses and music.
 
 ```sh
 npm run studio
@@ -121,6 +127,8 @@ npm run studio
 
 It opens http://localhost:5180 with its own Vite server, separate from the game server.
 The production build does not include it.
+
+To listen without opening the game, search for `music` or scroll to the Music category. Select one of the eight courses or Menu music, then press **Play music**. Each preview shows its composition title, tempo, loop length and playback progress, with pause, restart and volume controls. Only the active comparison pane plays audio. Switching to a non-music element stops playback. The toolbar's Pause and Restart also control music; animation speed does not change its tempo. Shared links and page reloads never autoplay.
 
 Search the library with `/` (or Cmd/Ctrl+K), then press Enter to show the highlighted element in the active pane.
 Shift+Enter adds it as a new pane.
@@ -210,6 +218,7 @@ npm run build
 npx playwright install chromium
 npm run test:e2e
 npm run test:production
+npm run test:studio
 
 # Optional WebKit compatibility check, with the dev server running
 npx playwright install webkit
@@ -243,9 +252,10 @@ Reports are in `output/playwright-report/`; screenshots are in `output/testing/`
 - `src/gfx/materials/`: toon, glow, outline, ghost, fresnel shell, crystal and ground decal materials, one per file.
 - `src/gfx/geometry/`: the geometry helpers used to sculpt the models (baked transforms, primitives, rocks and swept tubes).
 - `src/main.ts`: modes, menus, HUD, input, local race loop and ghost recording.
-- `studio/`: the internal element viewer (`npm run studio`). `registry.ts` lists the elements, `elements/` defines them by category and `viewport.ts` renders one pane.
+- `studio/`: the internal element viewer (`npm run studio`). `registry.ts` lists the elements, `elements/` defines them by category and `viewport.ts` renders one pane. `music-player.ts` previews the game's scores in the active music pane.
 - `src/network.ts`: reconnects, world-space interpolation and bounded extrapolation.
-- `src/audio.ts`: original synthesized music and effects.
+- `src/audio.ts`: Web Audio instruments, stage music scheduling and sound effects.
+- `src/music/`: separate original scores for all eight courses, menu music and shared score types.
 - `docs/research.md`: original-game research, sources, technology choices and fidelity limits.
 
 ## Contributing

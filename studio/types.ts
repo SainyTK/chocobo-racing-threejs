@@ -2,8 +2,9 @@ import type * as THREE from 'three';
 import type { Effects } from '../src/gfx/effects/index.ts';
 import type { Environment } from '../src/gfx/stage/course.ts';
 import type { ViewState } from './viewport.ts';
+import type { StageMusic } from '../src/music/types.ts';
 
-export const CATEGORIES = ['Characters', 'Items', 'Effects', 'Stage', 'Courses'] as const;
+export const CATEGORIES = ['Characters', 'Items', 'Effects', 'Stage', 'Courses', 'Music'] as const;
 export type Category = typeof CATEGORIES[number];
 
 /** What an element can draw into: its pane's scene, the pane's own effects controller and camera. */
@@ -34,6 +35,8 @@ export interface StudioElement {
   id: string; name: string; category: Category; tags?: string[]; variants: Variant[];
   /** Orbit target height and distance. Elements with a bounded `object` may omit it to frame automatically. */
   view?: { y: number; distance: number };
+  /** Music panes show score information and use the studio's single audio player. */
+  music?: StageMusic;
   create(variant: string, ctx: StudioContext): Instance;
 }
 
