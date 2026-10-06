@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 const debug = (p: any) => p.evaluate(() => (window as any).__raceDebug);
-test('impaired two-human six-racer driving, one-shot recovery and reload', async ({ browser }) => {
-  const contexts = await Promise.all([browser.newContext(), browser.newContext()]);
+test('impaired desktop and mobile six-racer driving, one-shot recovery and reload', async ({ browser }) => {
+  const contexts = await Promise.all([browser.newContext(), browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })]);
   const [a,b] = await Promise.all(contexts.map(c=>c.newPage())); const errors: string[]=[];
   try {
     for (const c of contexts) await c.addInitScript(() => { localStorage.setItem('cbr-quality','retro'); localStorage.setItem('cbr-sound','false'); });
@@ -10,7 +10,11 @@ test('impaired two-human six-racer driving, one-shot recovery and reload', async
     await b.getByRole('textbox',{name:'Room code'}).fill(code); await b.getByRole('button',{name:'Join room'}).click(); await expect(b.locator('#room-code')).toHaveText(code);
     await a.getByRole('button',{name:'START ONLINE RACE'}).click(); await expect(b.locator('#place')).toBeVisible();
     await expect.poll(async()=>(await debug(a)).race.phase).toBe('racing');
-    for(const p of [a,b]) await p.evaluate(()=>document.body.dispatchEvent(new KeyboardEvent('keydown',{code:'KeyW',bubbles:true})));
+    await a.evaluate(()=>document.body.dispatchEvent(new KeyboardEvent('keydown',{code:'KeyW',bubbles:true})));
+    const cdp = await contexts[1].newCDPSession(b), gas = (await b.getByRole('button', { name: 'Accelerate', exact: true }).boundingBox())!, steer = (await b.getByRole('button', { name: 'Steer right', exact: true }).boundingBox())!;
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: gas.x + gas.width / 2, y: gas.y + gas.height / 2, id: 0 }, { x: steer.x + steer.width / 2, y: steer.y + steer.height / 2, id: 1 }] });
+    await expect.poll(async()=>{const d=await debug(b);return d.race.racers.find((p:any)=>p.id===d.playerId).speed;}).toBeGreaterThan(1);
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
     await expect.poll(async()=>{const d=await debug(a);return d.race.racers.find((p:any)=>p.id===d.playerId).speed;}).toBeGreaterThan(1);
     const d=await debug(a); expect(d.network.transport).toBe('websocket'); expect(d.race.racers).toHaveLength(6); expect(d.race.racers.filter((p:any)=>!p.bot)).toHaveLength(2);
     await a.evaluate(()=> { document.body.dispatchEvent(new KeyboardEvent('keyup',{code:'KeyW',bubbles:true})); document.body.dispatchEvent(new KeyboardEvent('keydown',{code:'KeyR',bubbles:true})); });

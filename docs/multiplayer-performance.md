@@ -75,6 +75,12 @@ Orca 1.4.217's version-matched browser guide was followed. A separate embedded-b
 
 Machine-readable baseline, compact, prediction, isolated repeat and final reports live in `docs/performance/`. Validation commands/results are in `validation.json`.
 
+## Mobile merge validation
+
+Merged local `main` at `abc451a`, including `5b06689` responsive mobile touchscreen controls, into this branch with merge commit `7d44187`. The merge had no conflicts. Local main was two commits ahead of origin/main when fetched; main itself was not modified or pushed.
+
+Post-merge validation passed: 113 unit/integration tests, TypeScript check, production build and production restart/reload smoke. Four targeted browser tests passed: portrait/landscape driving, responsive gamepad layout, cancellation/menu release, and an impaired desktop-plus-mobile six-racer regression. That regression now uses desktop keyboard input and mobile multi-touch gas/steering, plus reload and reconnection. The full long E2E suite and performance benchmarks were not rerun after this mobile-only merge; the earlier performance numbers remain pre-merge measurements. No deployment was made.
+
 ## Reproduction and Thai-player follow-up
 
 Run `npm run benchmark:multiplayer -- review` with no other browser suite running. Output is `docs/performance/review.json`, using port 3219. For browser regressions, run `npm run test:e2e`; override `TEST_PORT` if 3218 is busy. For WebKit, run a local server on 3218 and `TEST_BASE_URL=http://localhost:3218 node tests/compatibility-smoke.mjs`. Production smoke starts and stops its own server on 3107.
