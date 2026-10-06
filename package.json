@@ -13,6 +13,7 @@
   },
   "scripts": {
     "dev": "tsx watch server/index.ts",
+    "tunnel": "node scripts/tunnel.mjs",
     "start": "NODE_ENV=production tsx server/index.ts",
     "studio": "vite --config studio/vite.config.ts",
     "build": "tsc --noEmit && vite build",

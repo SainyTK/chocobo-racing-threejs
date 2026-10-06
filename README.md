@@ -83,39 +83,25 @@ For temporary internet play without deployment, use the tunnel setup below. For 
 
 ### Test online multiplayer locally with cloudflared
 
-A Cloudflare Quick Tunnel gives this computer's game server a temporary public HTTPS URL. Teammates can join from computers or phones on different networks without deploying to Railway. The host computer must stay awake with both terminal processes running. This tests internet play through the host computer and Cloudflare, not the production Singapore Railway route.
+A Cloudflare Quick Tunnel gives this computer's game server a temporary public HTTPS URL. Teammates can join from computers or phones on different networks without deploying to Railway. The host computer must stay awake with the command running. This tests internet play through the host computer and Cloudflare, not the production Singapore Railway route.
 
 Install Node.js 22.12 or newer and [cloudflared](https://developers.cloudflare.com/tunnel/downloads/). Quick Tunnel instructions and limitations are in [Cloudflare's documentation](https://developers.cloudflare.com/tunnel/get-started/quick-tunnels/). On macOS with Homebrew, install it with `brew install cloudflared`.
 
-1. In the repository checkout you want to test, build and start the production game server on a separate local port:
+1. In the repository checkout you want to test, run:
 
    ```sh
-   npm ci
-   npm run build
-   ALLOWED_ORIGINS= PORT=3219 npm start
+   npm run tunnel
    ```
 
-2. In a second terminal, start the tunnel:
+   Run `npm ci` first if dependencies are not installed. This command checks for cloudflared and a free port, builds the game, starts the production server on port `3219`, and opens the tunnel. No second terminal or manual origin configuration is needed. It uses the server's same-origin check for multiplayer, overriding any inherited `ALLOWED_ORIGINS` setting for this test session.
 
-   ```sh
-   cloudflared tunnel --url http://localhost:3219
-   ```
+   To use another port, run `PORT=3000 npm run tunnel`. If the port is occupied, the command stops rather than exposing another server.
 
-   Copy the actual `https://...trycloudflare.com` URL printed by cloudflared. It changes whenever the tunnel restarts. Keep this terminal running.
+2. Copy the actual `https://...trycloudflare.com` URL printed by cloudflared. It changes whenever the tunnel restarts. Keep the command running.
 
-3. Stop only the game server in the first terminal with Ctrl+C, then restart it with the tunnel's exact origin allowed. The following prompts you to paste that URL rather than using an example hostname:
+3. Open the same tunnel URL on every device. Choose **Online**, create a room on one device, then join its six-character room code on the others. Open the tunnel URL before copying an invite; a localhost invite does not work on a teammate's phone. With two players, the remaining four racers are CPU-controlled. On a phone, push the joystick up or diagonally to drive. The right-side buttons use items, activate the selected ability, and drift. Use mobile data on the phone to test separate internet connections, or the same Wi-Fi for a same-network test through the tunnel.
 
-   ```sh
-   printf 'Paste the HTTPS tunnel URL, without a trailing slash: '
-   read -r TUNNEL_ORIGIN
-   ALLOWED_ORIGINS="$TUNNEL_ORIGIN,http://localhost:3219" PORT=3219 npm start
-   ```
-
-   Paste only the origin, with no path, trailing slash or `?netPerf`. Do not use `https://example.trycloudflare.com`. A wrong origin causes "Cannot reach the race server. Practice still works" because the server rejects the WebSocket handshake. If you restart the tunnel, restart the game server with its new origin too.
-
-4. Open the same tunnel URL on every device. Choose **Online**, create a room on one device, then join its six-character room code on the others. Open the tunnel URL before copying an invite; a localhost invite does not work on a teammate's phone. With two players, the remaining four racers are CPU-controlled. On a phone, hold GAS and a steering arrow; the touchscreen gamepad also provides MAGIC, ABILITY, BRAKE, REV and RECOVER. Use mobile data on the phone to test separate internet connections, or the same Wi-Fi for a same-network test through the tunnel.
-
-5. Optionally append `/?netPerf` to the tunnel URL to collect bounded frame/network diagnostics. Do not add `netDelay`, `netJitter` or `netDrop` for a real-connection test. Desktop Chrome's developer console can copy the telemetry with:
+4. Optionally append `/?netPerf` to the tunnel URL to collect bounded frame/network diagnostics. Do not add `netDelay`, `netJitter` or `netDrop` for a real-connection test. Desktop Chrome's developer console can copy the telemetry with:
 
    ```js
    copy(JSON.stringify(window.__raceDebug.network))
@@ -123,7 +109,7 @@ Install Node.js 22.12 or newer and [cloudflared](https://developers.cloudflare.c
 
    Record the device/browser, graphics setting and connection type alongside the telemetry. Try normal play without diagnostics too. See [multiplayer measurements and test methodology](docs/multiplayer-performance.md).
 
-Share the temporary URL only with the test team; anyone with it can access the local game service. This is a testing tunnel, not permanent hosting. When finished, leave the rooms and stop both the server and cloudflared with Ctrl+C. No Railway deployment, paid service or billing change is needed.
+Share the temporary URL only with the test team; anyone with it can access the local game service. This is a testing tunnel, not permanent hosting. When finished, press Ctrl+C to stop the server and cloudflared. Cancellation during the build also stops the build processes. If the server or tunnel exits unexpectedly, the command stops the other process too. No Railway deployment, paid service or billing change is needed.
 
 ## Studio
 
