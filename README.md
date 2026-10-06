@@ -56,10 +56,10 @@ Manual acceleration is on by default. You must steer around corners. The game do
 | Brake | S or down arrow | BRAKE / left trigger |
 | Reverse | X | REV / B |
 | Drift | Shift while steering, or accelerator + brake | DRIFT / A |
-| Cast latest stone | Space | Magic card / X |
-| Ability | E | Ability card / Y |
-| Recover | R | REC button |
-| Look behind | B | Keyboard |
+| Cast latest stone | Space | MAGIC / X |
+| Ability | E | ABILITY / Y |
+| Recover | R | RECOVER button |
+| Look behind | B | LOOK button |
 | Race menu | Escape | Pause button |
 
 A long drift causes a spin, not a release turbo. Release the pedals during an over-drift spin, then press accelerate to perform a Spin Dash. A timed accelerator press just before GO gives a dash start.
@@ -79,7 +79,51 @@ Local menus pause the race. Online rooms continue running. Disconnected online r
 
 The server listens on `0.0.0.0`. Use this computer's LAN IP on devices on the same network, for example `http://192.168.1.20:3000`. Open the LAN address before copying an invite. A localhost link cannot reach another computer. Allow the port through the host firewall.
 
-For internet play, deploy the Node server on a reachable HTTPS host with WebSocket support. Static-file hosting alone is insufficient.
+For temporary internet play without deployment, use the tunnel setup below. For permanent hosting, deploy the Node server on a reachable HTTPS host with WebSocket support. Static-file hosting alone is insufficient.
+
+### Test online multiplayer locally with cloudflared
+
+A Cloudflare Quick Tunnel gives this computer's game server a temporary public HTTPS URL. Teammates can join from computers or phones on different networks without deploying to Railway. The host computer must stay awake with both terminal processes running. This tests internet play through the host computer and Cloudflare, not the production Singapore Railway route.
+
+Install Node.js 22.12 or newer and [cloudflared](https://developers.cloudflare.com/tunnel/downloads/). Quick Tunnel instructions and limitations are in [Cloudflare's documentation](https://developers.cloudflare.com/tunnel/get-started/quick-tunnels/). On macOS with Homebrew, install it with `brew install cloudflared`.
+
+1. In the repository checkout you want to test, build and start the production game server on a separate local port:
+
+   ```sh
+   npm ci
+   npm run build
+   ALLOWED_ORIGINS= PORT=3219 npm start
+   ```
+
+2. In a second terminal, start the tunnel:
+
+   ```sh
+   cloudflared tunnel --url http://localhost:3219
+   ```
+
+   Copy the actual `https://...trycloudflare.com` URL printed by cloudflared. It changes whenever the tunnel restarts. Keep this terminal running.
+
+3. Stop only the game server in the first terminal with Ctrl+C, then restart it with the tunnel's exact origin allowed. The following prompts you to paste that URL rather than using an example hostname:
+
+   ```sh
+   printf 'Paste the HTTPS tunnel URL, without a trailing slash: '
+   read -r TUNNEL_ORIGIN
+   ALLOWED_ORIGINS="$TUNNEL_ORIGIN,http://localhost:3219" PORT=3219 npm start
+   ```
+
+   Paste only the origin, with no path, trailing slash or `?netPerf`. Do not use `https://example.trycloudflare.com`. A wrong origin causes "Cannot reach the race server. Practice still works" because the server rejects the WebSocket handshake. If you restart the tunnel, restart the game server with its new origin too.
+
+4. Open the same tunnel URL on every device. Choose **Online**, create a room on one device, then join its six-character room code on the others. Open the tunnel URL before copying an invite; a localhost invite does not work on a teammate's phone. With two players, the remaining four racers are CPU-controlled. On a phone, hold GAS and a steering arrow; the touchscreen gamepad also provides MAGIC, ABILITY, BRAKE, REV and RECOVER. Use mobile data on the phone to test separate internet connections, or the same Wi-Fi for a same-network test through the tunnel.
+
+5. Optionally append `/?netPerf` to the tunnel URL to collect bounded frame/network diagnostics. Do not add `netDelay`, `netJitter` or `netDrop` for a real-connection test. Desktop Chrome's developer console can copy the telemetry with:
+
+   ```js
+   copy(JSON.stringify(window.__raceDebug.network))
+   ```
+
+   Record the device/browser, graphics setting and connection type alongside the telemetry. Try normal play without diagnostics too. See [multiplayer measurements and test methodology](docs/multiplayer-performance.md).
+
+Share the temporary URL only with the test team; anyone with it can access the local game service. This is a testing tunnel, not permanent hosting. When finished, leave the rooms and stop both the server and cloudflared with Ctrl+C. No Railway deployment, paid service or billing change is needed.
 
 ## Studio
 
@@ -230,4 +274,4 @@ This project's code and newly authored assets are released under the [MIT licens
 
 This is a fan remake, not an emulator or an exact reproduction. Story, Relay, secret racers, bonus tracks, original cutscenes, custom stat editing, split-screen and the original soundtrack are not included. Course layouts and handling differ from the PlayStation game. Time Attack records live only in local storage and are grouped by course, laps and ability. Ghost saves require a race under five minutes and available browser storage.
 
-Online racing targets a LAN or nearby server. Full client prediction, public matchmaking, accounts and durable online leaderboards are not implemented. Keyboard and emulated touch testing do not establish physical gamepad or real-phone compatibility.
+Online driving uses bounded local prediction and server reconciliation. Collisions, pickups, abilities and race results remain authoritative, so network delays can still cause visual corrections. Public matchmaking, accounts and durable online leaderboards are not implemented. Keyboard and emulated touch tests do not establish physical gamepad or real-phone compatibility; test your devices with the tunnel workflow above.
