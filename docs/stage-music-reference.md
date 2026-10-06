@@ -2,64 +2,66 @@
 
 ## Research
 
-This project interprets the 1999 PlayStation Chocobo Racing, not 2022's Chocobo GP. Square Enix's official album page credits Kenji Ito's arrangements and lists separate course tracks numbered 17 through 24 for the eight courses implemented here. [1]
+The arrangement targets are the 1999 PlayStation Chocobo Racing recordings, not Chocobo GP or earlier Final Fantasy recordings. Square Enix lists separate course songs at OST tracks 17 through 24, plus Chocobo Choosin' at track 2. [1]
 
-The historical Music FAQ identifies the underlying themes. [2] These are research references, not permission to distribute the recordings or transcribe the melodies. No original game audio is included.
+Published descriptions of the actual Racing arrangements identify a low flute with a fast beat for Moogle Forest, eerie keyboard effects for Black Manor, synth-led Floating Gardens and fast percussion in Mythril Mines. [3] The historical Music FAQ describes Gingerbread Land's jazz treatment and identifies battle-theme sources for Ancient Gate and Vulcan-O Valley. [2]
 
-| Course ID | Reference | Direction for our original composition |
-| --- | --- | --- |
-| test | Chocobo theme arrangement | Bright, brisk major-key racing tune with short brass phrases |
-| forest | Unused FFVI town music | Peaceful woodwind lead, plucked accompaniment, light rhythm |
-| gate | FFIII boss battle | Minor-key martial pulse, brass and driving bass |
-| mines | FFI volcano music | Repeating dungeon ostinato, metallic accents, low strings |
-| manor | FFII mage shrine music | Eerie keyboard/organ, chromatic motion, restrained percussion |
-| gardens | FFV ending music | Airy melodic strings, bells and rising phrases |
-| gingerbread | Jazz Chocobo arrangement | Swing phrasing, bouncing bass, playful syncopation |
-| volcano | FFII boss music | Urgent minor-key battle arrangement, heavy percussion |
+These descriptions inform the arranging choices below. Tempos, pitches and instrumental details in our scores are newly authored design choices, not measurements or transcriptions of the original recordings. No original audio is bundled and no direct listening analysis has been performed. The [revision brief](music-revision-brief.md) records the evidence and limits.
 
-The composition directions are design choices informed by those references, not measured tempo or instrumentation transcriptions. Research used published descriptions; no listening analysis has been performed.
+## Revised compositions
 
-## Compositions
+The revision changes every score's non-bass musical events, not only its title or tempo. Three `gpt-6.1-sol` workers revised the early courses, late courses, and instruments/menu music. All score IDs and titles remain compatible with existing links. Each loop has 32 bars of 4/4, contrasting A/B phrases, bass, accompaniment and percussion.
 
-Three `gpt-6.1-sol` workers produced the early scores, late scores and playback engine in parallel. All melodies are newly authored. Each score has 32 bars of 4/4, contrasting A/B phrases, bass, accompaniment and percussion.
-
-| Course | New title | BPM | Loop duration |
-| --- | --- | --- | --- |
-| test | Open Throttle | 152 | 50.5 s |
-| forest | Canopy Daylight | 104 | 73.8 s |
-| gate | Stone Standard | 144 | 53.3 s |
-| mines | Copper Depths | 126 | 61.0 s |
-| manor | The clock behind the wall | 108 | 71.1 s |
-| gardens | Wind above the trellises | 120 | 64.0 s |
-| gingerbread | Cookie tin cabaret | 144 | 53.3 s |
-| volcano | Under the caldera | 168 | 45.7 s |
+| Score | Title | Racing reference | BPM | Loop duration | Revision |
+| --- | --- | --- | --- | --- | --- |
+| menu | A small journey | Chocobo Choosin', OST 2 | 138 | 55.7 s | Replaces the 96 BPM pastoral tune with brass/guitar hooks, piano chords, syncopated bass and drums. |
+| test | Open Throttle | Cid's Test Track, OST 17 | 164 | 46.8 s | Clipped brass hooks, synth answers, piano hits and punchy bass. |
+| forest | Canopy Daylight | Moogle Forest, OST 18 | 142 | 54.1 s | Lower MIDI 60-72 flute phrases over fast light plucks and moving bass, rather than the previous slow pastoral groove. |
+| gate | Stone Standard | The Ancient Gate, OST 19 | 156 | 49.2 s | Compact brass battle riffs, interlocking short strings, organ offbeats and marching drums. |
+| mines | Copper Depths | Mythril Mines, OST 20 | 172 | 44.7 s | Organ/piano exchanges over continuous eighth-note bass, keyboard fills and stronger drums. |
+| manor | The clock behind the wall | The Black Manor, OST 21 | 132 | 58.2 s | Piano/organ exchanges, chromatic passing harmony and quiet ghost replies. |
+| gardens | Wind above the trellises | Mysidian Floating Gardens, OST 22 | 148 | 51.9 s | Lyrical synth lead, minor-key bridge, flute/pluck answers and light brisk drums. |
+| gingerbread | Cookie tin cabaret | Gingerbread Land, OST 23 | 156 | 49.2 s | Piano/brass exchanges, 2:1 swing, quarter-note walking bass and offbeat piano chords. |
+| volcano | Under the caldera | Vulcan-O Valley, OST 24 | 180 | 42.7 s | Minor-key guitar riffs, synth/brass answers, bass sixteenth bursts, phrase crescendos and snare fills. |
 
 ## Playback
 
-`src/music/types.ts` defines MIDI-note events with times and durations in beats. `early-stages.ts` and `late-stages.ts` each define four course scores. `index.ts` exports their combined `STAGE_MUSIC` map and separate `MENU_MUSIC` score.
+`src/music/types.ts` defines MIDI-note events with times and durations in beats. `early-stages.ts` and `late-stages.ts` each define four course scores. `index.ts` exports the game's `STAGE_MUSIC` map and separate `MENU_MUSIC` score.
 
-`src/audio.ts` synthesizes woodwind, brass, strings, bells, organ, plucked notes, bass and percussion with oscillators, filters and envelopes. Percussion reuses one deterministic noise buffer. Music and effects use separate buses. The player schedules 120 ms ahead, limits music to 48 simultaneous voices and effects to 32, and disconnects ended nodes. Frame stalls skip missed notes instead of replaying them. Note bodies are capped at four seconds, with a short release tail.
+`src/music/instruments.ts` defines weighted harmonic voices, per-partial decay, attack/release envelopes and filter articulation. Piano, guitar, synth and ghost voices join flute, brass, strings, bells, organ, plucked notes, bass and percussion. These are procedural approximations, not a PlayStation soundfont. Percussion reuses one deterministic noise buffer.
 
-The game passes the authoritative race course rather than the menu selection, so online and Grand Prix stages select the correct music. Local pauses and hidden documents freeze playback; online menus leave race music running. Resume continues at the next event without reconstructing held notes. Changing course or returning to menus cancels the old music without cancelling effects. Mute controls both buses through the master gain.
+Music and effects use separate buses. The player schedules 120 ms ahead and limits music to 48 simultaneous notes and effects to 32. A pitched note uses at most four oscillator sources. Ended nodes disconnect; frame stalls skip missed notes instead of replaying them. Note bodies are capped at four seconds, with a maximum 160 ms release envelope and 10 ms cleanup margin.
 
-## Studio preview
+The game passes the authoritative race course, so online and Grand Prix music matches the race rather than the menu selection. Local pauses and hidden documents freeze playback; online menus leave race music running. Resume continues at the next event without reconstructing held notes. Score changes, restart and pause cancel the old music without cancelling effects. Volume and mute control both buses through the master gain.
 
-Run `npm run studio`, open http://localhost:5180, and search for `music`. The Music category contains the eight course scores and menu music. Play/pause, restart, volume, loop progress and score metadata are available without starting a race. Multiple panes share one player and only the active pane plays. Leaving Music stops playback. The toolbar's pause/restart controls also apply; its animation speed does not change the score tempo. Loading a shared link or reloading the studio does not autoplay.
+## Studio review
 
-`npm run test:studio` starts a separate studio server and tests all nine scores, pause/resume, restart, volume, focus changes between music panes, leaving Music and silent reloads. The controller has unit tests for explicit playback, single-player routing and hidden-document pauses.
+Run `npm run studio` and search for `music`. Each of the nine entries has two variants:
 
-Studio integration validation: 156 unit tests passed, both studio browser tests passed, both game audio browser tests passed, and TypeScript plus game/studio builds passed. The studio build also reports a large bundle warning. Screenshot: `output/testing/studio-music.png`.
+- **Revised composition**, the score now used in the game.
+- **Previous composition**, the first pass preserved under `studio/music/` for before/after review.
+
+Use the Variant selector, or All variants to compare both versions in separate panes. Only the active pane plays; changing focus restarts its selected score. Both versions use the updated instrument definitions, so this compares composition rather than reproducing the old synthesizer. The earlier scores are studio-only and do not enter the game bundle.
+
+Each card shows its specific 1999 reference, arrangement direction, tempo, loop length and playback progress. Play/pause, restart and volume work without starting a race. The toolbar's pause/restart controls also apply, while animation speed does not change music tempo. Shared links, opening a score and reloading the studio never autoplay.
+
+For reference listening, the cards link to Square Enix's [official album listening/download page](https://sqex.lnk.to/gzCQxWYWTP). No external recording plays automatically.
 
 ## Validation
 
-- `npm test`: 149 tests passed, including score bounds/coverage and mocked AudioContext scheduling, transitions, mute, pause and cleanup tests. An initial run hit the existing tunnel startup polling timeout; the final full run passed without changing that test.
-- `npm run check` and `npm run build`: passed. Vite reports the existing large Three.js chunk warning.
-- `npx playwright test tests/audio.e2e.ts`: both tests passed. Real Chromium checks all eight course selections, local pause/resume, exit and mute. A separate analyser check confirms finite, non-silent output below clipping during each stage's first 300 ms.
+- `npm test`: 167 tests passed, including event validity, coverage, instrument definitions, score override switching, cleanup and changed musical writing for all nine scores.
+- `npm run build`: TypeScript and the game build passed. The separate studio Vite build passed. Both retain large-bundle warnings.
+- `npm run test:studio`: three browser tests passed, covering all nine songs, previous/revised variants, same-course A/B focus switching, pause/resume, restart, volume, leaving music and silent reloads.
+- `npx playwright test tests/audio.e2e.ts`: both browser tests passed. Real Chromium checks all eight course selections and audio controls, plus finite non-silent output below clipping during each stage's first 300 ms.
 
-These checks do not establish subjective musical quality or close fidelity to the reference recordings. A full-loop listening review and physical mobile audio testing remain outstanding.
+Screenshot: `output/testing/studio-music-revision.png`.
+
+These checks establish valid scores and working playback, not subjective musical similarity. Full-loop listening review is left to the user in the studio. Physical mobile audio testing remains outstanding.
 
 ## Sources
 
 [1] https://www.jp.square-enix.com/music/en/lineup/item/SQEX-10121.html
 
 [2] https://gamefaqs.gamespot.com/ps/196911-chocobo-racing/faqs/16691
+
+[3] https://www.squareenixmusic.com/reviews/kie/chocoboracing.html

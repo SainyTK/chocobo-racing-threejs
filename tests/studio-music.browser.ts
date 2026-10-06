@@ -1,6 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
 import { TRACK_IDS } from '../shared/track/index.ts';
-import { MENU_MUSIC } from '../src/music/index.ts';
+import { MENU_MUSIC, STAGE_MUSIC } from '../src/music/index.ts';
+import { MENU_MUSIC as PREVIOUS_MENU, STAGE_MUSIC as PREVIOUS_STAGES } from '../studio/music/previous.ts';
 
 const status = (page: Page) => page.evaluate(() => (window as any).__studioAudio);
 
@@ -60,4 +61,33 @@ test('comparison panes share one player and switching focus changes the audible 
   await page.reload();
   expect(await page.evaluate(() => location.hash)).toBe(hash);
   expect((await status(page)).playing).toBe(false);
+});
+
+test('revised and previous compositions can be reviewed for every song', async ({ page }) => {
+  await page.goto('/#panes=music.menu:score');
+  await page.getByRole('button', { name: 'Play music', exact: true }).click();
+  await page.locator('#q').fill('music');
+  for (const id of ['menu', ...TRACK_IDS] as const) {
+    const revised = id === 'menu' ? MENU_MUSIC : STAGE_MUSIC[id];
+    const previous = id === 'menu' ? PREVIOUS_MENU : PREVIOUS_STAGES[id];
+    await page.locator(`#results .item[data-id="music.${id}"]`).click();
+    await expect(page.locator('.music-reference')).toContainText('1999 reference:');
+    await expect.poll(async () => (await status(page)).scoreBpm).toBe(revised.bpm);
+    await page.getByRole('combobox', { name: 'Variant', exact: true }).selectOption('previous');
+    await expect(page.locator('.music-info')).toContainText('Previous composition');
+    await expect.poll(async () => (await status(page)).scoreBpm).toBe(previous.bpm);
+    await expect.poll(async () => (await status(page)).running).toBe(true);
+    await page.getByRole('combobox', { name: 'Variant', exact: true }).selectOption('score');
+    await expect(page.locator('.music-info')).toContainText('Revised composition');
+    await expect.poll(async () => (await status(page)).scoreBpm).toBe(revised.bpm);
+  }
+  await page.locator('#results .item[data-id="music.forest"]').click();
+  await page.locator('.pane-head .all').click();
+  await expect(page.locator('.pane')).toHaveCount(2);
+  await expect(page.locator('.pane').nth(0).locator('.music-info')).toContainText('Revised composition');
+  await expect(page.locator('.pane').nth(1).locator('.music-info')).toContainText('Previous composition');
+  await page.locator('.pane').nth(1).locator('.title').click();
+  await expect.poll(async () => (await status(page)).scoreBpm).toBe(PREVIOUS_STAGES.forest.bpm);
+  await expect(page.locator('.pane').nth(0).locator('.music-status')).toHaveText('Select this pane to listen.');
+  await page.screenshot({ path: 'output/testing/studio-music-revision.png' });
 });

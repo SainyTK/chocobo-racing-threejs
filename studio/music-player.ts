@@ -11,7 +11,8 @@ export class StudioMusicPlayer {
   constructor(private readonly audio = new AudioEngine()) {}
 
   get status() {
-    return { selectedId: this.selected?.id ?? null, playing: this.playing, ...this.audio.playback };
+    return { selectedId: this.selected?.id ?? null, selectedBpm: this.selected?.bpm ?? null,
+      playing: this.playing, ...this.audio.playback };
   }
 
   select(score: StageMusic | null) {
@@ -41,6 +42,6 @@ export class StudioMusicPlayer {
     this.hidden = hidden;
     const id = this.selected?.id;
     this.audio.update(id !== undefined && id !== 'menu', id === 'menu' ? undefined : id,
-      !this.selected || !this.playing || paused || hidden);
+      !this.selected || !this.playing || paused || hidden, this.selected ?? undefined);
   }
 }

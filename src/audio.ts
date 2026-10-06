@@ -1,6 +1,7 @@
 import type { TrackId } from '../shared/track/types.ts';
 import { MENU_MUSIC, STAGE_MUSIC } from './music/index.ts';
-import type { MusicEvent, MusicVoice, StageMusic } from './music/types.ts';
+import type { MusicEvent, StageMusic } from './music/types.ts';
+import { INSTRUMENTS } from './music/instruments.ts';
 
 const LOOK_AHEAD = .12;
 const START_LEAD = .015;
@@ -10,16 +11,6 @@ const MAX_NOTE_SECONDS = 4;
 
 type Source = OscillatorNode | AudioBufferSourceNode;
 interface Voice { sources: Source[]; nodes: AudioNode[]; released: boolean }
-interface Timbre { type: OscillatorType; attack: number; release: number; level: number; cutoff: number; harmonics?: number[]; detune?: number }
-const TIMBRES: Record<Exclude<MusicVoice, 'kick' | 'snare' | 'hat'>, Timbre> = {
-  flute: { type: 'sine', attack: .025, release: .08, level: .65, cutoff: 3600, harmonics: [1, 2] },
-  brass: { type: 'sawtooth', attack: .025, release: .06, level: .42, cutoff: 1800 },
-  strings: { type: 'sawtooth', attack: .09, release: .18, level: .27, cutoff: 2500, harmonics: [1, 1], detune: 7 },
-  bell: { type: 'sine', attack: .003, release: .3, level: .55, cutoff: 9000, harmonics: [1, 2.76] },
-  organ: { type: 'sine', attack: .012, release: .05, level: .45, cutoff: 5000, harmonics: [1, 2, 4] },
-  pluck: { type: 'triangle', attack: .003, release: .08, level: .7, cutoff: 4200 },
-  bass: { type: 'triangle', attack: .006, release: .05, level: .8, cutoff: 700 },
-};
 
 export class AudioEngine {
   context: AudioContext | null = null;
@@ -45,6 +36,7 @@ export class AudioEngine {
   get playback() {
     return {
       scoreId: this.score?.id ?? null,
+      scoreBpm: this.score?.bpm ?? null,
       running: this.running,
       activeMusicVoices: this.musicVoices.size,
       activeEffectVoices: this.effectVoices.size,
@@ -123,8 +115,8 @@ export class AudioEngine {
     else this.tone(660, .1, 'sine', .2);
   }
 
-  update(racing: boolean, track: TrackId = 'test', paused = false) {
-    const wanted = racing ? STAGE_MUSIC[track] : MENU_MUSIC;
+  update(racing: boolean, track: TrackId = 'test', paused = false, override?: StageMusic) {
+    const wanted = override ?? (racing ? STAGE_MUSIC[track] : MENU_MUSIC);
     const now = this.context?.currentTime ?? 0;
     if (wanted !== this.score) {
       this.clearMusic(now);
@@ -233,7 +225,7 @@ export class AudioEngine {
     filter.connect(gain); gain.connect(pan); pan.connect(bus);
     const sources: Source[] = [];
     let duration = Math.max(.03, Math.min(event.duration * secondsPerBeat, MAX_NOTE_SECONDS));
-    let attack = .003, release = .04, level = .6, decay = false;
+    let attack = .003, release = .04, level = .6, sustain = .75;
     const frequency = 440 * 2 ** ((event.note - 69) / 12);
     if (event.voice === 'snare' || event.voice === 'hat') {
       const source = ctx.createBufferSource();
@@ -243,7 +235,7 @@ export class AudioEngine {
       filter.frequency.value = event.voice === 'hat' ? 7000 : 1300;
       duration = Math.min(duration, event.voice === 'hat' ? .08 : .18);
       level = event.voice === 'hat' ? .24 : .65;
-      decay = true;
+      sustain = .01;
     } else if (event.voice === 'kick') {
       const osc = ctx.createOscillator();
       osc.type = 'sine';
@@ -252,19 +244,26 @@ export class AudioEngine {
       osc.connect(filter); sources.push(osc);
       filter.frequency.value = 800;
       duration = Math.min(duration, .22);
-      level = .95; decay = true;
+      level = .95; sustain = .01;
     } else {
-      const timbre = TIMBRES[event.voice];
-      attack = timbre.attack; release = timbre.release; level = timbre.level;
-      filter.type = 'lowpass'; filter.frequency.value = timbre.cutoff;
-      decay = event.voice === 'bell' || event.voice === 'pluck';
-      const harmonics = timbre.harmonics ?? [1];
-      for (let i = 0; i < harmonics.length; i++) {
+      const timbre = INSTRUMENTS[event.voice];
+      attack = timbre.attack; release = timbre.release; level = timbre.level; sustain = timbre.sustain;
+      filter.type = 'lowpass';
+      // Open the filter on each attack, then close it to the sustained tone.
+      const cutoff = Math.min(ctx.sampleRate * .45, timbre.cutoff + frequency * timbre.keyTracking);
+      filter.frequency.setValueAtTime(cutoff * timbre.filterAttack, at);
+      filter.frequency.linearRampToValueAtTime(cutoff, at + Math.min(.08, duration / 2));
+      filter.frequency.exponentialRampToValueAtTime(cutoff * timbre.filterSustain, at + duration);
+      const weight = timbre.partials.reduce((sum, partial) => sum + partial.weight, 0);
+      for (const harmonic of timbre.partials) {
         const osc = ctx.createOscillator(), partial = ctx.createGain();
-        osc.type = timbre.type;
-        osc.frequency.value = frequency * harmonics[i];
-        osc.detune.value = timbre.detune ? (i === 0 ? -timbre.detune : timbre.detune) : 0;
-        partial.gain.value = (i === 0 ? 1 : .3) / harmonics.length;
+        osc.type = harmonic.type;
+        osc.frequency.value = Math.min(ctx.sampleRate * .45, frequency * harmonic.ratio);
+        osc.detune.value = harmonic.detune ?? 0;
+        partial.gain.setValueAtTime(harmonic.weight / weight, at);
+        partial.gain.exponentialRampToValueAtTime(
+          Math.max(.0001, harmonic.weight / weight * harmonic.sustain), at + duration,
+        );
         osc.connect(partial); partial.connect(filter);
         sources.push(osc); nodes.push(partial);
       }
@@ -273,7 +272,7 @@ export class AudioEngine {
     const peak = Math.max(.0001, Math.min(event.volume, 1) * level * .4);
     gain.gain.setValueAtTime(0, at);
     gain.gain.linearRampToValueAtTime(peak, at + attack);
-    if (!decay) gain.gain.setValueAtTime(peak * .75, at + duration);
+    gain.gain.exponentialRampToValueAtTime(Math.max(.0001, peak * sustain), at + duration);
     gain.gain.exponentialRampToValueAtTime(.0001, at + duration + release);
     this.startVoice(sources, nodes, this.musicVoices, at, at + duration + release + .01);
   }

@@ -4,7 +4,7 @@ import type { MusicEvent, MusicVoice, StageMusic } from '../src/music/types.ts';
 const fixtures = vi.hoisted(() => {
   const event = (beat: number, note: number, voice: MusicVoice = 'flute'): MusicEvent => ({ beat, note, voice, duration: .2, volume: .5, pan: -.2 });
   const score = (id: StageMusic['id'], events: MusicEvent[], beats = 8): StageMusic => ({ id, title: id, bpm: 120, beats, events });
-  const voices: MusicVoice[] = ['flute', 'brass', 'strings', 'bell', 'organ', 'pluck', 'bass', 'kick', 'snare', 'hat'];
+  const voices: MusicVoice[] = ['flute', 'brass', 'strings', 'bell', 'organ', 'pluck', 'bass', 'kick', 'snare', 'hat', 'piano', 'guitar', 'synth', 'ghost'];
   return {
     menu: score('menu', [event(0, 72), event(.5, 74), event(1, 76), event(2, 77)]),
     test: score('test', [event(0, 60), event(0, 64), event(.5, 67), event(1, 69), event(2, 71)]),
@@ -257,15 +257,18 @@ describe('score playback', () => {
 
   it('differentiates every instrument and reuses deterministic percussion noise', () => {
     const { engine, ctx } = setup(); engine.update(true, 'forest');
-    expect(engine.playback.activeMusicVoices).toBe(10);
+    expect(engine.playback.activeMusicVoices).toBe(14);
     expect(ctx.sources.filter(source => source.buffer)).toHaveLength(2);
     expect(ctx.buffers).toHaveLength(1);
     expect(ctx.sources.filter(source => source.buffer).every(source => source.buffer === ctx.buffers[0])).toBe(true);
-    expect(ctx.filters.map(filter => [filter.type, filter.frequency.value])).toEqual([
-      ['lowpass', 3600], ['lowpass', 1800], ['lowpass', 2500], ['lowpass', 9000],
-      ['lowpass', 5000], ['lowpass', 4200], ['lowpass', 700], ['lowpass', 800],
+    expect(ctx.filters.filter(filter => filter.type === 'lowpass')).toHaveLength(12);
+    expect(ctx.filters.slice(8, 10).map(filter => [filter.type, filter.frequency.value])).toEqual([
       ['highpass', 1300], ['highpass', 7000],
     ]);
+    const pitched = ctx.filters.filter((_, i) => i < 7 || i >= 10);
+    expect(pitched.every(filter => filter.frequency.linearRampToValueAtTime.mock.calls.length === 1)).toBe(true);
+    expect(pitched.every(filter => filter.frequency.exponentialRampToValueAtTime.mock.calls.length === 1)).toBe(true);
+    expect(new Set(pitched.map(filter => filter.frequency.value)).size).toBe(pitched.length);
     expect(ctx.sources.some(source => source.frequency.exponentialRampToValueAtTime.mock.calls.length > 0)).toBe(true);
     expect(ctx.sources.some(source => Math.abs(source.detune.value) === 7)).toBe(true);
     expect(ctx.panners.every(pan => pan.pan.value === -.2)).toBe(true);
@@ -273,6 +276,86 @@ describe('score playback', () => {
     expect(ctx.buffers).toHaveLength(1);
     const second = setup(); second.engine.update(true, 'forest');
     expect(second.ctx.buffers[0].data).toEqual(ctx.buffers[0].data);
+  });
+
+  it('switches override objects with the same id, preserves effects and returns to game routing', () => {
+    const { engine, ctx } = setup();
+    const first: StageMusic = { ...fixtures.test, bpm: 100, events: [{ ...fixtures.test.events[0], voice: 'piano' }] };
+    const second: StageMusic = { ...first, bpm: 160, events: [{ ...first.events[0], note: 79, voice: 'guitar' }] };
+    engine.update(true, 'test', false, first);
+    engine.effect('pickup');
+    const music = ctx.sources.filter(source => source.connections[0] instanceof Gain &&
+      (source.connections[0] as Gain).connections[0] instanceof Filter);
+    const count = ctx.sources.length;
+    ctx.advance(.08); engine.update(true, 'test', false, first);
+    expect(ctx.sources).toHaveLength(count);
+    engine.update(true, 'test', false, second);
+    expect(engine.playback).toMatchObject({ scoreId: 'test', scoreBpm: 160, activeMusicVoices: 1, activeEffectVoices: 3, positionSeconds: 0 });
+    expect(music.every(source => source.disconnect.mock.calls.length === 1)).toBe(true);
+    const replacement = ctx.sources.slice(count);
+    expect(replacement).toHaveLength(3);
+    expect(replacement[0].frequency.value).toBeCloseTo(440 * 2 ** ((79 - 69) / 12));
+    expect(starts(ctx).slice(count).every(at => at === .095)).toBe(true);
+    engine.update(true, 'test');
+    expect(replacement.every(source => source.disconnect.mock.calls.length === 1)).toBe(true);
+    expect(engine.playback.activeMusicVoices).toBe(2);
+    engine.update(false, 'test', false, second);
+    expect(engine.playback.scoreId).toBe('test');
+    engine.update(false);
+    expect(engine.playback.scoreId).toBe('menu');
+  });
+
+  it('releases every new instrument on pause, mute, restart and score switching', () => {
+    for (const stop of ['pause', 'mute', 'restart', 'switch'] as const) {
+      const { engine, ctx } = setup();
+      engine.update(true, 'forest');
+      const sources = [...ctx.sources];
+      const nodes = [...ctx.gains.slice(3), ...ctx.filters, ...ctx.panners];
+      if (stop === 'pause') engine.update(true, 'forest', true);
+      if (stop === 'mute') engine.setEnabled(false);
+      if (stop === 'restart') engine.restartMusic();
+      if (stop === 'switch') engine.update(true, 'test', true);
+      expect(engine.playback.activeMusicVoices).toBe(0);
+      expect(sources.every(source => source.stop.mock.calls.at(-1)?.[0] === 0)).toBe(true);
+      expect(sources.every(source => source.disconnect.mock.calls.length === 1)).toBe(true);
+      expect(nodes.every(node => node.disconnect.mock.calls.length === 1)).toBe(true);
+      sources.forEach(source => source.finish());
+      expect(nodes.every(node => node.disconnect.mock.calls.length === 1)).toBe(true);
+    }
+  });
+
+  it('bounds the four-partial piano at 192 sources and releases all partial envelopes', () => {
+    const { engine, ctx } = setup();
+    const score: StageMusic = { ...fixtures.gate, events: fixtures.gate.events.map(event => ({ ...event, voice: 'piano', duration: 100 })) };
+    engine.update(true, 'gate', false, score);
+    expect(engine.playback.activeMusicVoices).toBe(48);
+    expect(ctx.sources).toHaveLength(192);
+    expect(ctx.sources.every(source => source.stop.mock.calls[0][0] - source.start.mock.calls[0][0] <= 4.2)).toBe(true);
+    ctx.advance(5);
+    expect(engine.playback.activeMusicVoices).toBe(0);
+    expect(ctx.gains.slice(3).every(node => node.disconnect.mock.calls.length === 1)).toBe(true);
+  });
+
+  it('weights piano overtones and closes the brass filter after its attack', () => {
+    const { engine, ctx } = setup();
+    engine.update(true, 'forest');
+    const brass = ctx.filters[1].frequency;
+    const initial = brass.setValueAtTime.mock.calls[0];
+    const opened = brass.linearRampToValueAtTime.mock.calls[0];
+    const sustained = brass.exponentialRampToValueAtTime.mock.calls[0];
+    expect(initial[0]).toBeLessThan(opened[0]);
+    expect(sustained[0]).toBeLessThan(opened[0]);
+    expect(initial[1]).toBeLessThan(opened[1]);
+    expect(opened[1]).toBeLessThan(sustained[1]);
+    const pianoPartials = ctx.sources.filter(source => source.frequency.value >= 440 * 2 ** ((70 - 69) / 12) &&
+      source.connections[0] instanceof Gain && (source.connections[0] as Gain).connections[0] === ctx.filters[10]);
+    expect(pianoPartials).toHaveLength(4);
+    const weights = pianoPartials.map(source => (source.connections[0] as Gain).gain.setValueAtTime.mock.calls[0][0]);
+    expect(weights.reduce((sum, weight) => sum + weight, 0)).toBeCloseTo(1);
+    expect(weights[0]).toBeGreaterThan(weights[1]);
+    expect(weights[1]).toBeGreaterThan(weights[2]);
+    const decays = pianoPartials.map(source => (source.connections[0] as Gain).gain.exponentialRampToValueAtTime.mock.calls[0][0]);
+    expect(decays[3] / weights[3]).toBeLessThan(decays[0] / weights[0]);
   });
 
   it('disconnects every part of a finished voice and never double-disconnects canceled nodes', () => {

@@ -1,6 +1,6 @@
 import type { TrackId } from '../../shared/track/types.ts';
 
-export type MusicVoice = 'flute' | 'brass' | 'strings' | 'bell' | 'organ' | 'pluck' | 'bass' | 'kick' | 'snare' | 'hat';
+export type MusicVoice = 'flute' | 'brass' | 'strings' | 'bell' | 'organ' | 'pluck' | 'bass' | 'kick' | 'snare' | 'hat' | 'piano' | 'guitar' | 'synth' | 'ghost';
 
 /** Times and durations are in beats; pitched events use MIDI note numbers. */
 export interface MusicEvent {

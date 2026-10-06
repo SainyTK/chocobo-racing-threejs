@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { TRACK_IDS } from '../shared/track/tracks.ts';
 import { MENU_MUSIC, STAGE_MUSIC } from '../src/music/index.ts';
-import type { MusicVoice } from '../src/music/types.ts';
+import type { MusicVoice, MusicEvent } from '../src/music/types.ts';
+import { MENU_MUSIC as PREVIOUS_MENU, STAGE_MUSIC as PREVIOUS_STAGES } from '../studio/music/previous.ts';
 
-const voices: MusicVoice[] = ['flute', 'brass', 'strings', 'bell', 'organ', 'pluck', 'bass', 'kick', 'snare', 'hat'];
+const voices: MusicVoice[] = ['flute', 'brass', 'strings', 'bell', 'organ', 'pluck', 'bass', 'kick', 'snare', 'hat', 'piano', 'guitar', 'synth', 'ghost'];
 const percussion = new Set<MusicVoice>(['kick', 'snare', 'hat']);
 
 describe('original stage scores', () => {
@@ -47,6 +48,30 @@ describe('original stage scores', () => {
       }
     });
   }
+
+  it('changes the writing of every score, not just its title or tempo', () => {
+    for (const id of TRACK_IDS) {
+      expect(STAGE_MUSIC[id].title).toBe(PREVIOUS_STAGES[id].title);
+      expect(STAGE_MUSIC[id].events).not.toEqual(PREVIOUS_STAGES[id].events);
+      const pitched = (events: readonly MusicEvent[]) => events
+        .filter(event => !percussion.has(event.voice) && event.voice !== 'bass')
+        .map(event => [event.beat, event.duration, event.note, event.voice]);
+      expect(pitched(STAGE_MUSIC[id].events)).not.toEqual(pitched(PREVIOUS_STAGES[id].events));
+    }
+    expect(MENU_MUSIC.events).not.toEqual(PREVIOUS_MENU.events);
+    expect(MENU_MUSIC.bpm).toBeGreaterThan(PREVIOUS_MENU.bpm);
+    expect(STAGE_MUSIC.forest.bpm).toBeGreaterThan(PREVIOUS_STAGES.forest.bpm);
+    expect(STAGE_MUSIC.mines.bpm).toBeGreaterThan(PREVIOUS_STAGES.mines.bpm);
+  });
+
+  it('uses the distinct instrument roles requested for the revision', () => {
+    expect(STAGE_MUSIC.forest.events.some(event => event.voice === 'flute' && event.note < 72)).toBe(true);
+    expect(STAGE_MUSIC.gardens.events.some(event => event.voice === 'synth')).toBe(true);
+    expect(STAGE_MUSIC.manor.events.some(event => event.voice === 'ghost')).toBe(true);
+    expect(STAGE_MUSIC.gingerbread.events.some(event => event.voice === 'piano')).toBe(true);
+    expect(STAGE_MUSIC.volcano.events.some(event => event.voice === 'guitar')).toBe(true);
+    expect(MENU_MUSIC.events.some(event => percussion.has(event.voice))).toBe(true);
+  });
 
   it('keeps the menu composition separate from course music', () => {
     expect(MENU_MUSIC.id).toBe('menu');

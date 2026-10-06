@@ -37,6 +37,8 @@ export interface StudioElement {
   view?: { y: number; distance: number };
   /** Music panes show score information and use the studio's single audio player. */
   music?: StageMusic;
+  previousMusic?: StageMusic;
+  musicReference?: { track: number; title: string; direction: string };
   create(variant: string, ctx: StudioContext): Instance;
 }
 

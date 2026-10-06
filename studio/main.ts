@@ -6,6 +6,7 @@ import { setOrbDetail } from '../src/gfx/orbs/index.ts';
 import { CATEGORIES, type StudioElement } from './types.ts';
 import { Viewport, defaultView, type ViewState } from './viewport.ts';
 import { StudioMusicPlayer } from './music-player.ts';
+import { musicForVariant } from './music/review.ts';
 
 const LETTERS = 'ABCD';
 const $ = <T extends HTMLElement>(sel: string, root: ParentNode = document) => root.querySelector<T>(sel)!;
@@ -52,7 +53,8 @@ function commit() {
   $<HTMLSelectElement>('#bg').value = state.background; $<HTMLSelectElement>('#quality').value = state.quality; setOrbDetail(state.quality === 'high' ? 1 : .5); $<HTMLSelectElement>('#speed').value = String(state.speed);
   $('#play').textContent = paused ? 'Play' : 'Pause';
   syncPanes();
-  musicPlayer.select(elementById.get(state.panes[state.active].element)?.music ?? null);
+  const activePane = state.panes[state.active];
+  musicPlayer.select(musicForVariant(elementById.get(activePane.element), activePane.variant));
   musicPlayer.update(paused, document.hidden);
   updateMusicPanels(); renderResults();
 }
@@ -64,12 +66,14 @@ function syncPanes() {
     const own = { ...sharedView }, vp = new Viewport(state.link ? sharedView : own), el = document.createElement('section'); el.className = 'pane';
     el.innerHTML = `<div class="pane-head"><span class="letter"></span><div class="title"><strong></strong><small></small></div><select class="variant" aria-label="Variant"></select><button class="all" title="Compare all variants of this element (V)">All variants</button><button class="close" title="Close pane" aria-label="Close pane">&times;</button></div><span class="badge">In game</span>
       <section class="music-card" hidden aria-label="Music preview">
-        <span class="music-label">Original soundtrack preview</span><h2 class="music-title"></h2><p class="music-info"></p>
+        <span class="music-label">Newly composed music preview</span><h2 class="music-title"></h2><p class="music-info"></p>
+        <p class="music-reference"></p><p class="music-direction"></p>
         <div class="music-controls"><button class="music-play">Play music</button><button class="music-restart">Restart music</button></div>
         <label class="music-volume">Volume<input type="range" min="0" max="100" value="100" aria-label="Music volume"></label>
         <progress class="music-progress" value="0" max="1" aria-label="Music loop progress"></progress>
         <p class="music-status"></p>
-        <p class="music-note">The same synthesized score and instruments used in the game. Only the active pane plays audio. Animation speed does not change music tempo.</p>
+        <p class="music-note">Revised compositions are used in the game. Previous compositions are available for comparison through the same updated instruments. Only the active pane plays audio. These are newly authored pieces, not the original recordings.</p>
+        <a class="music-source" href="https://sqex.lnk.to/gzCQxWYWTP" target="_blank" rel="noopener noreferrer">Listen to the original Chocobo Racing album</a>
       </section>`;
     el.prepend(vp.canvas); paneHost.append(el); panes.push({ vp, el, own });
     el.addEventListener('pointerdown', () => { if (state.active !== panes.findIndex(p => p.el === el)) { state.active = panes.findIndex(p => p.el === el); commit(); } });
@@ -107,9 +111,12 @@ function syncPanes() {
     $('.badge', p.el).hidden = !variant.inGame || e.variants.every(v => v.inGame);
     p.el.classList.toggle('music-pane', !!e.music);
     $('.music-card', p.el).hidden = !e.music;
-    if (e.music) {
-      $('.music-title', p.el).textContent = e.music.title;
-      $('.music-info', p.el).textContent = `${e.music.bpm} BPM · ${e.music.beats / 4} bars · ${(e.music.beats * 60 / e.music.bpm).toFixed(1)} second loop`;
+    const score = musicForVariant(e, want.variant);
+    if (score) {
+      $('.music-title', p.el).textContent = score.title;
+      $('.music-info', p.el).textContent = `${variant.label} · ${score.bpm} BPM · ${score.beats / 4} bars · ${(score.beats * 60 / score.bpm).toFixed(1)} second loop`;
+      $('.music-reference', p.el).textContent = e.musicReference ? `1999 reference: ${e.musicReference.title} · OST ${e.musicReference.track}` : '';
+      $('.music-direction', p.el).textContent = want.variant === 'previous' ? 'Previous composition, kept for before/after review.' : e.musicReference?.direction ?? '';
     }
   });
 }
@@ -117,7 +124,7 @@ function syncPanes() {
 function updateMusicPanels() {
   const status = musicPlayer.status;
   panes.forEach((p, i) => {
-    const score = p.vp.element?.music; if (!score) return;
+    const score = musicForVariant(p.vp.element, p.vp.variant); if (!score) return;
     const active = i === state.active;
     $('.music-play', p.el).textContent = active && status.playing ? paused ? 'Resume music' : 'Pause music' : 'Play music';
     $('.music-status', p.el).textContent = !active ? 'Select this pane to listen.'

@@ -128,7 +128,9 @@ npm run studio
 It opens http://localhost:5180 with its own Vite server, separate from the game server.
 The production build does not include it.
 
-To listen without opening the game, search for `music` or scroll to the Music category. Select one of the eight courses or Menu music, then press **Play music**. Each preview shows its composition title, tempo, loop length and playback progress, with pause, restart and volume controls. Only the active comparison pane plays audio. Switching to a non-music element stops playback. The toolbar's Pause and Restart also control music; animation speed does not change its tempo. Shared links and page reloads never autoplay.
+To listen without opening the game, search for `music` or scroll to the Music category. Select one of the eight courses or Menu music, then press **Play music**. Each has a **Revised composition** used in the game and a **Previous composition** for before/after review. Choose the variant or press **All variants** to compare them in separate panes. Both versions use the updated instruments, so this compares the composition, not the old synthesizer sound.
+
+Each preview shows the 1999 Chocobo Racing reference track, arranging notes, composition title, tempo, loop length and playback progress, with pause, restart and volume controls. The scores remain newly authored, not copies of the reference recordings. Only the active comparison pane plays audio. Switching to a non-music element stops playback. The toolbar's Pause and Restart also control music; animation speed does not change its tempo. Shared links and page reloads never autoplay. See the [revision brief and sources](docs/music-revision-brief.md).
 
 Search the library with `/` (or Cmd/Ctrl+K), then press Enter to show the highlighted element in the active pane.
 Shift+Enter adds it as a new pane.
