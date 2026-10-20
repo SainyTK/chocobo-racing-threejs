@@ -18,11 +18,13 @@ export function cornerSpeed(r: Race, p: Racer, lateral: number) {
   return v;
 }
 
-/** CPU steering and pedals toward a lane offset. Brakes for corners from the real grip limit, taps the brake through
+/** How far ahead a CPU racer aims its steering. */
+export const botLook = (p: Racer) => clamp(p.speed * .55 + 7, 12, 30);
+
+/** CPU steering and pedals toward a target point. Brakes for corners from the real grip limit, taps the brake through
  * corners that need more grip than the tyres hold, and drifts short slides through hairpins. */
-export function botDriving(r: Race, p: Racer, lane: number): Pick<Input, 'steer' | 'throttle' | 'brake' | 'drift'> {
+export function botDriving(r: Race, p: Racer, target: { x: number; z: number }): Pick<Input, 'steer' | 'throttle' | 'brake' | 'drift'> {
   const cls = DIFFICULTIES[r.difficulty], grip = cornerGrip(p);
-  const look = clamp(p.speed * .55 + 7, 12, 30), target = pointAt(r.track, p.s + look, lane);
   const delta = angleDelta(Math.atan2(target.x - p.px, target.z - p.pz), p.yaw);
   const plan = grip * cls.cpuCorner * (1 + H.sharpGain * cls.cpuTaps);
   const desired = Math.min(RACERS[p.character].speed * p.pace * (p.boost > 0 ? H.boostSpeed : 1), cornerSpeed(r, p, plan));

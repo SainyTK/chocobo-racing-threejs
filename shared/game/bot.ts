@@ -2,7 +2,7 @@ import { mod } from '../math.ts';
 import { TRACKS } from '../track/tracks.ts';
 import { pointAt, trackLength } from '../track/sampling.ts';
 import { courseObjects } from '../track/objects.ts';
-import { botDriving } from './bot-driving.ts';
+import { botDriving, botLook } from './bot-driving.ts';
 import { neutralInput, type Input } from './input.ts';
 import type { Race, Racer } from './types.ts';
 
@@ -12,5 +12,5 @@ export function botInput(r: Race, p: Racer): Input {
   let lane = Math.sin(i * 2.2 + p.s / 150) * 2.2;
   if (p.stones.length < 3) { const stone = courseObjects(r.track).stones.filter(e => mod(e.s - p.s, len) < 40 && r.pickups[e.id] < .4).sort((a, b) => Math.abs(a.x - p.x) - Math.abs(b.x - p.x))[0]; if (stone) lane = stone.x; }
   const curve = Math.max(...[12, 25, 40].map(d => Math.abs(pointAt(r.track, p.s + d).curve)));
-  return { ...botDriving(r, p, lane), reverse: false, item: p.stones.length > 0 && Math.sin(r.time * 2 + i) > .65, ability: p.ability >= 100 && (p.abilityId !== 'dash' && p.abilityId !== 'charge' || curve < .014), rescue: p.speed < 2 && r.time > 8 && Math.abs(p.x) > def.width - 2 || p.s > (p.gates + 2) * len / 12 };
+  return { ...botDriving(r, p, pointAt(r.track, p.s + botLook(p), lane)), reverse: false, item: p.stones.length > 0 && Math.sin(r.time * 2 + i) > .65, ability: p.ability >= 100 && (p.abilityId !== 'dash' && p.abilityId !== 'charge' || curve < .014), rescue: p.speed < 2 && r.time > 8 && Math.abs(p.x) > def.width - 2 || p.s > (p.gates + 2) * len / 12 };
 }
