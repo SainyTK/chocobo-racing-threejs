@@ -1,11 +1,11 @@
 import * as THREE from 'three';
-import { trackTable, type TrackId } from '../../../shared/track/index.ts';
+import { TRACKS, shortcutPaths, trackTable, type TrackId } from '../../../shared/track/index.ts';
 import { stageMaterial } from './materials.ts';
 import { fbm2, ridge2, smoothstep, lerp } from './noise.ts';
 import { roadTexture, basaltGlow, groundDetail, type RoadKind, type RoadPalette } from './textures.ts';
 import type { Kit } from './kit.ts';
 
-/** Nearest-road lookup on a 4 m grid: distance to the centre line, the road height there and its distance along the lap. */
+/** Nearest-road lookup on a 4 m grid: distance to the centre line (shortcuts included) and the road height there. */
 export class TrackField {
   readonly minX: number; readonly minZ: number; readonly nx: number; readonly nz: number; readonly cx: number; readonly cz: number; readonly extent: number;
   private dist: Float32Array; private roadY: Float32Array; static readonly CELL = 4; static readonly REACH = 160;
@@ -15,15 +15,21 @@ export class TrackField {
     this.cx = (x0 + x1) / 2; this.cz = (z0 + z1) / 2; this.extent = Math.max(x1 - x0, z1 - z0) / 2;
     this.minX = x0 - R; this.minZ = z0 - R; this.nx = Math.ceil((x1 - x0 + 2 * R) / C) + 1; this.nz = Math.ceil((z1 - z0 + 2 * R) / C) + 1;
     this.dist = new Float32Array(this.nx * this.nz).fill(R); this.roadY = new Float32Array(this.nx * this.nz).fill(table[0].y);
-    const reach = Math.ceil(R / C);
     // Splat every centre-line segment into the cells around it, keeping the nearest.
-    for (let i = 0; i < table.length - 1; i += 2) {
-      const a = table[i], b = table[Math.min(table.length - 1, i + 2)], gx = Math.round((a.x - this.minX) / C), gz = Math.round((a.z - this.minZ) / C);
-      const dx = b.x - a.x, dz = b.z - a.z, ll = dx * dx + dz * dz || 1;
-      for (let j = Math.max(0, gz - reach); j <= Math.min(this.nz - 1, gz + reach); j++) for (let k = Math.max(0, gx - reach); k <= Math.min(this.nx - 1, gx + reach); k++) {
-        const x = this.minX + k * C, z = this.minZ + j * C, t = Math.max(0, Math.min(1, ((x - a.x) * dx + (z - a.z) * dz) / ll)), d = Math.hypot(x - a.x - dx * t, z - a.z - dz * t), idx = j * this.nx + k;
-        if (d < this.dist[idx]) { this.dist[idx] = d; this.roadY[idx] = a.y + (b.y - a.y) * t; }
-      }
+    for (let i = 0; i < table.length - 1; i += 2) this.splat(table[i], table[Math.min(table.length - 1, i + 2)], 0);
+    // Shortcuts count as road too. Their distances are shifted so a shortcut's edge reads as `width` from the road,
+    // exactly like the main road's edge: scenery, terrain and walls then treat both alike.
+    for (const path of shortcutPaths(id)) {
+      const shift = TRACKS[id].width - path.shortcut.width;
+      for (let i = 0; i < path.x.length - 1; i++) this.splat({ x: path.x[i], y: path.y[i], z: path.z[i] }, { x: path.x[i + 1], y: path.y[i + 1], z: path.z[i + 1] }, shift);
+    }
+  }
+  private splat(a: { x: number; y: number; z: number }, b: { x: number; y: number; z: number }, shift: number) {
+    const C = TrackField.CELL, reach = Math.ceil(TrackField.REACH / C), gx = Math.round((a.x - this.minX) / C), gz = Math.round((a.z - this.minZ) / C);
+    const dx = b.x - a.x, dz = b.z - a.z, ll = dx * dx + dz * dz || 1;
+    for (let j = Math.max(0, gz - reach); j <= Math.min(this.nz - 1, gz + reach); j++) for (let k = Math.max(0, gx - reach); k <= Math.min(this.nx - 1, gx + reach); k++) {
+      const x = this.minX + k * C, z = this.minZ + j * C, t = Math.max(0, Math.min(1, ((x - a.x) * dx + (z - a.z) * dz) / ll)), d = Math.hypot(x - a.x - dx * t, z - a.z - dz * t) + shift, idx = j * this.nx + k;
+      if (d < this.dist[idx]) { this.dist[idx] = d; this.roadY[idx] = a.y + (b.y - a.y) * t; }
     }
   }
   /** Bilinear lookup; outside the field the road is out of reach. */
@@ -88,7 +94,7 @@ export function buildTerrain(kit: Kit, field: TrackField, spec: TerrainSpec) {
 
 /** `glow` lights the road's cracks (basalt only) at the given strength, 1 being a gentle ember glow. */
 export interface RoadSpec { kind: RoadKind; palette: RoadPalette; glow?: number }
-/** Textured road ribbon, slightly above the ground under it and split into culled sections. */
+/** Textured road ribbon, slightly above the ground under it, split into culled sections and broken over gaps. Returns its material for shortcuts to share. */
 export function buildRoad(kit: Kit, spec: RoadSpec) {
   const w = kit.w, tex = kit.own(roadTexture(spec.kind, spec.palette)), glow = spec.glow ? kit.own(basaltGlow()) : null;
   const mat = kit.own(stageMaterial({ ground: true, map: tex, vertexColors: false, rim: 0 }));
@@ -101,8 +107,9 @@ export function buildRoad(kit: Kit, spec: RoadSpec) {
       const s = (r0 + i) * kit.len / rows;
       for (let k = 0; k <= across; k++) { const off = -w + 2 * w * k / across, p = kit.at(s, off); pos.push(p.x, p.y + .02, p.z); uv.push(k / across, s / kit.len * tiles); }
     }
-    for (let i = 0; i < n; i++) for (let k = 0; k < across; k++) { const a = i * (across + 1) + k, b = a + 1, c = a + across + 1, d = c + 1; idx.push(a, c, b, b, c, d); }
+    for (let i = 0; i < n; i++) for (let k = 0; k < across; k++) { if (kit.gap((r0 + i + .5) * kit.len / rows)) continue; const a = i * (across + 1) + k, b = a + 1, c = a + across + 1, d = c + 1; idx.push(a, c, b, b, c, d); }
     const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx); g.computeVertexNormals(); g.computeBoundingSphere();
     const mesh = new THREE.Mesh(g, mat); mesh.receiveShadow = true; mesh.name = 'road'; kit.add(mesh);
   }
+  return mat;
 }

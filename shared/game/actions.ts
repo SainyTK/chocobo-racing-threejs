@@ -1,5 +1,6 @@
 import { mod } from '../math.ts';
 import { pointAt, trackLength } from '../track/sampling.ts';
+import { restartPoint } from '../track/surface.ts';
 import { ABILITIES } from './abilities.ts';
 import { spellName } from './items.ts';
 import { addStone, canAddStone, syncInventory, takeStack } from './inventory.ts';
@@ -38,6 +39,6 @@ export function useAbility(r: Race, p: Racer) {
   p.ability = 0; event(r, p, 'ability', `${ABILITIES[p.abilityId].name}!`);
 }
 export function recover(r: Race, p: Racer) {
-  const safe = Math.min(p.lastSafeS - 2, (p.gates + 1) * trackLength(r.track) / 12 - 3);
+  const safe = restartPoint(r.track, Math.min(p.lastSafeS - 2, (p.gates + 1) * trackLength(r.track) / 12 - 3));
   placeRacer(r.track, p, safe); p.stun = 0; p.falling = 0; p.drift = 0; p.drifting = false; p.invincible = 2; p.lastRescue = r.time; event(r, p, 'recover', 'Back on the track');
 }

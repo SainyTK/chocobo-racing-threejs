@@ -177,7 +177,8 @@ export const forest: CourseArt = {
   },
   road: { kind: 'dirt', palette: { base: '#c19a5e', dark: '#8f6c3f', light: '#e2c896', accent: '#5c9a3a', edge: '#86c04f' } },
   start: { pillar: '#b37a48', trim: '#f6ead2', banner: '#3d8a4a', text: '#fff2b8', light: '#ffd36a', flags: ['#e0473f', '#3d8a4a', '#ffd84a', '#4a8fe0'] },
-  hazard: 'mud',
+  patches: { slow: 'mud', slip: 'ice' },
+  shortcut: { wall: C.barkDark, cap: C.dirt },
   signs: { board: '#f4e2b8', arrow: '#c1452f', post: '#7c5132' },
   ambient: [
     { color: '#fff7a0', endColor: '#c8ff7a', rate: 16, size: .16, life: 4, glow: true, height: [.4, 3], wander: .5, drift: [0, .1, 0], radius: 34, alpha: .9 },

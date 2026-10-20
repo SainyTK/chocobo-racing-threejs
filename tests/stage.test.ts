@@ -24,6 +24,7 @@ describe.each(TRACK_IDS)('course %s', id => {
   });
 
   // Nothing may stand on the driving line: inside the road, scenery is either paint or curbs on the surface or high overhead.
+  // Timed hazards are the exception by design: they move into the racing line on a timer, so their moving parts are skipped here.
   it('keeps the road clear between the surface and overhead structures', () => {
     const field = new TrackField(id), w = TRACKS[id].width, v = new THREE.Vector3(), blocked: string[] = [];
     // The grid is a fast filter. Candidates are confirmed against the exact centre line, using the highest surface
@@ -33,7 +34,7 @@ describe.each(TRACK_IDS)('course %s', id => {
       return top > -Infinity && p.y > top + .3 && p.y < top + 9;
     };
     for (const m of meshes) {
-      if (m.name === 'sky' || m.name === 'road' || m.name === 'hazards' || m.name === 'liquid' || m.name.startsWith('mountains') || m.name === 'terrain') continue;
+      if (m.name === 'sky' || m.name === 'road' || m.name === 'ramp' || m.name === 'patches' || m.name === 'hazard' || m.name === 'hazard warning' || m.name === 'liquid' || m.name.startsWith('mountains') || m.name === 'terrain') continue;
       const pos = m.geometry.attributes.position as THREE.BufferAttribute; m.updateWorldMatrix(true, false);
       for (let i = 0; i < pos.count; i++) {
         v.fromBufferAttribute(pos, i).applyMatrix4(m.matrixWorld); const f = field.sample(v.x, v.z);

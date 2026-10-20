@@ -37,7 +37,7 @@ export class Interpolation {
         const ahead = latest.race.phase==='racing' && p.finishTime===null && p.falling<=0 ? extrapolation : 0;
         return { ...p,px:p.px+p.vx*ahead,pz:p.pz+p.vz*ahead };
       }
-      return { ...p,px:a.px+(b.px-a.px)*t,pz:a.pz+(b.pz-a.pz)*t,yaw:a.yaw+angleDelta(b.yaw,a.yaw)*t,s:a.s+(b.s-a.s)*t,x:a.x+(b.x-a.x)*t };
+      return { ...p,px:a.px+(b.px-a.px)*t,pz:a.pz+(b.pz-a.pz)*t,yaw:a.yaw+angleDelta(b.yaw,a.yaw)*t,s:a.s+(b.s-a.s)*t,x:a.x+(b.x-a.x)*t,alt:a.alt+(b.alt-a.alt)*t };
     }) } };
   }
 }

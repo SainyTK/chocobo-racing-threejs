@@ -4,8 +4,10 @@ import { hills } from '../terrain.ts';
 import { fbm2, hash2, smoothstep, type Rng } from '../noise.ts';
 import { Shape } from '../../particles/particles.ts';
 import { stageTime } from '../materials.ts';
-import { bush, grass, block, prism, cone, card, cyl, bead, disc, ellipsoid, rbox, rock, sweep, grad, xf } from '../props/common.ts';
+import { bush, grass, block, prism, cone, card, cyl, bead, disc, ellipsoid, rbox, rock, lathe, sweep, grad, xf } from '../props/common.ts';
 import { arch, type V3 } from '../props/shapes.ts';
+import { TRACKS, type Hazard } from '../../../../shared/track/index.ts';
+import { layoutHazard } from '../hazards.ts';
 import type { CourseArt } from '../types.ts';
 
 const C = {
@@ -150,6 +152,45 @@ function farDeadTree(r: Rng) {
   return p;
 }
 
+/** Iron cage that drops over the road: barred walls with spiked feet, a gridded roof and a violet-glowing crown rail. Fits the hazard's footprint. */
+function cage(h: Hazard) {
+  const p = new Parts(), W = h.width / 2, L = h.length / 2, H = 4.6;
+  const bars = (x0: number, z0: number, x1: number, z1: number) => {
+    const n = Math.max(2, Math.round(Math.hypot(x1 - x0, z1 - z0) / 1.15));
+    for (let i = 0; i <= n; i++) { const x = x0 + (x1 - x0) * i / n, z = z0 + (z1 - z0) * i / n; p.add(cyl(.07, .07, H, [x, H / 2, z], [0, 0, 0], 5), C.iron, { ao: false }); p.add(cone(.13, .45, 4, [x, -.3, z], [Math.PI, 0, 0]), C.ironHi, { ao: false, flat: true }); }
+  };
+  bars(-W, -L, W, -L); bars(-W, L, W, L); bars(-W, -L, -W, L); bars(W, -L, W, L);
+  for (const y of [.35, H - .1]) for (const [x0, z0, x1, z1] of [[-W, -L, W, -L], [-W, L, W, L], [-W, -L, -W, L], [W, -L, W, L]]) {
+    const len = Math.hypot(x1 - x0, z1 - z0); p.add(xf(new THREE.BoxGeometry(len + .2, .22, .22), [(x0 + x1) / 2, y, (z0 + z1) / 2], [0, Math.atan2(-(z1 - z0), x1 - x0), 0]), y > 1 ? '#be87d5' : C.ironHi, { layer: y > 1 ? 'glow' : 'solid', ao: false });
+  }
+  for (let x = -W; x <= W + .01; x += h.width / 6) p.add(xf(new THREE.BoxGeometry(.12, .12, h.length), [x, H, 0]), C.iron, { ao: false });
+  for (const z of [-L / 2, 0, L / 2]) p.add(xf(new THREE.BoxGeometry(h.width, .12, .12), [0, H, z]), C.iron, { ao: false });
+  p.add(xf(new THREE.TorusGeometry(.55, .1, 6, 12), [0, H + .6, 0], [Math.PI / 2, 0, 0]), C.ironHi, { ao: false });
+  return p;
+}
+
+/** Gantry the cage hangs from: twin stone pillars beyond the walls carrying a beam high above the road, with chains down to the raised cage. */
+function cageGantry(h: Hazard) {
+  const p = new Parts(), w = TRACKS.manor.width, top = 15.2, xs = [w + 2.4 - h.x, -(w + 2.4) - h.x];
+  for (const x of xs) { p.add(block(1.6, top, 1.6, [x, 0, 0]), grad(C.stoneDark, C.stoneLight, 0, top), { flat: true }); p.add(cone(1.3, 1.8, 4, [x, top + .9, 0], [0, Math.PI / 4, 0]), C.slate, { flat: true, ao: false }); p.add(bead(.3, [x, top + 3, 0]), C.wisp, { layer: 'glow', ao: false }); }
+  p.add(block(xs[0] - xs[1] + 1.6, .9, 1.1, [(xs[0] + xs[1]) / 2, top, 0]), C.stoneDark, { flat: true, ao: false });
+  for (const x of [-h.width / 2 + 1, h.width / 2 - 1]) p.add(cyl(.06, .06, top - 14.4, [x, (top + 14.4) / 2, 0], [0, 0, 0], 4), C.ironHi, { ao: false });
+  return p;
+}
+
+/** A sheet ghost drifting across the hall: glowing body and tail, round dark eyes and a gaping mouth, arms raised. Faces +z. */
+function ghost() {
+  const p = new Parts(), body = '#bfe8ff';
+  p.add(ellipsoid([.95, 1.05, .9], [0, 2.1, 0]), body, { layer: 'glow', ao: false });
+  p.add(lathe([[.95, 1.6], [.9, 1.1], [.6, .7], [.25, .35], [0, .15]], [0, 0, 0], [0, 0, 0], 12), body, { layer: 'glow', ao: false });
+  for (const s of [-1, 1]) {
+    p.add(ellipsoid([.17, .26, .08], [s * .36, 2.3, .82]), '#1b1030', { ao: false });
+    p.add(sweep([[s * .7, 1.9, 0], [s * 1.2, 2.3, .2], [s * 1.35, 2.75, .35]], t => .2 - t * .12, { radial: 6, segments: 6 }), body, { layer: 'glow', ao: false });
+  }
+  p.add(ellipsoid([.2, .28, .08], [0, 1.85, .84]), '#1b1030', { ao: false });
+  return p;
+}
+
 /** Headstones in three shapes: rounded tablet, cross and obelisk. */
 function gravestone(r: Rng, kind: number) {
   const p = new Parts(), tilt: V3 = [r.range(-.12, .12), 0, r.range(-.12, .12)], stone = grad(C.stoneDark, C.stoneLight, 0, 1.8);
@@ -285,7 +326,12 @@ export const manor: CourseArt = {
   },
   road: { kind: 'flagstone', palette: { base: '#6a6380', dark: '#36304a', light: '#8f87a6' } },
   start: { pillar: '#4a4460', trim: '#b8acd0', banner: '#3a1d52', text: '#ffcf6a', light: '#9fd8ff', flags: ['#5a2a7a', '#e0702a', '#2a2a4a', '#8a5ac8'] },
-  hazard: 'ink',
+  patches: { slow: 'blood', slip: 'ice' },
+  ramp: { deck: C.slateLight, stripe: C.pumpkin, side: C.slate },
+  hazards: {
+    cage: { mover: cage, base: cageGantry, warn: '#be87d5' },
+    ghost: { mover: ghost },
+  },
   signs: { board: '#2a2238', arrow: '#ffb84a', post: '#1d1a26' },
   ambient: [
     { color: '#9fe0ff', endColor: '#b77aff', rate: 12, size: .32, life: 5, glow: true, height: [.6, 3.5], wander: .6, drift: [0, .15, 0], radius: 36, alpha: .9 },
@@ -295,6 +341,7 @@ export const manor: CourseArt = {
     Manor: manorHouse, 'Iron gate': () => ironGate(11), 'Wall lantern': r => pillar(r, true), 'Wall finial': r => pillar(r, false), 'Iron fence': () => fencePanel(),
     'Dead tree': r => deadTree(r), 'Far tree': farDeadTree, Tablet: r => gravestone(r, 0), Cross: r => gravestone(r, 1), Obelisk: r => gravestone(r, 2),
     Crypt: crypt, 'Ruined chapel': chapel, Pumpkin: r => pumpkin(r), 'Dead hedge': hedge,
+    'Drop cage': () => cage(layoutHazard('manor', 'cage')), 'Cage gantry': () => cageGantry(layoutHazard('manor', 'cage')), Ghost: ghost,
   },
   build(kit) {
     const r = kit.r, w = kit.w;

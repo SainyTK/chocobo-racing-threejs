@@ -5,6 +5,8 @@ import { fbm2, hash2, smoothstep, type Rng } from '../noise.ts';
 import { Shape } from '../../particles/particles.ts';
 import { arch } from '../props/shapes.ts';
 import { banner, brazier, flagPole, bunting, block, prism, cone, cyl, bead, disc, ellipsoid, rbox, rock, torus, lathe, sweep, grad, xf } from '../props/common.ts';
+import { TRACKS, type Hazard } from '../../../../shared/track/index.ts';
+import { layoutHazard } from '../hazards.ts';
 import type { CourseArt } from '../types.ts';
 
 const C = {
@@ -45,6 +47,28 @@ function colonnade(r: Rng, n = 4, ruined = false) {
     p.add(block(span, .3, 1.9, [x0 + span / 2, h + 2.4, 0]), C.stoneLight, { flat: true, ao: false });
     p.add(block(span, .22, 1.75, [x0 + span / 2, h + 1.95, .01]), C.purple, { ao: false });
   }
+  return p;
+}
+
+/** Stone door slab that drops to close half the road: dressed blocks, a gold band, glowing rune lines and a spiked foot. Spans the hazard's footprint. */
+function gateDoor(h: Hazard) {
+  const p = new Parts(), W = h.width - .3, H = 7.6, D = Math.min(1.4, h.length);
+  p.add(block(W, H, D), (x, y, _z, out) => { out.set(C.stone).lerp(new THREE.Color(C.stoneDark), hash2(Math.floor(x / 1.8 + 9), Math.floor(y / 1.2), 4) * .35 + (y < .8 ? .3 : 0)); }, { flat: true, ao: false });
+  for (const y of [1.6, H - 1.2]) p.add(block(W + .1, .35, D + .1, [0, y, 0]), C.gold, { ao: false });
+  for (const z of [-1, 1]) for (let i = 0; i < 3; i++) p.add(xf(new THREE.BoxGeometry(W * (.7 - i * .18), .12, .05), [0, 3 + i * 1.1, z * (D / 2 + .03)]), i === 1 ? C.runeHot : C.rune, { layer: 'glow', ao: false });
+  for (let x = -W / 2 + .5; x < W / 2; x += 1.1) p.add(cone(.22, .5, 4, [x, -.45, 0], [Math.PI, 0, 0]), C.gold, { flat: true, ao: false });
+  return p;
+}
+
+/** The frame the doors drop from: a tall pillar beside the road and half of a lintel high overhead, so the two doors' frames meet as one gateway. */
+function doorFrame(h: Hazard) {
+  const p = new Parts(), w = TRACKS.gate.width, side = Math.sign(h.x), x = side * (w + 1.8) - h.x, top = 18.4;
+  p.add(block(2.4, top, 2.4, [x, 0, 0]), grad(C.stoneDark, C.stoneLight, 0, top), { flat: true });
+  p.add(block(2.8, .6, 2.8, [x, top, 0]), C.gold, { ao: false });
+  for (const y of [4, 9, 14]) p.add(xf(new THREE.BoxGeometry(2.5, .25, 2.5), [x, y, 0]), C.carve, { ao: false });
+  const inner = -h.x, len = Math.abs(x - inner) + 1.2;
+  p.add(block(len, 2, 2.2, [(x + inner) / 2 + side * .6, top - 1.6, 0]), grad(C.stoneDark, C.stone, top - 1.6, top + .4), { flat: true, ao: false });
+  p.add(xf(new THREE.BoxGeometry(len, .2, .05), [(x + inner) / 2 + side * .6, top - .6, 1.13]), C.rune, { layer: 'glow', ao: false });
   return p;
 }
 
@@ -238,7 +262,9 @@ export const gate: CourseArt = {
   },
   road: { kind: 'cobble', palette: { base: '#b4a68e', dark: '#6e6152', light: '#d6c9ad' } },
   start: { pillar: '#d9c08e', trim: '#f5ecd4', banner: '#5a3a8a', text: '#ffd86a', light: '#ffb347', flags: [C.purple, C.gold, '#b8402e', C.purpleLight] },
-  hazard: 'mud',
+  patches: { slow: 'mud', slip: 'oil' },
+  shortcut: { wall: C.stoneDark, cap: C.stoneLight },
+  hazards: { door: { mover: gateDoor, base: doorFrame, warn: '#ffb347' } },
   signs: { board: '#efdcb2', arrow: '#5b3a8e', post: '#8a6a4a' },
   ambient: [
     { color: '#f7deae', endColor: '#e8c48a', rate: 22, size: .1, life: 5, height: [.3, 5], drift: [2.2, .15, .8], wander: .5, radius: 32, alpha: .7, shape: Shape.Smoke },
@@ -248,6 +274,7 @@ export const gate: CourseArt = {
     'Ancient Gate': () => ancientGate(11), Column: r => column(r), 'Broken column': r => column(r, 7, true), Colonnade: r => colonnade(r, 4), 'Ruined colonnade': r => colonnade(r, 5, true),
     Obelisk: r => obelisk(r), Palm: palm, Sphinx: sphinx, 'Ruined house': ruin, Urns: urns, Rubble: r => rubble(r), Pilaster: () => pilaster(),
     Brazier: () => brazier(C.stone, '#6a4c30', C.flame, 1.4), Banner: () => banner(C.purple, C.gold, C.goldLight, 1.6, 4), Ziggurat: () => ziggurat(), Colossus: () => colossus(),
+    'Gate door': () => gateDoor(layoutHazard('gate', 'door')), 'Door frame': () => doorFrame(layoutHazard('gate', 'door')),
   },
   build(kit) {
     const r = kit.r, w = kit.w;

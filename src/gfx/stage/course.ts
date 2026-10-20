@@ -1,13 +1,16 @@
 import * as THREE from 'three';
-import { courseObjects, type TrackId } from '../../../shared/track/index.ts';
+import type { TrackId } from '../../../shared/track/index.ts';
 import { Kit, Parts } from './kit.ts';
 import { STAGE, stageTime } from './materials.ts';
 import { makeSky, makeMountains } from './sky.ts';
 import { TrackField, buildTerrain, buildRoad } from './terrain.ts';
 import { Ambient } from './ambient.ts';
 import { chevronSign, block, rbox, cyl, ball, cone, tube, flagPole, xf } from './props/common.ts';
-import { noiseTexture } from './textures.ts';
-import type { CourseArt, Environment, HazardKind, StartGateStyle } from './types.ts';
+import { buildPatches } from './patches.ts';
+import { buildRamps } from './ramps.ts';
+import { buildShortcuts } from './shortcuts.ts';
+import { HazardViews } from './hazards.ts';
+import type { CourseArt, Environment, StartGateStyle } from './types.ts';
 import { COURSE_ART } from './courses/index.ts';
 
 export type { Environment, CourseArt } from './types.ts';
@@ -17,7 +20,8 @@ export type StageQuality = 'high' | 'low' | 'retro';
 export interface Course {
   id: TrackId; root: THREE.Group; env: Environment; art: CourseArt;
   groundAt(x: number, z: number): number;
-  update(t: number, dt: number, camera: THREE.Camera): void;
+  /** `t` drives ambient animation; `raceTime` poses the timed hazards, so they match the simulation. */
+  update(t: number, dt: number, camera: THREE.Camera, raceTime?: number): void;
   setQuality(q: StageQuality): void;
   dispose(): void;
 }
@@ -35,10 +39,12 @@ export function buildCourse(id: TrackId): Course {
   const sunDir = new THREE.Vector3(...env.sun.dir).normalize();
   kit.road = (x, z) => field.sample(x, z); kit.bounds = { cx: field.cx, cz: field.cz, extent: field.extent };
   if (art.terrain) buildTerrain(kit, field, art.terrain); else kit.groundAt = (x, z) => field.sample(x, z).y - 1;
-  buildRoad(kit, art.road);
+  const road = buildRoad(kit, art.road);
   startLine(kit, art.start);
   signs(kit, art);
-  const hazard = hazards(kit, art.hazard);
+  const surfaces = [...buildPatches(kit, art.patches), ...buildShortcuts(kit, road, art.shortcut, art.patches)];
+  buildRamps(kit, art.ramp);
+  const hazards = new HazardViews(kit, art.hazards);
   art.build(kit);
   kit.finish();
 
@@ -53,8 +59,8 @@ export function buildCourse(id: TrackId): Course {
   let detail = true;
   return {
     id, root: kit.root, env, art, groundAt: (x, z) => kit.groundAt(x, z),
-    update(t, dt, camera) {
-      stageTime.value = t; sky.mesh.position.copy(camera.position); hazard.uniforms.uTime.value = t;
+    update(t, dt, camera, raceTime = t) {
+      stageTime.value = t; sky.mesh.position.copy(camera.position); for (const m of surfaces) m.uniforms.uTime.value = t; hazards.update(raceTime);
       for (const ch of chunks) ch.o.visible = ch.c.distanceTo(camera.position) - ch.r < reach;
       kit.update(t, dt, camera); ambient.update(dt, camera);
     },
@@ -75,7 +81,7 @@ export function buildCourse(id: TrackId): Course {
   };
 }
 
-/** Checkered start line, grid boxes and the start gate with its banner. */
+/** Checkered start line, grid boxes and the start gate with a banner naming the course. */
 function startLine(kit: Kit, st: StartGateStyle) {
   const w = kit.w, a = new THREE.Color('#f7f4ee'), b = new THREE.Color('#25243a'), pos: number[] = [], col: number[] = [];
   const quad = (s0: number, s1: number, o0: number, o1: number, c: THREE.Color, lift = .09) => {
@@ -114,7 +120,7 @@ function startLine(kit: Kit, st: StartGateStyle) {
   const c = document.createElement('canvas'); c.width = 1024; c.height = 160; const x = c.getContext('2d')!;
   x.fillStyle = st.banner; x.fillRect(0, 0, 1024, 160); x.strokeStyle = st.trim; x.lineWidth = 10; x.strokeRect(8, 8, 1008, 144);
   x.fillStyle = st.text; x.font = 'italic 900 88px "Barlow Condensed", "Arial Black", sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
-  x.shadowColor = '#00000066'; x.shadowOffsetY = 5; x.fillText('CHOCOBO RACING', 512, 84);
+  x.shadowColor = '#00000066'; x.shadowOffsetY = 5; x.fillText(kit.def.name.toUpperCase(), 512, 84, 960);
   const tex = kit.own(new THREE.CanvasTexture(c)); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 8;
   const mat = kit.own(new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide, fog: true }));
   const p = kit.at(0, mid), board = new THREE.Mesh(new THREE.PlaneGeometry(span * 2 - .6, 2.4), mat);
@@ -132,45 +138,4 @@ function signs(kit: Kit, art: CourseArt) {
     kit.onTrack(sign, s, off, { yaw: Math.PI + (dir < 0 ? Math.PI : 0), onGround: !kit.def.cliff });
     s += 70;
   }
-}
-
-/** Slowing puddles from the course objects, drawn as one animated decal mesh. */
-function hazards(kit: Kit, kind: HazardKind) {
-  const palette: Record<HazardKind, [string, string, string, number]> = {
-    mud: ['#3a2618', '#6b4a2c', '#c9a77a', 0], lava: ['#ff3d0d', '#ffb02e', '#fff2a0', 2.4], goo: ['#c2306f', '#ff7fb6', '#ffe1f0', .3], ink: ['#1e0f33', '#5b2a8c', '#c79bff', 1], water: ['#3b84b8', '#7fd0f0', '#ffffff', .2],
-  };
-  const [deep, mid, hi, glow] = palette[kind], noise = kit.own(noiseTexture(128));
-  const mat = kit.own(new THREE.ShaderMaterial({
-    transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3, fog: true,
-    uniforms: THREE.UniformsUtils.merge([THREE.UniformsLib.fog, { uTime: { value: 0 }, uNoise: { value: null }, uDeep: { value: new THREE.Color(deep) }, uMid: { value: new THREE.Color(mid) }, uHi: { value: new THREE.Color(hi) }, uGlow: { value: glow } }]),
-    vertexShader: `varying vec2 vUv; varying vec3 vW;
-      #include <fog_pars_vertex>
-      void main(){ vUv = uv; vec4 w = modelMatrix * vec4(position, 1.); vW = w.xyz; vec4 mvPosition = viewMatrix * w; gl_Position = projectionMatrix * mvPosition;
-        #include <fog_vertex>
-      }`,
-    fragmentShader: `uniform float uTime, uGlow; uniform sampler2D uNoise; uniform vec3 uDeep, uMid, uHi; varying vec2 vUv; varying vec3 vW;
-      #include <fog_pars_fragment>
-      void main(){ vec2 p = vUv * 2. - 1.; float edge = length(p * vec2(1., .8)) + (texture2D(uNoise, vUv * .5 + vW.xz * .01).r - .5) * .5;
-        if (edge > .92) discard;
-        float swirl = texture2D(uNoise, vW.xz * .06 + vec2(uTime * .02, -uTime * .015)).g, bub = texture2D(uNoise, vW.xz * .18 - uTime * .03).b;
-        vec3 c = mix(uMid, uDeep, smoothstep(.85, .2, edge) * .8 + swirl * .3);
-        c = mix(c, uHi, smoothstep(.6, .75, swirl) * .5 + smoothstep(.85, .92, edge) * .35 + step(.72, bub) * .3);
-        c *= 1. + uGlow * (.6 + .4 * sin(uTime * 2. + swirl * 9.)) * smoothstep(.9, .3, edge);
-        // The quad's own border always fades out, so a ragged edge never shows a straight cut.
-        gl_FragColor = vec4(c, smoothstep(.92, .82, edge) * smoothstep(1., .86, max(abs(p.x), abs(p.y))));
-        #include <tonemapping_fragment>
-        #include <colorspace_fragment>
-        #include <fog_fragment>
-      }`,
-  }));
-  // Set after the merge: merging clones texture uniforms, and the clone would never be disposed.
-  mat.uniforms.uNoise.value = noise;
-  const pos: number[] = [], uv: number[] = [], idx: number[] = [];
-  courseObjects(kit.id).hazards.forEach((h, i) => {
-    for (let j = 0; j <= 1; j++) for (let k = 0; k <= 1; k++) { const p = kit.at(h.s + (j - .5) * 6.4, h.x + (k - .5) * 6); pos.push(p.x, p.y + .05, p.z); uv.push(k, j); }
-    const o = i * 4; idx.push(o, o + 2, o + 1, o + 1, o + 2, o + 3);
-  });
-  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx); g.computeBoundingSphere();
-  const mesh = new THREE.Mesh(g, mat); mesh.renderOrder = 1; mesh.name = 'hazards'; mesh.receiveShadow = true; kit.add(mesh);
-  return mat;
 }

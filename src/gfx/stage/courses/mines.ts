@@ -1,8 +1,10 @@
 import * as THREE from 'three';
 import { Parts, type Kit } from '../kit.ts';
-import { fbm2, ridge2, smoothstep, type Rng } from '../noise.ts';
+import { fbm2, ridge2, rng, smoothstep, type Rng } from '../noise.ts';
 import { Shape } from '../../particles/particles.ts';
 import { crystalCluster, boulder, block, prism, cone, cyl, bead, rbox, rock, lathe, tube, blob, grad, xf } from '../props/common.ts';
+import { courseLayout, projectOnTrack, shortcutPaths, shortcutPoint, type Hazard } from '../../../../shared/track/index.ts';
+import { layoutHazard } from '../hazards.ts';
 import type { CourseArt } from '../types.ts';
 
 const C = {
@@ -51,6 +53,28 @@ function minecart(r: Rng, glow: string) {
   for (const x of [-.62, .62]) for (const z of [-.6, .6]) { p.add(cyl(.3, .3, .14, [x, .32, z], [0, 0, Math.PI / 2], 10), C.ironDark, { ao: false }); p.add(cyl(.1, .1, .16, [x * 1.02, .32, z], [0, 0, Math.PI / 2], 6), C.rust, { ao: false }); }
   for (let i = 0; i < 5; i++) p.add(blob(r.range(.35, .5), [r.range(-.35, .35), 1.62, r.range(-.55, .55)], r() * 9, .3, 0), C.ore, { flat: true, ao: false });
   for (let i = 0; i < 4; i++) { const a = r() * 6.28; p.add(prism(0, .13, .55, 5, [Math.cos(a) * .35, 1.7, Math.sin(a) * .5], [Math.sin(a) * .5, 0, Math.cos(a) * .5]), glow, { layer: 'glow', ao: false, flat: true }); }
+  return p;
+}
+
+/** A runaway ore cart, larger than the parked ones so it reads from the chase camera, with a hazard-striped bumper. */
+function runawayCart(h: Hazard) {
+  const p = new Parts().include(minecart(rng(Math.round(h.s)), C.teal), [0, 0, 0], 0, 1.25);
+  for (const z of [-1, 1]) p.add(xf(new THREE.BoxGeometry(1.7, .3, .12), [0, .9, z * 1.95]), (x, _y, _z, out) => out.set(Math.floor((x + 2) * 2.5) % 2 ? C.warn : C.warnDark), { ao: false });
+  p.add(prism(.16, .12, .34, 6, [0, 2.4, 0]), C.lampHot, { layer: 'glow', ao: false });
+  return p;
+}
+
+/** The cart's crossing: a pair of rails and sleepers laid flush across the road, between two timber tunnel portals with warning lamps. */
+function cartCrossing(h: Hazard) {
+  const p = new Parts(), span = h.amp ?? 0, dir = Math.sign(span), n = Math.round(Math.abs(span) / 1.3);
+  for (const z of [-.75, .75]) p.add(xf(new THREE.BoxGeometry(Math.abs(span) + 4, .1, .14), [span / 2, .05, z]), C.iron, { ao: false });
+  for (let i = 0; i <= n; i++) p.add(xf(new THREE.BoxGeometry(.4, .05, 2.3), [i * span / n, .025, 0]), C.woodDark, { ao: false });
+  for (const x of [-dir * 1.5, span + dir * 1.5]) {
+    for (const z of [-2, 2]) p.add(block(.6, 4.4, .6, [x, 0, z]), grad(C.woodDark, C.wood, 0, 4.4), { flat: true });
+    p.add(block(.8, .6, 5.2, [x, 4.4, 0]), C.woodDark, { flat: true, ao: false });
+    p.add(block(.3, 4.2, 3.6, [x + Math.sign(x - span / 2) * .9, 0, 0]), '#120d18', { ao: false });
+    for (const z of [-2, 2]) p.add(bead(.18, [x, 4.95, z]), C.warn, { layer: 'glow', ao: false });
+  }
   return p;
 }
 
@@ -153,7 +177,9 @@ export const mines: CourseArt = {
   },
   road: { kind: 'planks', palette: { base: '#8f6a4a', dark: '#4a3424', light: '#b9916a' } },
   start: { pillar: '#5a3f2c', trim: '#c9a35a', banner: '#2b1f4c', text: '#8ff6ff', light: '#8ff6ff', flags: ['#7ff6ff', '#b07aff', '#f0b52e', '#5a3fa0'] },
-  hazard: 'ink',
+  patches: { slow: 'tar', slip: 'oil' },
+  shortcut: { wall: C.woodDark, cap: C.warn },
+  hazards: { cart: { mover: runawayCart, base: cartCrossing, warn: C.warn } },
   signs: { board: '#f0c548', arrow: '#2a1f2e', post: '#4f3828' },
   ambient: [
     { color: '#cbb9f0', rate: 14, size: .09, life: 6, height: [.5, 9], wander: .25, drift: [.15, .05, 0], radius: 32, alpha: .45 },
@@ -163,6 +189,7 @@ export const mines: CourseArt = {
     'Support frame': () => frame(10.5), 'Crystal (teal)': r => crystalCluster(r, C.teal, C.tealShell, 1.2, C.rock), 'Crystal (violet)': r => crystalCluster(r, C.violet, C.violetShell, 1.2, C.rock),
     Minecart: r => minecart(r, C.teal), Scaffold: scaffold, 'Ore pile': orePile, Stalagmite: stalagmite, Stalactite: stalactite, 'Rail post': () => railPost(true), Crates: crates,
     Boulder: r => boulder(r, C.rockLight, 1.4), 'Geode arch': r => geodeArch(r, 10.5),
+    'Runaway cart': () => runawayCart(layoutHazard('mines', 'cart')), 'Cart crossing': () => cartCrossing(layoutHazard('mines', 'cart')),
   },
   build(kit) {
     const r = kit.r, w = kit.w, len = kit.len;
@@ -174,16 +201,18 @@ export const mines: CourseArt = {
     // Pieces on the inside of the tightest hairpins would fold back over the road, so those are left out.
     const kick: [number, number][] = [[.62, 0], [.62, .32], [.86, .32], [.86, 0]], rail: [number, number][] = [[.64, .78], [.64, 1.12], [.86, 1.12], [.86, .78], [.64, .78]];
     const flip = (pr: [number, number][]) => pr.map(([x, y]) => [-x, y] as [number, number]).reverse();
+    // Cart crossings leave an opening in the barrier for the carts to roll through.
+    const crossings = courseLayout(kit.id).hazards.filter(h => h.kind === 'cart').map(h => h.s), crossing = (s: number) => crossings.some(c => Math.abs(s - c) < 4.5);
     for (const side of [-1, 1]) for (let s = 0; s < len; s += 8) {
-      if (![0, 4, 8].every(d => clear(s + d, side * (w + .8), .4))) continue;
+      if (![0, 4, 8].every(d => clear(s + d, side * (w + .8), .4)) || crossing(s) || crossing(s + 8)) continue;
       kit.extrude(side > 0 ? kick : flip(kick), { s0: s, s1: s + 8, offset: side * w, mirror: false, step: 2, paint: (_s, k, i, out) => out.set((side > 0 ? k === 0 : k === kick.length - 2) ? (i % 2 ? C.wood : '#7d5c3e') : C.woodDark) });
       kit.extrude(side > 0 ? rail : flip(rail), { s0: s, s1: s + 8, offset: side * w, mirror: false, step: 1.5, paint: (_s, k, i, out) => { const kk = side > 0 ? k : rail.length - 2 - k; out.set(kk === 0 ? (i % 2 ? C.warn : C.warnDark) : kk === 1 ? C.woodLight : C.woodDark); } });
     }
-    for (let s = 0, i = 0; s < len; s += 4, i++) for (const side of [-1, 1]) if (clear(s, side * (w + 1.02), .6)) { const lamp = i % 5 === (side > 0 ? 0 : 2); kit.onTrack(kit.prop(lamp ? 'post lamp' : 'post', () => railPost(lamp)), s, side * (w + 1.02)); }
+    for (let s = 0, i = 0; s < len; s += 4, i++) for (const side of [-1, 1]) if (clear(s, side * (w + 1.02), .6) && !crossing(s)) { const lamp = i % 5 === (side > 0 ? 0 : 2); kit.onTrack(kit.prop(lamp ? 'post lamp' : 'post', () => railPost(lamp)), s, side * (w + 1.02)); }
 
     // Minecart rails on the shelf, in pieces that stop wherever another section of road comes close.
     for (const side of [-1, 1]) for (let s = 0; s < len; s += 16) {
-      if (![0, 8, 16].every(d => clear(s + d, side * (w + 5), 4.5))) continue;
+      if (![0, 8, 16].every(d => clear(s + d, side * (w + 5), 4.5)) || [0, 8, 16].some(d => crossing(s + d))) continue;
       // Positive offsets sweep the profile outward; on the left the profile runs mirrored so faces still point out.
       for (const x of [3.7, 5.15]) kit.extrude(side > 0 ? [[x, .12], [x, .3], [x + .15, .3], [x + .15, .12]] : [[-x - .15, .3], [-x - .15, .12], [-x, .12], [-x, .3]], { s0: s, s1: s + 16, offset: side * w, mirror: false, step: 2, paint: C.iron });
       for (let k = 0; k < 16; k += 1.4) kit.onTrack(kit.prop('sleeper', () => new Parts().add(block(2.3, .14, .42), (_x, _y, _z, out) => out.set(C.woodDark), { ao: false })), s + k, side * (w + 4.5), { yaw: Math.PI / 2 });
@@ -199,8 +228,10 @@ export const mines: CourseArt = {
     const g0 = len * .52, g1 = g0 + 110;
     for (let s = g0; s < g1; s += r.range(6, 11)) for (const side of [-1, 1]) {
       const off = side * (w + r.range(7, 14)); if (!clear(s, off, Math.abs(off) - w - 3)) continue;
-      const teal = r() < .5;
-      kit.onTrack(kit.prop(teal ? 'giant teal' : 'giant violet', rr => crystalCluster(rr, teal ? C.teal : C.violet, teal ? C.tealShell : C.violetShell, 1, C.rock), r.int(0, 2)), s, off, { onGround: true, faceRoad: true, scale: r.range(3, 5.5), tilt: [r.range(.15, .4), 0] });
+      const teal = r() < .5, variant = r.int(0, 2), scale = r.range(3, 5.5), tilt = r.range(.15, .4);
+      // The tallest spire (three units high) leans in and the side spires splay out, so the whole cluster's reach must stay clear of every stretch of road.
+      if (!clear(s, off, scale * (3 * Math.sin(tilt) + .9))) continue;
+      kit.onTrack(kit.prop(teal ? 'giant teal' : 'giant violet', rr => crystalCluster(rr, teal ? C.teal : C.violet, teal ? C.tealShell : C.violetShell, 1, C.rock), variant), s, off, { onGround: true, faceRoad: true, scale, tilt: [tilt, 0] });
     }
     for (const s of [g0 + 25, g0 + 80]) if (spanClear(s)) kit.onTrack(kit.prop('geode arch', rr => geodeArch(rr, w), s > g0 + 50 ? 1 : 0), s, 0);
 
@@ -223,5 +254,18 @@ export const mines: CourseArt = {
     // The cavern ceiling: hanging spires and pinpricks of crystal light high above.
     kit.scatter(170, 0, 260, (x, z) => { const y = kit.road(x, z).y + r.range(62, 95); kit.place(kit.prop('stalactite', stalactite, r.int(0, 5)), x, y, z, { yaw: r() * 6, scale: r.range(.8, 1.4) }); });
     kit.scatter(420, 0, 300, (x, z) => { const y = kit.road(x, z).y + r.range(55, 110); kit.place(kit.prop('ceiling glint', () => new Parts().add(xf(new THREE.OctahedronGeometry(.7)), C.teal, { layer: 'glow', ao: false }).add(xf(new THREE.OctahedronGeometry(.55), [2, -.6, 1]), C.violet, { layer: 'glow', ao: false })), x, y, z, { yaw: r() * 6, scale: r.range(.6, 1.6) }); });
+    // The hidden rail bed: an old cart line along the shortcut, with lanterns on its walls.
+    for (const path of shortcutPaths(kit.id)) {
+      const sleeper = kit.prop('sleeper', () => new Parts().add(block(2.3, .14, .42), (_x, _y, _z, out) => out.set(C.woodDark), { ao: false }));
+      const rail = kit.prop('rail piece', () => new Parts().add(xf(new THREE.BoxGeometry(.14, .16, 1.42), [0, .2, 0]), C.iron, { ao: false }));
+      // Only where the bed has left the road, so nothing stands in the road at its mouth or exit.
+      const offRoad = (x: number, z: number) => kit.road(x, z).d > 0 && Math.abs(projectOnTrack(kit.id, x, z).offset) > w + 1.2;
+      for (let d = 2; d < path.length - 2; d += 1.4) {
+        const q = shortcutPoint(path, d / path.length); if (!offRoad(q.x, q.z)) continue;
+        kit.place(sleeper, q.x, q.y, q.z, { yaw: q.yaw + Math.PI / 2, shortcut: true });
+        for (const o of [-.75, .75]) { const e = shortcutPoint(path, d / path.length, o); kit.place(rail, e.x, e.y, e.z, { yaw: q.yaw, shortcut: true }); }
+      }
+      for (let d = 10, i = 0; d < path.length - 8; d += 12, i++) { const side = i % 2 ? 1 : -1, q = shortcutPoint(path, d / path.length, side * (path.shortcut.width + .35)); if (offRoad(q.x, q.z)) kit.place(kit.prop('post lamp', () => railPost(true)), q.x, q.y + .5, q.z, { yaw: q.yaw, shortcut: true }); }
+    }
   },
 };

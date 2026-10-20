@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import type { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
-import { courseObjects, pointAt, type TrackId } from '../shared/track/index.ts';
+import { courseObjects, pointAt, routeHeight, type TrackId } from '../shared/track/index.ts';
 import type { Item, Race } from '../shared/game/index.ts';
 import { createCharacter, type Character } from './gfx/characters/index.ts';
 import { Effects } from './gfx/effects/index.ts';
@@ -119,12 +119,12 @@ export class World {
       const self = race.racers.find(q => q.id === playerId) || race.racers[0], chars = new Map<string, Character>();
       for (const p of race.racers) {
         const r = this.racers.get(p.id); if (!r) continue; const c = r.c; chars.set(p.id, c); c.root.visible = true;
-        const floor = pointAt(race.track, p.s).y; c.root.position.set(p.px, floor + (p.flying > 0 ? 2.4 + Math.sin(t * 4) * .15 : 0) - (p.falling > 0 ? (1.3 - p.falling) * 12 : 0), p.pz); c.root.rotation.y = p.yaw;
+        const floor = routeHeight(race.track, p.route, p.s) + p.alt; c.root.position.set(p.px, floor + (p.flying > 0 ? 2.4 + Math.sin(t * 4) * .15 : 0) - (p.falling > 0 ? (1.3 - p.falling) * 12 : 0), p.pz); c.root.rotation.y = p.yaw;
         r.scale += ((p.mini > 0 ? 1 - p.miniLevel * .18 : 1) - r.scale) * (1 - Math.exp(-live * 10)); c.root.scale.setScalar(r.scale);
         c.animate({ t: t + p.character * 1.7, dt: live, speed: p.speed, steer: p.input.steer, drifting: p.drifting, flying: p.flying, stun: p.stun, boost: p.boost, menu: false });
         if (r.label) { const ahead = (p.px - self.px) * Math.sin(self.yaw) + (p.pz - self.pz) * Math.cos(self.yaw); const distance = this.camera.position.distanceTo(c.root.position); r.label.visible = p.id !== playerId && distance > 7 && distance < 60 && ahead * (lookBack ? -1 : 1) > 0; }
       }
-      const p = self, floor = pointAt(race.track, p.s).y, a = p.yaw + (lookBack ? Math.PI : 0), distance = 10.5 + Math.min(4, Math.abs(p.speed) * .055);
+      const p = self, floor = routeHeight(race.track, p.route, p.s) + p.alt * .6, a = p.yaw + (lookBack ? Math.PI : 0), distance = 10.5 + Math.min(4, Math.abs(p.speed) * .055);
       const desired = new THREE.Vector3(p.px - Math.sin(a) * distance, floor + 6.3 + (p.flying > 0 ? 2 : 0), p.pz - Math.cos(a) * distance);
       if (!this.cameraReady || desired.distanceTo(this.camera.position) > 55) this.camera.position.copy(desired); else this.camera.position.lerp(desired, 1 - Math.exp(-dt * 8)); this.cameraReady = true;
       target.set(p.px + Math.sin(a) * 8, floor + 1.8, p.pz + Math.cos(a) * 8); this.camera.lookAt(target);
@@ -138,7 +138,7 @@ export class World {
     // The shadow frustum follows the focus point so racers always cast crisp shadows.
     const env = this.course!.env; this.sun.position.copy(target).add(sunOffset(env, this.sunOffset)); this.sun.target.position.copy(target);
     this.hemi.intensity = env.hemi.intensity + this.fx.flash * 1.6;
-    this.course!.update(t, live, this.camera);
+    this.course!.update(t, live, this.camera, race?.time);
     this.renderer.info.reset(); if (this.quality === 'high') this.composer.render(); else this.renderer.render(this.scene, this.camera);
   }
   stats() { return { calls: this.renderer.info.render.calls, triangles: this.renderer.info.render.triangles, geometries: this.renderer.info.memory.geometries, textures: this.renderer.info.memory.textures, ...this.fx.stats() }; }

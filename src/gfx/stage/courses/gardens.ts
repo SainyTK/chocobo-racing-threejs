@@ -337,7 +337,9 @@ export const gardens: CourseArt = {
   terrain: null,
   road: { kind: 'flagstone', palette: { base: '#e9dfcf', dark: '#a8977e', light: '#fbf6ec', accent: '#d8c8b0' } },
   start: { pillar: '#f4f0fa', trim: '#e2b85a', banner: '#5b74c8', text: '#fff6d0', light: '#bff4ff', flags: ['#c9a8ff', '#e2b85a', '#79ded8', '#ff9fd6'] },
-  hazard: 'water',
+  patches: { slow: 'mud', slip: 'ice' },
+  ramp: { deck: C.marble, stripe: C.gold, side: C.marbleShade },
+  shortcut: { wall: C.rockDark, cap: C.gold },
   signs: { board: '#f6f2ff', arrow: '#5b74c8', post: '#c9a54e' },
   ambient: [
     { color: '#ffc2dc', endColor: '#ffffff', rate: 12, size: .2, life: 6, height: [1, 10], drift: [1.3, -.45, .5], wander: .6, shape: Shape.Shard, radius: 34, alpha: .95 },

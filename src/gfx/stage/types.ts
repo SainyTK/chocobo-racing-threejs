@@ -1,4 +1,5 @@
-import type { Kit, PropFactory } from './kit.ts';
+import type { Hazard, HazardKind, PatchSurface } from '../../../shared/track/index.ts';
+import type { Kit, Parts, PropFactory } from './kit.ts';
 import type { SkySpec, MountainLayer } from './sky.ts';
 import type { TerrainSpec, RoadSpec } from './terrain.ts';
 import type { AmbientSpec } from './ambient.ts';
@@ -14,7 +15,17 @@ export interface Environment {
 }
 
 export interface StartGateStyle { pillar: string; trim: string; banner: string; text: string; light?: string; flags?: string[] }
-export type HazardKind = 'mud' | 'lava' | 'goo' | 'ink' | 'water';
+/** How a slow or slippery patch looks. */
+export type PatchLook = 'mud' | 'oil' | 'ice' | 'icing' | 'syrup' | 'blood' | 'goo' | 'tar';
+/** Jump ramp colours: the deck, the chevrons and lip stripes, and the side panels. */
+export interface RampStyle { deck: string; stripe: string; side: string }
+/** Shortcut edge colours: wall faces (or the underside of a drop) and the cap or lip. */
+export interface ShortcutStyle { wall: string; cap: string }
+/**
+ * Models for one kind of timed hazard, built for a specific hazard so they can fit its footprint. `mover` is animated from race time;
+ * `base` is fixed scenery around it (rails, a gantry, a vent). `warn` colours the decal that shows where it is about to strike.
+ */
+export interface HazardArt { mover: (h: Hazard) => Parts; base?: (h: Hazard) => Parts; warn?: string }
 
 /** Everything that makes a course look like itself. One file per course under courses/. */
 export interface CourseArt {
@@ -23,7 +34,14 @@ export interface CourseArt {
   terrain: TerrainSpec | null;
   road: RoadSpec;
   start: StartGateStyle;
-  hazard: HazardKind;
+  /** Looks of the course's slow and slippery patches. */
+  patches: Record<PatchSurface, PatchLook>;
+  /** Needed when the course layout has ramps. */
+  ramp?: RampStyle;
+  /** Needed when the course layout has shortcuts. */
+  shortcut?: ShortcutStyle;
+  /** Models for every kind of timed hazard in the course layout. */
+  hazards?: Partial<Record<HazardKind, HazardArt>>;
   /** Colours for the corner warning boards. */
   signs: { board: string; arrow: string; post: string };
   ambient?: AmbientSpec[];

@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { TRACKS, pointAt, trackLength, type TrackId, type TrackDefinition, type TrackPoint } from '../../../shared/track/index.ts';
+import { TRACKS, inGap, pointAt, projectOnShortcut, shortcutPaths, trackLength, type ShortcutPath, type TrackId, type TrackDefinition, type TrackPoint } from '../../../shared/track/index.ts';
 import { STAGE, type Layer } from './materials.ts';
 import { rng, smoothstep, type Rng } from './noise.ts';
 
@@ -70,7 +70,11 @@ export class Parts {
 /** Builds and caches props by key, so a forest of 300 trees generates only a handful of tree shapes. */
 export type PropFactory = (r: Rng) => Parts;
 
-export interface PlaceOptions { y?: number; yaw?: number; scale?: number | V3; tint?: THREE.ColorRepresentation; tintAmount?: number; tilt?: [number, number] }
+export interface PlaceOptions {
+  y?: number; yaw?: number; scale?: number | V3; tint?: THREE.ColorRepresentation; tintAmount?: number; tilt?: [number, number];
+  /** Dressing that belongs on a shortcut. Any other prop whose origin lands on a shortcut is left out, so scenery never blocks one. */
+  shortcut?: boolean;
+}
 export interface TrackPlaceOptions extends PlaceOptions {
   /** Turns the prop so its +z faces the road. Otherwise +z points along the direction of travel. */
   faceRoad?: boolean;
@@ -108,6 +112,8 @@ export class Kit {
   constructor(readonly id: TrackId, seed = 1) { this.def = TRACKS[id]; this.len = trackLength(id); this.w = this.def.width; this.r = rng(seed * 7919 + id.length * 104729); }
 
   at(s: number, offset = 0): TrackPoint { return pointAt(this.id, s, offset); }
+  /** True over a chasm in the course, where no road, curb or wall is built. */
+  gap(s: number) { return inGap(this.id, s); }
   /** Returns a cached prop, building it on first use. `variant` lets one factory make several distinct shapes. */
   prop(key: string, factory: PropFactory, variant = 0) {
     const k = `${key}#${variant}`; let p = this.cache.get(k);
@@ -117,6 +123,7 @@ export class Kit {
 
   /** Places a prop at a world position. */
   place(parts: Parts, x: number, y: number, z: number, o: PlaceOptions = {}) {
+    if (!o.shortcut && this.onShortcut(x, z)) return;
     const sc = o.scale ?? 1;
     e.set(o.tilt?.[0] ?? 0, o.yaw ?? 0, o.tilt?.[1] ?? 0, 'YXZ'); q.setFromEuler(e);
     m4.compose(vp.set(x, y + (o.y ?? 0), z), q, typeof sc === 'number' ? vs.setScalar(sc) : vs.set(...sc));
@@ -129,6 +136,20 @@ export class Kit {
       if (!chunk.has(layer)) chunk.set(layer, []); chunk.get(layer)!.push(c);
     }
   }
+  /** True within a couple of metres of a shortcut's driving surface. */
+  onShortcut(x: number, z: number) {
+    for (const path of shortcutPaths(this.id)) {
+      const box = this.shortcutBox(path); if (x < box[0] || x > box[1] || z < box[2] || z > box[3]) continue;
+      const q = projectOnShortcut(path, x, z); if (q.u > 0 && q.u < 1 && Math.abs(q.x) < path.shortcut.width + 2.5) return true;
+    }
+    return false;
+  }
+  private boxes = new Map<ShortcutPath, [number, number, number, number]>();
+  private shortcutBox(path: ShortcutPath) {
+    let b = this.boxes.get(path);
+    if (!b) { const m = path.shortcut.width + 3; b = [Math.min(...path.x) - m, Math.max(...path.x) + m, Math.min(...path.z) - m, Math.max(...path.z) + m]; this.boxes.set(path, b); }
+    return b;
+  }
   /** Places a prop `offset` metres from the centre line at distance `s`. */
   onTrack(parts: Parts, s: number, offset: number, o: TrackPlaceOptions = {}) {
     const p = this.at(s, offset), y = o.onGround ? this.groundAt(p.x, p.z) : p.y;
@@ -138,7 +159,7 @@ export class Kit {
   addWorld(geo: THREE.BufferGeometry, paint: Paint, o: PartOptions = {}) { const p = new Parts().add(geo, paint, { ao: false, ...o }); this.place(p, 0, 0, 0); p.dispose(); }
 
   /**
-   * Sweeps a cross-section along the road. Profile points are [offset from the road edge outward, height]; with
+   * Sweeps a cross-section along the road, broken over gaps. Profile points are [offset from the road edge outward, height]; with
    * `mirror` it runs on both sides. Each quad gets its own vertices, so colours can change sharply (curbs, stripes).
    */
   extrude(profile: [number, number][], o: ExtrudeOptions) {
@@ -149,6 +170,7 @@ export class Kit {
       const pos: number[] = [], col: number[] = [], pts: TrackPoint[] = [];
       for (let i = p0; i <= Math.min(steps, p0 + piece); i++) pts.push(this.at(s0 + i * ds));
       for (let i = 0; i < pts.length - 1; i++) for (let k = 0; k < profile.length - 1; k++) {
+        if (this.gap(s0 + (p0 + i + .5) * ds)) continue;
         const a = pts[i], b = pts[i + 1], [x0, y0] = profile[k], [x1, y1] = profile[k + 1];
         // On the inside of a bend tighter than the profile's reach, points fold across another stretch of road.
         // Those sink below the surface so walls and curbs never stand on the track.
