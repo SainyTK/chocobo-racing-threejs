@@ -11,7 +11,33 @@ const skillPaths: Record<AbilityId, string> = {
   receive: 'M8 29v12h32V29M24 5v27M14 22l10 10 10-10',
   charge: 'm6 10 16 14L6 38M24 10l16 14-16 14',
 };
+const controlPaths = {
+  behind: 'M4 24q20-22 40 0-20 22-40 0ZM24 18a6 6 0 1 0 0 12 6 6 0 1 0 0-12',
+  rescue: 'M38 24a14 14 0 1 1-4-10M38 8v8h-8',
+  reverse: 'M24 8v30M12 26l12 12 12-12',
+  brake: 'M17 6h14l11 11v14L31 42H17L6 31V17ZM15 24h18',
+  drift: 'M12 42C12 24 22 14 38 14M31 7l7 7-7 7M5 32l7 2M7 23l7 3',
+  drive: 'M10 30 24 14l14 16M10 42l14-16 14 16',
+};
 const glyph = (path: string) => `<svg viewBox="0 0 48 48" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="${path}"/></svg>`;
+
+/**
+ * Two-thumb layout: the left thumb steers on a horizontal pad, the right thumb rests on DRIVE.
+ * DRIVE, DRIFT and BRAKE share a slide group so the right thumb can roll between them without lifting.
+ * DRIFT holds the accelerator too, so sliding off DRIVE keeps the racer driving.
+ */
 export function mobileControls(ability: AbilityId) {
-  return `<div class="touch-controls" aria-label="Touchscreen gamepad"><div class="steering-pad" role="group" aria-label="Direction controls"><div data-touch="joystick" class="joystick" role="group" aria-label="Driving joystick: up accelerate, down brake, left and right steer"><span class="stick-directions" aria-hidden="true">↑</span><span class="stick-knob"></span></div></div><div class="action-pad" role="group" aria-label="Race actions"><div class="utility-controls"><button data-touch="behind" aria-label="Look behind">↶</button><button data-touch="rescue" aria-label="Recover racer">↺</button></div><button data-touch="item" aria-label="Activate item" class="mobile-item"><span id="mobile-stones" class="mobile-stones"></span><small id="mobile-item-label">NO STONES</small></button><button data-touch="ability" aria-label="Activate ability: ${ABILITIES[ability].name}" class="mobile-ability">${glyph(skillPaths[ability])}<small>${ABILITIES[ability].name}</small><span id="mobile-ability-state"></span></button><button data-touch="drift" aria-label="Drift" class="mobile-drift">${glyph('M10 10Q0 24 10 38M38 10q10 14 0 28M24 7a17 17 0 1 0 0 34 17 17 0 1 0 0-34M19 17v14M29 17v14')}<small>DRIFT</small></button></div></div>`;
+  return `<div class="touch-controls" aria-label="Touchscreen gamepad">`
+    + `<div class="steering-side" role="group" aria-label="Direction controls">`
+    + `<div class="utility-controls"><button data-touch="behind" aria-label="Look behind">${glyph(controlPaths.behind)}</button><button data-touch="rescue" aria-label="Recover racer">${glyph(controlPaths.rescue)}</button><button data-touch="reverse" aria-label="Reverse">${glyph(controlPaths.reverse)}</button></div>`
+    + `<div data-touch="steer" class="steering-pad" role="group" aria-label="Steering pad: slide left or right"><span class="steer-arrow" aria-hidden="true">‹</span><span class="steer-knob"></span><span class="steer-arrow" aria-hidden="true">›</span></div>`
+    + `</div>`
+    + `<div class="action-pad" role="group" aria-label="Race actions">`
+    + `<button data-touch="ability" aria-label="Activate ability: ${ABILITIES[ability].name}" class="mobile-ability">${glyph(skillPaths[ability])}<small>${ABILITIES[ability].name}</small><span id="mobile-ability-state"></span></button>`
+    + `<button data-touch="item" aria-label="Activate item" class="mobile-item"><span id="mobile-stones" class="mobile-stones"></span><small id="mobile-item-label">NO STONES</small></button>`
+    + `<div class="pedals" data-touch-slide>`
+    + `<button data-touch="drift" data-hold="throttle drift" aria-label="Drift" class="mobile-drift">${glyph(controlPaths.drift)}<small>DRIFT</small></button>`
+    + `<button data-touch="brake" aria-label="Brake" class="mobile-brake">${glyph(controlPaths.brake)}<small>BRAKE</small></button>`
+    + `<button data-touch="throttle" aria-label="Drive" class="mobile-drive">${glyph(controlPaths.drive)}<small class="drive-label">DRIVE</small><small class="auto-label">AUTO</small></button>`
+    + `</div></div></div>`;
 }

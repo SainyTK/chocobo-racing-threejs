@@ -1,0 +1,64 @@
+/* HUD placement on touch layouts. Race info fills the top band, each readout sits above a thumb cluster,
+   and the centre of the screen stays clear for the player's racer in both orientations. */
+.touch-device {
+  --hud-top-band: max(50px, calc(var(--hud-unit) * 5.6 + 14px));
+  /* Bottom edge of the standings strip: race-wide banners start below it. */
+  --hud-standings-bottom: calc(var(--touch-top) + var(--hud-top-band) + var(--hud-unit) * 6.2 + 12px);
+  --readout-left-bottom: calc(var(--touch-bottom) + var(--steer-stack-h) + var(--touch-reach-gap));
+  --readout-right-bottom: calc(var(--touch-bottom) + var(--action-stack-h) + var(--touch-reach-gap));
+}
+.touch-device .powers, .touch-device .race-hint { display: none; }
+
+.touch-device .hud-top { top: var(--touch-top); left: var(--touch-left); right: var(--touch-right); gap: 10px; }
+.touch-device .lap-box > small { font-size: calc(var(--hud-unit) * 2); }
+.touch-device .lap-box strong { font-size: calc(var(--hud-unit) * 4.4); }
+.touch-device .lap-box em { font-size: calc(var(--hud-unit) * 2.6); }
+.touch-device .race-title small { font-size: max(9px, calc(var(--hud-unit) * 1.3)); }
+.touch-device .race-title strong { font-size: calc(var(--hud-unit) * 3.3); }
+.touch-device .race-actions > span { font-size: max(10px, calc(var(--hud-unit) * 1.2)); }
+.touch-device .race-actions button { min-width: 44px; min-height: 44px; font-size: max(18px, calc(var(--hud-unit) * 2.4)); }
+
+/* Standings sit on an opaque strip so they stay readable over the start arch and other scenery. */
+.touch-device .standings { top: calc(var(--touch-top) + var(--hud-top-band)); gap: max(3px, calc(var(--hud-unit) * .5)); }
+.touch-device .standings > div { width: calc(var(--hud-unit) * 7.4); background: #172653e8; border-color: #839ac1aa; }
+.touch-device .standings svg { width: calc(var(--hud-unit) * 3.6); height: calc(var(--hud-unit) * 3.6); }
+.touch-device .standings b { font-size: max(13px, calc(var(--hud-unit) * 1.9)); }
+.touch-device .standings span { font-size: max(8px, calc(var(--hud-unit) * 1.1)); }
+
+.touch-device .hud-bottom { display: contents; }
+.touch-device .position {
+  position: absolute;
+  left: var(--touch-left);
+  bottom: var(--readout-left-bottom);
+  min-width: 0;
+  padding: 0;
+}
+.touch-device .position > span { font-size: calc(var(--hud-unit) * 8); }
+.touch-device .position sup { font-size: calc(var(--hud-unit) * 2.8); }
+.touch-device .position small { font-size: max(8px, calc(var(--hud-unit) * 1.1)); letter-spacing: 2px; margin-top: calc(var(--hud-unit) * .8); }
+.touch-device .speed-box {
+  position: absolute;
+  right: var(--touch-right);
+  bottom: var(--readout-right-bottom);
+  width: calc(var(--hud-unit) * 12);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+}
+.touch-device .speed-box > strong { font-size: calc(var(--hud-unit) * 5.2); }
+.touch-device .speed-box > small { font-size: max(9px, calc(var(--hud-unit) * 1.4)); }
+.touch-device .speed-box > span { display: block; font-size: max(8px, calc(var(--hud-unit) * 1.1)); }
+.touch-device .meter { min-width: 0; margin: calc(var(--hud-unit) * .6) 0; }
+.touch-device #minimap {
+  position: absolute;
+  left: var(--touch-left);
+  bottom: calc(var(--readout-left-bottom) + var(--hud-unit) * 11);
+  width: calc(var(--hud-unit) * 13);
+  height: calc(var(--hud-unit) * 10.3);
+  opacity: .85;
+}
+
+/* The countdown sits high, above the rival name tags on the grid and clear of the player's racer. */
+.touch-device .countdown { top: calc(var(--hud-standings-bottom) + var(--hud-unit) * 2); }
+.touch-device .countdown strong { font-size: min(calc(var(--hud-unit) * 14), 17dvh); }
+.touch-device .countdown span { font-size: max(10px, calc(var(--hud-unit) * 1.6)); padding: 0 var(--touch-left); }

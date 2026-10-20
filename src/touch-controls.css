@@ -7,52 +7,30 @@ body.racing #world, body.racing .hud {
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior: none;
 }
-.touch-controls {
-  display: none;
-  --button-size: clamp(66px, 19dvh, 90px);
-  left: max(16px, env(safe-area-inset-left));
-  right: max(16px, env(safe-area-inset-right));
-  bottom: max(12px, env(safe-area-inset-bottom));
-  align-items: flex-end;
+.touch-controls { display: none; }
+.touch-device .touch-controls {
+  display: block;
+  position: absolute;
+  inset: auto var(--touch-right) var(--touch-bottom) var(--touch-left);
+  height: max(var(--steer-stack-h), var(--action-stack-h));
+  pointer-events: none;
+  font-family: 'Barlow Condensed', sans-serif;
 }
-.touch-device .touch-controls { display: flex; }
-.touch-controls > .steering-pad { display: block; }
-.joystick {
-  position: relative;
-  width: clamp(112px, 32dvh, 150px);
-  aspect-ratio: 1;
-  border: 2px solid #d5e7f6aa;
-  border-radius: 50%;
-  background: radial-gradient(circle, #a4d9fc22, #172b4f88);
+.touch-controls button, .steering-pad {
   pointer-events: auto;
   touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
 }
-.stick-knob {
-  position: absolute;
-  inset: 27%;
-  border: 2px solid #d1e9ff;
-  border-radius: 50%;
-  background: #719fcddd;
-  box-shadow: 0 3px 12px #0a183b88;
-  transform: translate(var(--stick-x, 0px), var(--stick-y, 0px));
-  pointer-events: none;
-}
-.stick-directions { position: absolute; top: 3px; width: 100%; text-align: center; color: #d1e9ff; font-size: 23px; }
-.touch-controls > .action-pad {
-  display: grid;
-  grid-template-columns: repeat(2, var(--button-size));
-  gap: 6px 10px;
-  justify-items: center;
-}
-.touch-controls .action-pad button {
-  width: var(--button-size);
-  height: var(--button-size);
+.touch-controls button {
   min-width: 0;
-  padding: 5px;
-  border-radius: 50%;
+  padding: 0;
   border: 2px solid #bce4ffbb;
+  border-radius: 50%;
   background: #27496dda;
   color: #e0f3ff;
+  box-shadow: 0 3px 10px #0a183b66;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -60,43 +38,90 @@ body.racing #world, body.racing .hud {
   gap: 1px;
   text-shadow: 1px 1px #152044;
 }
-.touch-controls button svg { width: 48%; height: 48%; flex-shrink: 0; }
-.touch-controls button small { font-size: 9px; line-height: 1.1; max-width: 100%; }
-.touch-controls .action-pad .utility-controls { grid-column: 1 / -1; display: flex; gap: 8px; }
-.touch-controls .utility-controls button { width: 32px; height: 32px; font-size: 22px; padding: 0; border-width: 1px; }
-.touch-controls .mobile-item { grid-column: 1 / -1; }
-.mobile-stones { display: flex; align-items: center; justify-content: center; position: relative; width: 100%; height: 70%; }
-.mobile-stones img { object-fit: contain; pointer-events: none; -webkit-user-drag: none; }
-.mobile-stones .current-stone { width: 65%; height: 100%; }
-.mobile-stones .next-stone { position: absolute; width: 24%; height: 30%; right: -1px; top: 0; }
-.mobile-stones .next-stone + .next-stone { top: 35%; }
-.mobile-stones > span { font-size: 35px; opacity: .6; }
-#mobile-ability-state { font-size: 9px; }
-.touch-controls .action-pad .mobile-ability { background: conic-gradient(#4c719c var(--charge, 0%), #20344fe6 0); }
+.touch-controls button svg { width: 46%; height: 46%; flex-shrink: 0; }
+.touch-controls button small { font-size: clamp(9px, 1.5vmin, 13px); font-weight: 700; letter-spacing: .5px; line-height: 1.1; max-width: 92%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.touch-controls button.pressed, .steering-pad.pressed { border-color: #ffe594; box-shadow: inset 0 0 0 3px #ffdc6666, 0 0 14px #ffe59466; }
+
+/* Left thumb: steering pad, with the rarely used actions out of its sliding path above it. */
+.steering-side { position: absolute; left: 0; bottom: 0; display: flex; flex-direction: column; align-items: flex-start; gap: var(--touch-reach-gap); }
+.utility-controls { display: flex; gap: var(--touch-gap); }
+.touch-controls .utility-controls button { width: var(--utility-size); height: var(--utility-size); border-width: 1px; background: #1d3354cc; }
+.touch-controls .utility-controls svg { width: 52%; height: 52%; }
+.steering-pad {
+  position: relative;
+  width: var(--steer-w);
+  height: var(--steer-h);
+  border: 2px solid #d5e7f6aa;
+  border-radius: calc(var(--steer-h) / 2);
+  background: linear-gradient(90deg, #a4d9fc33, #172b4f99 30% 70%, #a4d9fc33);
+  box-shadow: 0 3px 12px #0a183b66;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 calc(var(--steer-h) * .2);
+  color: #d1e9ff;
+  font-size: calc(var(--steer-h) * .45);
+  line-height: 1;
+}
+/* The pad's touch area reaches past its drawn edge, so a thumb that lands slightly outside still steers. */
+.steering-pad::before { content: ''; position: absolute; inset: calc(var(--touch-gap) * -1); border-radius: inherit; }
+.steer-arrow { pointer-events: none; opacity: .75; }
+.steer-knob {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: calc(var(--steer-h) * .76);
+  aspect-ratio: 1;
+  border: 2px solid #d1e9ff;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #a9cdf0, #5d8bbb);
+  box-shadow: 0 3px 12px #0a183b88;
+  transform: translate(calc(-50% + var(--steer-offset, 0) * (var(--steer-w) - var(--steer-h)) / 2), -50%);
+  pointer-events: none;
+}
+.steering-pad.pressed .steer-knob { border-color: #ffe594; }
+
+/* Right thumb rests on DRIVE; DRIFT and BRAKE sit one roll to the left, magic and the skill one reach above. */
+.touch-controls > .action-pad {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  display: grid;
+  grid-template-columns: var(--pedal-size) var(--drive-w);
+  grid-template-rows: var(--drive-w) calc(var(--touch-reach-gap) - var(--touch-gap)) var(--pedal-size) var(--pedal-size);
+  grid-template-areas: 'ability item' '. .' 'drift drive' 'brake drive';
+  gap: var(--touch-gap);
+  place-items: center;
+}
+.touch-controls .pedals { display: contents; }
+.touch-controls .mobile-ability { grid-area: ability; align-self: end; width: var(--pedal-size); height: var(--pedal-size); background: conic-gradient(#4c719c var(--charge, 0%), #20344fe6 0); }
 .touch-controls .mobile-ability.ready { border-color: #ffe594; }
-.touch-controls .action-pad button.pressed, .joystick.pressed { border-color: #ffe594; box-shadow: inset 0 0 0 2px #ffdc6666; background-color: #5377a1; }
-.touch-device .powers, .touch-device .race-hint { display: none; }
-.touch-device .hud-top { top: max(10px, env(safe-area-inset-top)); left: max(16px, env(safe-area-inset-left)); right: max(16px, env(safe-area-inset-right)); }
-.touch-device .hud-bottom { left: 50%; right: auto; bottom: max(14px, env(safe-area-inset-bottom)); transform: translateX(-50%); gap: 16px; flex-wrap: nowrap; }
-.touch-device .position { position: static; min-width: 50px; padding: 0; }
-.touch-device .position > span { font-size: 48px; }
-.touch-device .position sup { font-size: 20px; }
-.touch-device .position small { font-size: 8px; letter-spacing: 1px; margin-top: 6px; }
-.touch-device .speed-box { width: 65px; min-width: 0; padding: 0; }
-.touch-device .speed-box > strong { font-size: 32px; }
-.touch-device .speed-box > small { font-size: 9px; }
-.touch-device .meter { min-width: 0; }
-.touch-device #minimap { position: absolute; bottom: 72px; left: 50%; transform: translateX(-50%); width: 85px; height: 68px; opacity: .8; }
-@media (orientation: portrait) {
-  .touch-controls { --button-size: clamp(62px, 18vw, 82px); }
-  .joystick { width: clamp(108px, 30vw, 144px); }
-  .touch-device .hud-bottom { bottom: calc(245px + env(safe-area-inset-bottom)); }
-  .touch-device #minimap { display: none; }
+#mobile-ability-state { font-size: clamp(9px, 1.4vmin, 12px); font-weight: 700; }
+.touch-controls .mobile-item { grid-area: item; width: var(--drive-w); height: var(--drive-w); }
+.touch-controls .mobile-drift { grid-area: drift; width: var(--pedal-size); height: var(--pedal-size); background: #7a5524dd; border-color: #ffd68fcc; }
+.touch-controls .mobile-brake { grid-area: brake; width: var(--pedal-size); height: var(--pedal-size); background: #7a2e3add; border-color: #ffb3bccc; }
+.touch-controls .mobile-drive {
+  grid-area: drive;
+  width: var(--drive-w);
+  height: 100%;
+  border-radius: calc(var(--drive-w) / 2);
+  background: linear-gradient(#3f9a62, #24653fe6);
+  border-color: #c6f5d2;
 }
-@media (max-height: 450px) and (orientation: landscape) {
-  .touch-device .standings { top: 64px; }
-  .touch-device .standings > div { width: 36px; }
-  .touch-device .standings svg, .touch-device .standings span { display: none; }
-  .touch-device .standings b { position: static; font-size: 12px; }
-  .touch-device .countdown span { max-width: 270px; margin: 8px auto; }
-}
+.touch-controls .mobile-drive svg { width: 50%; height: auto; }
+.touch-controls .mobile-drive small { font-size: clamp(12px, 2vmin, 17px); letter-spacing: 1px; }
+.touch-controls .mobile-drive .auto-label { display: none; }
+.auto-throttle .touch-controls .mobile-drive { background: linear-gradient(#56b37a, #2f7d4fe6); box-shadow: inset 0 0 0 3px #c6f5d266; }
+.auto-throttle .touch-controls .mobile-drive .drive-label { display: none; }
+.auto-throttle .touch-controls .mobile-drive .auto-label { display: block; }
+.touch-controls .mobile-drift.pressed { background-color: #a8742e; }
+.touch-controls .mobile-brake.pressed { background-color: #a83e4e; }
+.touch-controls .mobile-drive.pressed { background: linear-gradient(#5cc283, #2f8a53); }
+.touch-controls .mobile-ability.pressed, .touch-controls .mobile-item.pressed, .touch-controls .utility-controls button.pressed { background-color: #5377a1; }
+
+.mobile-stones { display: flex; align-items: center; justify-content: center; position: relative; width: 100%; height: 62%; }
+.mobile-stones img { object-fit: contain; pointer-events: none; -webkit-user-drag: none; }
+.mobile-stones .current-stone { width: 62%; height: 100%; }
+.mobile-stones .next-stone { position: absolute; width: 22%; height: 28%; right: 4%; top: 2%; }
+.mobile-stones .next-stone + .next-stone { top: 34%; }
+.mobile-stones > span { font-size: calc(var(--drive-w) * .36); opacity: .6; }

@@ -1,10 +1,10 @@
-/** Digital axes match ArrowUp/Down/Left/Right, including diagonal driving. */
-export function joystickActions(x: number, y: number): string[] {
-  const length = Math.hypot(x, y);
-  if (length < .22) return [];
-  x /= Math.max(1, length); y /= Math.max(1, length);
-  return [x < -.3 ? 'left' : x > .3 ? 'right' : '', y < -.3 ? 'throttle' : y > .3 ? 'brake' : ''].filter(Boolean);
-}
+import { steerFromOffset } from './touch-steering.ts';
+
+interface Hold { control: HTMLElement; captor: HTMLElement; actions: string[] }
+interface Steering { pointerId: number; pad: HTMLElement; value: number }
+
+const controlAt = (target: EventTarget | null) => target instanceof Element ? target.closest<HTMLElement>('[data-touch]') : null;
+const actionsOf = (control: HTMLElement) => control.dataset.hold?.split(' ') ?? [control.dataset.touch!];
 
 export function installTouchControls(options: {
   held: Set<string>;
@@ -13,27 +13,37 @@ export function installTouchControls(options: {
   onCancel: (action: string) => void;
   onLayoutChange: () => void;
 }) {
-  const pointers = new Map<number, { button: HTMLElement; actions: string[]; joystick: boolean }>();
+  const holds = new Map<number, Hold>();
+  let steering: Steering | null = null, pressed = new Set<HTMLElement>();
   const compact = matchMedia('(max-width: 900px)');
   const coarse = matchMedia('(any-pointer: coarse)');
-  const sync = () => {
+  const render = () => {
     options.held.clear();
-    for (const p of pointers.values()) for (const action of p.actions) options.held.add(action);
+    const active = new Set<HTMLElement>();
+    for (const hold of holds.values()) {
+      active.add(hold.control);
+      for (const action of hold.actions) options.held.add(action);
+    }
+    if (steering) active.add(steering.pad);
+    for (const control of pressed) if (!active.has(control)) control.classList.remove('pressed');
+    for (const control of active) control.classList.add('pressed');
+    pressed = active;
   };
   const release = (pointerId: number) => {
-    const entry = pointers.get(pointerId);
-    if (!entry) return;
-    pointers.delete(pointerId);
-    sync();
-    if (![...pointers.values()].some(p => p.button === entry.button)) {
-      entry.button.classList.remove('pressed');
-      entry.button.style.removeProperty('--stick-x');
-      entry.button.style.removeProperty('--stick-y');
+    const hold = holds.get(pointerId);
+    const captor = hold?.captor ?? (steering?.pointerId === pointerId ? steering.pad : null);
+    if (!captor) return;
+    holds.delete(pointerId);
+    if (steering?.pointerId === pointerId) {
+      steering.pad.style.removeProperty('--steer-offset');
+      steering = null;
     }
-    if (entry.button.hasPointerCapture(pointerId)) entry.button.releasePointerCapture(pointerId);
+    render();
+    if (captor.hasPointerCapture(pointerId)) captor.releasePointerCapture(pointerId);
   };
   const reset = () => {
-    for (const id of [...pointers.keys()]) release(id);
+    for (const id of [...holds.keys()]) release(id);
+    if (steering) release(steering.pointerId);
     options.held.clear();
   };
   const updateLayout = () => {
@@ -49,48 +59,58 @@ export function installTouchControls(options: {
   window.addEventListener('blur', reset);
   document.addEventListener('visibilitychange', reset);
   updateLayout();
-  const move = (e: PointerEvent) => {
-    const entry = pointers.get(e.pointerId);
-    if (!entry?.joystick) return;
-    const rect = entry.button.getBoundingClientRect(), radius = rect.width / 2;
-    const x = (e.clientX - rect.left - radius) / radius, y = (e.clientY - rect.top - rect.height / 2) / radius;
-    entry.actions = joystickActions(x, y);
-    const scale = radius * .52 / Math.max(1, Math.hypot(x, y));
-    entry.button.style.setProperty('--stick-x', `${x * scale}px`);
-    entry.button.style.setProperty('--stick-y', `${y * scale}px`);
-    sync();
+  const steerTo = (e: PointerEvent) => {
+    const rect = steering!.pad.getBoundingClientRect();
+    const offset = (e.clientX - rect.left - rect.width / 2) / (rect.width / 2);
+    steering!.value = steerFromOffset(offset);
+    steering!.pad.style.setProperty('--steer-offset', String(Math.max(-1, Math.min(1, offset))));
   };
   document.addEventListener('pointerdown', e => {
-    const button = e.target instanceof Element ? e.target.closest<HTMLElement>('[data-touch]') : null;
-    if (!button || !options.enabled() || e.button !== 0) return;
+    const control = controlAt(e.target);
+    if (!control || !options.enabled() || e.button !== 0) return;
     e.preventDefault();
-    const action = button.dataset.touch!, joystick = action === 'joystick';
-    // A second finger must not take ownership of the steering thumb.
-    if (joystick && [...pointers.values()].some(p => p.joystick)) return;
-    pointers.set(e.pointerId, { button, actions: joystick ? [] : [action], joystick });
-    button.classList.add('pressed');
-    button.setPointerCapture(e.pointerId);
-    if (joystick) move(e); else sync();
+    const action = control.dataset.touch!;
+    if (action === 'steer') {
+      // A second finger must not take ownership of the steering thumb.
+      if (steering) return;
+      steering = { pointerId: e.pointerId, pad: control, value: 0 };
+      steerTo(e);
+    } else holds.set(e.pointerId, { control, captor: control, actions: actionsOf(control) });
+    control.setPointerCapture(e.pointerId);
+    render();
     options.onPress(action);
   });
-  document.addEventListener('pointermove', move);
+  document.addEventListener('pointermove', e => {
+    if (steering?.pointerId === e.pointerId) {
+      steerTo(e);
+      return;
+    }
+    // Inside a slide group the thumb rolls from pedal to pedal without lifting.
+    const hold = holds.get(e.pointerId), group = hold?.control.closest('[data-touch-slide]');
+    if (!hold || !group) return;
+    const next = controlAt(document.elementFromPoint(e.clientX, e.clientY));
+    if (!next || next === hold.control || next.closest('[data-touch-slide]') !== group) return;
+    holds.set(e.pointerId, { ...hold, control: next, actions: actionsOf(next) });
+    render();
+    options.onPress(next.dataset.touch!);
+  });
   for (const type of ['pointerup', 'pointercancel', 'lostpointercapture'] as const) {
     document.addEventListener(type, e => {
       if (type !== 'pointerup') {
-        for (const action of pointers.get(e.pointerId)?.actions || []) options.onCancel(action);
+        for (const action of holds.get(e.pointerId)?.actions || []) options.onCancel(action);
       }
       release(e.pointerId);
     });
   }
   const gameTarget = (target: EventTarget | null) => target instanceof Element && !!target.closest('#world,.hud') && !target.closest('input,textarea,select,[contenteditable]');
-  for (const type of ['contextmenu', 'selectstart', 'dragstart', 'gesturestart', 'gesturechange', 'touchmove']) {
+  for (const type of ['contextmenu', 'selectstart', 'dragstart', 'gesturestart', 'gesturechange', 'touchmove', 'dblclick']) {
     document.addEventListener(type, e => {
       if (options.enabled() && gameTarget(e.target)) e.preventDefault();
     }, { passive: false });
   }
   document.addEventListener('click', e => {
-    const button = e.target instanceof Element ? e.target.closest<HTMLElement>('[data-touch]') : null;
-    if (button && e.detail === 0 && options.enabled()) options.onPress(button.dataset.touch!);
+    const control = controlAt(e.target);
+    if (control && e.detail === 0 && options.enabled()) options.onPress(control.dataset.touch!);
   });
-  return { reset };
+  return { reset, steer: () => steering?.value ?? 0 };
 }
