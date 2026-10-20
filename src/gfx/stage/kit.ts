@@ -136,11 +136,11 @@ export class Kit {
       if (!chunk.has(layer)) chunk.set(layer, []); chunk.get(layer)!.push(c);
     }
   }
-  /** True within a couple of metres of a shortcut's driving surface. */
-  onShortcut(x: number, z: number) {
+  /** True within `margin` metres of a shortcut's driving surface. */
+  onShortcut(x: number, z: number, margin = 2.5) {
     for (const path of shortcutPaths(this.id)) {
       const box = this.shortcutBox(path); if (x < box[0] || x > box[1] || z < box[2] || z > box[3]) continue;
-      const q = projectOnShortcut(path, x, z); if (q.u > 0 && q.u < 1 && Math.abs(q.x) < path.shortcut.width + 2.5) return true;
+      const q = projectOnShortcut(path, x, z); if (q.u > 0 && q.u < 1 && Math.abs(q.x) < path.shortcut.width + margin) return true;
     }
     return false;
   }
@@ -159,7 +159,7 @@ export class Kit {
   addWorld(geo: THREE.BufferGeometry, paint: Paint, o: PartOptions = {}) { const p = new Parts().add(geo, paint, { ao: false, ...o }); this.place(p, 0, 0, 0); p.dispose(); }
 
   /**
-   * Sweeps a cross-section along the road, broken over gaps. Profile points are [offset from the road edge outward, height]; with
+   * Sweeps a cross-section along the road, broken over gaps and where shortcuts pass. Profile points are [offset from the road edge outward, height]; with
    * `mirror` it runs on both sides. Each quad gets its own vertices, so colours can change sharply (curbs, stripes).
    */
   extrude(profile: [number, number][], o: ExtrudeOptions) {
@@ -179,6 +179,8 @@ export class Kit {
           return [px, r.d < Math.min(o - .6, this.w - .2) ? Math.min(p.y + y, r.y - 3) : p.y + y, pz];
         };
         const A = v(a, x0, y0), B = v(a, x1, y1), C = v(b, x0, y0), D = v(b, x1, y1);
+        // Shortcuts cut straight through curbs, shoulders and walls, leaving a clean opening.
+        if ([A, B, C, D].some(p => this.onShortcut(p[0], p[2], .4))) continue;
         if (side > 0) pos.push(...A, ...C, ...B, ...B, ...C, ...D); else pos.push(...A, ...B, ...C, ...B, ...D, ...C);
         if (typeof o.paint === 'function') o.paint(s0 + (p0 + i) * ds, k, p0 + i, c); else c.set(o.paint);
         for (let j = 0; j < 6; j++) col.push(c.r, c.g, c.b);

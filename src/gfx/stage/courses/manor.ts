@@ -178,9 +178,9 @@ function cageGantry(h: Hazard) {
   return p;
 }
 
-/** A sheet ghost drifting across the hall: glowing body and tail, round dark eyes and a gaping mouth, arms raised. Faces +z. */
+/** A sheet ghost drifting across the hall: glowing body and tail, round dark eyes and a gaping mouth, arms raised. Faces +z. The glow is kept dim so bloom does not wash out its face. */
 function ghost() {
-  const p = new Parts(), body = '#bfe8ff';
+  const p = new Parts(), body = '#7aa8c4';
   p.add(ellipsoid([.95, 1.05, .9], [0, 2.1, 0]), body, { layer: 'glow', ao: false });
   p.add(lathe([[.95, 1.6], [.9, 1.1], [.6, .7], [.25, .35], [0, .15]], [0, 0, 0], [0, 0, 0], 12), body, { layer: 'glow', ao: false });
   for (const s of [-1, 1]) {
@@ -330,7 +330,7 @@ export const manor: CourseArt = {
   ramp: { deck: C.slateLight, stripe: C.pumpkin, side: C.slate },
   hazards: {
     cage: { mover: cage, base: cageGantry, warn: '#be87d5' },
-    ghost: { mover: ghost },
+    ghost: { mover: () => new Parts().include(ghost(), [0, 0, 0], 0, 1.3) },
   },
   signs: { board: '#2a2238', arrow: '#ffb84a', post: '#1d1a26' },
   ambient: [

@@ -23,7 +23,7 @@ function dangerous(h: Hazard, time: number, x: number, margin: number) {
 /** Picks the lane nearest `lane` that is clear of hazards and patches over the next stretch; brakes when every lane is blocked. */
 function clearLane(r: Race, p: Racer, i: number, lane: number) {
   const layout = courseLayout(r.track), w = TRACKS[r.track].width, speed = Math.max(12, p.speed);
-  const lanes = [lane, ...[-.75, -.5, -.25, 0, .25, .5, .75].map(k => k * w).sort((a, b) => Math.abs(a - lane) - Math.abs(b - lane))];
+  const lanes = [lane, ...[-1, -.75, -.5, -.25, 0, .25, .5, .75, 1].map(k => k * (w - 1.4)).sort((a, b) => Math.abs(a - lane) - Math.abs(b - lane))];
   const ahead = (s: number, from: number, to: number) => { const a = along(r.track, p.s, s); return a > from && a < to; };
   const blocked = (x: number) => {
     for (const patch of layout.patches) if (ahead(patch.s + patch.length / 2, -patch.length / 2, 40 + patch.length / 2) && Math.abs(x - patch.x) < patch.width / 2 + 1.2) return true;
@@ -51,10 +51,9 @@ export function courseLine(r: Race, p: Racer, lane: number, look: number): Cours
   }
   for (const [k, path] of paths.entries()) {
     const to = along(r.track, p.s, path.shortcut.from);
-    if (to > look + 25 || to < -path.skipped * .3 || coin(i, k + 7, p.lap) < .35) continue;
-    // Aim into the mouth from the road edge, then along the shortcut.
-    const u = (look - to) / path.skipped;
-    return { target: u > .06 ? shortcutPoint(path, u, 0) : routePoint(r.track, MAIN_ROUTE, path.shortcut.from + 4, path.shortcut.side * (TRACKS[r.track].width - 1)), brake: false, shortcut: false };
+    if (to > look + 20 || to < -path.skipped * .3 || coin(i, k + 7, p.lap) < .35) continue;
+    // Aim just inside the mouth until it is within reach, so the line crosses the road edge right at the opening, then along the shortcut.
+    return { target: shortcutPoint(path, clamp((look - to) / path.skipped, .05, 1), 0), brake: false, shortcut: false };
   }
   const gapRamp = layout.ramps.find(ramp => layout.gaps.some(g => Math.abs(along(r.track, ramp.s, g.s)) < 10) && along(r.track, p.s, ramp.s) > -2 && along(r.track, p.s, ramp.s) < 70);
   const line = gapRamp ? { lane: gapRamp.x, brake: false } : clearLane(r, p, i, lane);

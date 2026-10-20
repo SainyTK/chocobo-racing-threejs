@@ -23,7 +23,7 @@ const col = (s: string) => new THREE.Color(s);
  * Silver with a candy-striped handle, so it reads as an obstacle from far down the road.
  */
 function cutlery(h: Hazard) {
-  const p = new Parts(), silver = grad('#8e97a8', '#eef2f8', 0, 6), lean: [number, number, number] = [-.32, 0, h.x > 0 ? .12 : -.12], g = new Parts();
+  const p = new Parts(), silver = grad('#8e97a8', '#eef2f8', 0, 6), lean: [number, number, number] = [-.18, 0, h.x > 0 ? .1 : -.1], g = new Parts();
   if (h.x > 0) {
     for (const x of [-.6, -.2, .2, .6]) g.add(prism(.07, .1, 1.8, 6, [x, 0, 0]), silver, { ao: false });
     g.add(rbox(1.5, .55, .22, .1, [0, 1.95, 0]), silver, { ao: false });
@@ -34,9 +34,10 @@ function cutlery(h: Hazard) {
     g.add(rbox(1.4, .3, .3, .1, [0, 2.75, 0]), '#c9d0dc', { ao: false });
   }
   g.add(lathe([[.24, 0], [.3, 1.4], [.36, 2.6], [.3, 3], [0, 3.05]], [0, 3.1, 0], [0, 0, 0], 10), stripes(C.red, C.icing, .45, 'y', .6), { ao: false });
-  p.include(g, [0, 0, 0]); for (const list of p.layers.values()) for (const geo of list) geo.rotateX(lean[0]).rotateZ(lean[2]);
+  p.include(g, [0, 0, 0], 0, 1.6); for (const list of p.layers.values()) for (const geo of list) geo.rotateX(lean[0]).rotateZ(lean[2]);
   g.dispose();
-  p.add(disc(1.1, 14, [0, .05, 0]), C.chocDark, { ao: false });
+  // A crack in the biscuit where it went in, lifted clear of the road's depth offset.
+  p.add(disc(1.6, 14, [0, .12, 0]), C.chocDark, { ao: false });
   return p;
 }
 

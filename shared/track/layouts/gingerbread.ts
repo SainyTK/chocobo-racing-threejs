@@ -8,7 +8,7 @@ export const gingerbread: CourseLayout = {
   gaps: [],
   shortcuts: [{ from: 624, to: 750, side: 1, bulge: 4, width: 3.2, edge: 'rough', surface: 'slip' }],
   hazards: [
-    { kind: 'cutlery', s: 990, x: 6, length: 1.6, width: 2.2, stun: .9, text: 'Bonk!' },
-    { kind: 'cutlery', s: 1012, x: -5, length: 1.6, width: 2.2, stun: .9, text: 'Bonk!' },
+    { kind: 'cutlery', s: 990, x: 6, length: 1.6, width: 2.6, stun: .9, text: 'Bonk!' },
+    { kind: 'cutlery', s: 1012, x: -5, length: 1.6, width: 2.6, stun: .9, text: 'Bonk!' },
   ],
 };

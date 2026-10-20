@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import * as THREE from 'three';
 import { buildCourse } from '../src/gfx/stage/course.ts';
 import { TrackField } from '../src/gfx/stage/terrain.ts';
-import { TRACKS, TRACK_IDS, trackTable } from '../shared/track/index.ts';
+import { TRACKS, TRACK_IDS, projectOnShortcut, shortcutPaths, shortcutPoint, trackTable } from '../shared/track/index.ts';
 
 const triangles = (g: THREE.BufferGeometry) => (g.index ? g.index.count : g.attributes.position.count) / 3;
 
@@ -29,8 +29,10 @@ describe.each(TRACK_IDS)('course %s', id => {
     const field = new TrackField(id), w = TRACKS[id].width, v = new THREE.Vector3(), blocked: string[] = [];
     // The grid is a fast filter. Candidates are confirmed against the exact centre line, using the highest surface
     // where two stretches of road overlap (a start on a corner apex).
+    // Shortcuts are checked the same way against their own surface.
     const table = trackTable(id), exact = (p: THREE.Vector3) => {
       let top = -Infinity; for (const t of table) if (Math.hypot(t.x - p.x, t.z - p.z) < w + .5) top = Math.max(top, t.y);
+      for (const path of shortcutPaths(id)) { const q = projectOnShortcut(path, p.x, p.z); if (q.u > 0 && q.u < 1 && Math.abs(q.x) < path.shortcut.width - .3) top = Math.max(top, shortcutPoint(path, q.u).y); }
       return top > -Infinity && p.y > top + .3 && p.y < top + 9;
     };
     for (const m of meshes) {

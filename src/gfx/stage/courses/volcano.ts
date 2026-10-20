@@ -52,25 +52,34 @@ function magmaRock(r: Rng, size = 1) {
   return p;
 }
 
-/** Falling boulder: a magma rock as wide as its footprint, crust split over a glowing core. */
+/** Falling boulder as wide as its footprint: dark crust plates split over a molten core, kept deep red so it reads as hot rock. */
 function fallingBoulder(h: Hazard) {
-  return magmaRock(rng(Math.round(h.s)), Math.min(h.width, h.length) * .5);
+  const p = new Parts(), r = rng(Math.round(h.s)), size = Math.min(h.width, h.length) * .5;
+  p.add(rock([size * .8, size * .7, size * .8], [0, size * .75, 0], r() * 9), '#9a2a08', { layer: 'glow', flat: true, ao: false });
+  for (let i = 0; i < 6; i++) {
+    const a = i / 6 * 6.28 + r() * .4, up = i % 2 ? .35 : -.2;
+    p.add(rock([size * .6, size * .5, size * .6], [Math.cos(a) * size * .4, size * (.75 + up), Math.sin(a) * size * .4], r() * 99, [0, a, 0]), grad(C.basaltDark, C.basalt, 0, size * 1.6), { flat: true, ao: false });
+  }
+  return p;
 }
 
 /** Geyser vent flush with the road: a cracked, glowing crust ring a racer drives straight over between eruptions. */
 function geyserVent(h: Hazard) {
   const p = new Parts(), R = Math.min(h.width, h.length) * .5;
-  p.add(disc(R, 18, [0, .04, 0]), C.basaltDark, { ao: false });
-  p.add(disc(R * .62, 14, [0, .07, 0]), C.magma, { layer: 'glow', ao: false });
+  // Lifted clear of the road, which renders with a depth offset of its own.
+  p.add(disc(R, 18, [0, .12, 0]), C.basaltDark, { ao: false });
+  p.add(disc(R * .62, 14, [0, .16, 0]), '#8a2a0a', { layer: 'glow', ao: false });
   for (let i = 0; i < 9; i++) { const a = i / 9 * 6.28; p.add(rock([R * .22, .16, R * .18], [Math.cos(a) * R * .82, .02, Math.sin(a) * R * .82], i * 7, [0, a, 0]), C.basalt, { flat: true, ao: false }); }
   return p;
 }
 
-/** Erupting lava column, unit height scaled by the animation: a glowing core, a darker crusted sheath and a spray of blobs on top. */
+/** Erupting lava plume, unit height scaled by the animation: a molten core wrapped in lumpy surging blobs, splashing over at the top. */
 function lavaColumn(h: Hazard) {
-  const p = new Parts(), R = Math.min(h.width, h.length) * .42, H = 11;
-  p.add(lathe([[R, 0], [R * .78, H * .3], [R * .7, H * .75], [R * .95, H * .92], [R * .5, H], [0, H * 1.02]], [0, 0, 0], [0, 0, 0], 12), grad(C.magma, C.flame, 0, H), { layer: 'glow', ao: false });
-  for (let i = 0; i < 6; i++) { const a = i / 6 * 6.28; p.add(bead(R * .28, [Math.cos(a) * R * .9, H * (.94 + (i % 3) * .05), Math.sin(a) * R * .9]), C.flame, { layer: 'glow', ao: false }); }
+  const p = new Parts(), R = Math.min(h.width, h.length) * .4, H = 11, r = rng(Math.round(h.s));
+  // Glow colours are kept deep: the bloom pass lifts them to molten orange instead of washing them out to white.
+  p.add(lathe([[R * .8, 0], [R * .62, H * .35], [R * .55, H * .8], [R * .4, H], [0, H * 1.04]], [0, 0, 0], [0, 0, 0], 10), grad('#7a1804', '#b04a14', 0, H), { layer: 'glow', ao: false });
+  for (let i = 0; i < 9; i++) { const y = H * (.08 + i * .1), a = r() * 6.28; p.add(blob(R * (.75 - i * .04), [Math.cos(a) * R * .2, y, Math.sin(a) * R * .2], i * 3, .3), i % 2 ? '#8a2206' : '#a8380c', { layer: 'glow', ao: false }); }
+  for (let i = 0; i < 7; i++) { const a = i / 7 * 6.28; p.add(blob(R * .32, [Math.cos(a) * R * .95, H * (.9 + (i % 3) * .06), Math.sin(a) * R * .95], i * 5, .3), '#c0581a', { layer: 'glow', ao: false }); }
   return p;
 }
 
@@ -299,7 +308,7 @@ export const volcano: CourseArt = {
   start: { pillar: '#3a2a2e', trim: '#c8a070', banner: '#8a1f1a', text: '#ffd27a', light: '#ff9a3a', flags: ['#c22a1a', '#ffb347', '#2a1a1e'] },
   patches: { slow: 'tar', slip: 'oil' },
   hazards: {
-    boulder: { mover: fallingBoulder, warn: '#1a0a06' },
+    boulder: { mover: fallingBoulder, warn: '#ffb347' },
     geyser: { mover: lavaColumn, base: geyserVent, warn: '#ff7a1a' },
   },
   signs: { board: '#2a2226', arrow: '#ff9a3a', post: '#5a4a48' },

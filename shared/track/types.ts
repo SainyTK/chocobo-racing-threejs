@@ -32,7 +32,7 @@ export type ShortcutEdge = 'wall' | 'fall' | 'rough';
  * and between those it bows `bulge` metres sideways from the straight line joining its ends (positive bows further out to `side`).
  * Progress along it counts as the main-road distance it skips, so a shortcut is shorter to drive but never skips a lap gate.
  */
-export interface Shortcut { from: number; to: number; side: 1 | -1; bulge: number; width: number; edge: ShortcutEdge; surface?: PatchSurface; rise?: number }
+export interface Shortcut { from: number; to: number; side: 1 | -1; bulge: number; width: number; edge: ShortcutEdge; surface?: PatchSurface }
 /**
  * A timed hazard, deterministic from race time so the server, prediction and every client agree.
  * Each `period` seconds (shifted by `phase`), it warns for `warn` seconds and then strikes for `strike` seconds; with no period it is always live.

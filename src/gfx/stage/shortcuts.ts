@@ -29,15 +29,36 @@ function strip(kit: Kit, path: ShortcutPath, o0: number, o1: number, y0: number,
   return g;
 }
 
-/** Wall or lip profile swept along both edges, painted like the course's own barriers. */
+/** Wall or lip profile swept along both edges, painted like the course's own barriers. Each strip faces inward, upward or outward. */
 function edges(kit: Kit, path: ShortcutPath, style: ShortcutStyle) {
-  const sc = path.shortcut, parts = new Parts(), c = shortcutPoint(path, .5);
+  const sc = path.shortcut, parts = new Parts(), c = shortcutPoint(path, .5), m = shortcutPoint(path, .5, 1);
+  const leftward = new THREE.Vector3(m.x - c.x, 0, m.z - c.z).normalize(), up = new THREE.Vector3(0, 1, 0);
   // Built around the shortcut's middle, so it lands in the right scenery chunk for culling.
-  const add = (o0: number, o1: number, y0: number, y1: number, paint: string) => { for (const side of [-1, 1]) { const g = strip(kit, path, side * o0, side * o1, y0, y1, .6, 1).translate(-c.x, -c.y, -c.z); if (side < 0) g.index!.array.reverse(); parts.add(g, paint, { ao: false }); } };
-  if (sc.edge === 'wall') { add(sc.width + .1, sc.width + .1, 0, 1.2, style.wall); add(sc.width + .1, sc.width + .6, 1.2, 1.2, style.cap); add(sc.width + .6, sc.width + .6, 1.2, -.5, style.wall); }
-  else if (sc.edge === 'fall') { add(sc.width, sc.width + .5, .02, .18, style.cap); add(sc.width + .5, sc.width * .4, .18, -3.2, style.wall); }
-  else add(sc.width, sc.width + 1.4, .02, -.25, style.cap);
+  const add = (o0: number, o1: number, y0: number, y1: number, paint: string, facing: 'in' | 'up' | 'out') => {
+    for (const side of [-1, 1]) {
+      const g = strip(kit, path, side * o0, side * o1, y0, y1, .6, 1).translate(-c.x, -c.y, -c.z), n = g.attributes.normal as THREE.BufferAttribute, mid = g.index!.array[Math.floor(g.index!.count / 6) * 3];
+      const want = facing === 'up' ? up : leftward.clone().multiplyScalar(facing === 'in' ? -side : side);
+      if (n.getX(mid) * want.x + n.getY(mid) * want.y + n.getZ(mid) * want.z < 0) { g.index!.array.reverse(); g.computeVertexNormals(); }
+      parts.add(g, paint, { ao: false });
+    }
+  };
+  if (sc.edge === 'wall') { add(sc.width + .1, sc.width + .1, 0, 1.2, style.wall, 'in'); add(sc.width + .1, sc.width + .6, 1.2, 1.2, style.cap, 'up'); add(sc.width + .6, sc.width + .6, 1.2, -.5, style.wall, 'out'); }
+  else if (sc.edge === 'fall') { add(sc.width, sc.width + .5, .02, .18, style.cap, 'up'); add(sc.width + .5, sc.width * .4, .18, -3.2, style.wall, 'out'); }
+  else add(sc.width, sc.width + 1.4, .02, -.25, style.cap, 'up');
   kit.place(parts.bake(), c.x, c.y, c.z, { shortcut: true }); parts.dispose();
+}
+
+/**
+ * Spots every `step` metres along a shortcut, `offset` from its centre line, that lie clear of the main road.
+ * Courses dress their shortcuts with these, so nothing they add stands in the road at a mouth or exit.
+ */
+export function shortcutSpots(kit: Kit, path: ShortcutPath, step: number, offset = 0) {
+  const spots: { x: number; y: number; z: number; yaw: number; u: number }[] = [];
+  for (let d = step / 2; d < path.length; d += step) {
+    const u = d / path.length, q = shortcutPoint(path, u, offset);
+    if (Math.abs(projectOnTrack(kit.id, q.x, q.z, path.shortcut.from + u * path.skipped).offset) > kit.w + 1.2) spots.push({ ...q, u });
+  }
+  return spots;
 }
 
 /**

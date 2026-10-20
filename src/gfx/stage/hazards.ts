@@ -18,7 +18,7 @@ function meshes(parts: Parts, name: string) {
   return g;
 }
 
-/** Pulsing striped decal marking where a hazard is about to strike. */
+/** Pulsing striped decal marking where a hazard is about to strike, with a shadow that darkens its middle as the strike nears. */
 function warnMaterial(kit: Kit, color: string) {
   return kit.own(new THREE.ShaderMaterial({
     transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4,
@@ -28,7 +28,8 @@ function warnMaterial(kit: Kit, color: string) {
       void main(){ vec2 p = abs(vUv - .5) * 2.; float d = max(p.x, p.y), rim = smoothstep(.72, .86, d) * smoothstep(1., .94, d);
         float stripes = step(.5, fract((vUv.x + vUv.y) * 4. - uTime * 2.)) * smoothstep(1., .9, d) * .45;
         float pulse = .65 + .35 * sin(uTime * 14.);
-        gl_FragColor = vec4(uColor, (rim + stripes) * uAmount * pulse); }`,
+        float edge = rim + stripes, shade = smoothstep(.95, .4, d) * .5 * uAmount;
+        gl_FragColor = vec4(uColor * edge / max(.001, edge + shade), max(edge * uAmount * pulse, shade)); }`,
   }));
 }
 
@@ -51,7 +52,8 @@ export class HazardViews {
         // The decal covers everywhere the hazard can strike: its footprint, stretched across a crossing's whole path.
         const span = h.motion === 'cross' ? Math.abs(h.amp ?? 0) + h.width : h.width, centre = h.motion === 'cross' ? h.x + (h.amp ?? 0) / 2 : h.x, p = kit.at(h.s, centre);
         warn = warnMaterial(kit, a.warn);
-        const decal = new THREE.Mesh(new THREE.PlaneGeometry(span, h.length).rotateX(-Math.PI / 2), warn); decal.name = 'hazard warning'; decal.renderOrder = 2;
+        // A little larger than the strike zone, so it shows around the hazard's own model.
+        const decal = new THREE.Mesh(new THREE.PlaneGeometry(span + 2, h.length + 2).rotateX(-Math.PI / 2), warn); decal.name = 'hazard warning'; decal.renderOrder = 2;
         decal.position.set(p.x, p.y + .08, p.z); decal.rotation.y = p.yaw; kit.add(decal);
       }
       this.views.push({ h, motion, mover, warn, s: h.s });

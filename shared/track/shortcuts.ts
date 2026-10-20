@@ -15,7 +15,7 @@ const smooth = (t: number) => t * t * (3 - 2 * t);
 
 /**
  * Builds the centre line: a nearly straight cubic curve that eases out of the road edge along the road's heading and back in,
- * bowed square to its chord by `bulge`. Height blends between the road heights at both ends, lifted by `rise` in the middle.
+ * bowed square to its chord by `bulge`. Height blends between the road heights at both ends.
  */
 function buildPath(id: TrackId, shortcut: Shortcut): ShortcutPath {
   const w = TRACKS[id].width, len = trackLength(id), a = pointAt(id, shortcut.from, shortcut.side * w), b = pointAt(id, shortcut.to, shortcut.side * w);
@@ -29,7 +29,7 @@ function buildPath(id: TrackId, shortcut: Shortcut): ShortcutPath {
     const t = i / SAMPLES, m = 1 - t, bow = Math.sin(t * Math.PI) * shortcut.bulge;
     x[i] = m * m * m * a.x + 3 * m * m * t * c1.x + 3 * m * t * t * c2.x + t * t * t * b.x + out.x * bow;
     z[i] = m * m * m * a.z + 3 * m * m * t * c1.z + 3 * m * t * t * c2.z + t * t * t * b.z + out.z * bow;
-    y[i] = a.y + (b.y - a.y) * smooth(t) + Math.sin(t * Math.PI) * (shortcut.rise ?? 0);
+    y[i] = a.y + (b.y - a.y) * smooth(t);
     d[i] = i ? d[i - 1] + Math.hypot(x[i] - x[i - 1], z[i] - z[i - 1]) : 0;
   }
   return { shortcut, x, y, z, d, length: d[SAMPLES], skipped: mod(shortcut.to - shortcut.from, len) };

@@ -3,7 +3,8 @@ import { Parts, type Kit } from '../kit.ts';
 import { fbm2, ridge2, rng, smoothstep, type Rng } from '../noise.ts';
 import { Shape } from '../../particles/particles.ts';
 import { crystalCluster, boulder, block, prism, cone, cyl, bead, rbox, rock, lathe, tube, blob, grad, xf } from '../props/common.ts';
-import { courseLayout, projectOnTrack, shortcutPaths, shortcutPoint, type Hazard } from '../../../../shared/track/index.ts';
+import { courseLayout, shortcutPaths, shortcutPoint, type Hazard } from '../../../../shared/track/index.ts';
+import { shortcutSpots } from '../shortcuts.ts';
 import { layoutHazard } from '../hazards.ts';
 import type { CourseArt } from '../types.ts';
 
@@ -67,8 +68,9 @@ function runawayCart(h: Hazard) {
 /** The cart's crossing: a pair of rails and sleepers laid flush across the road, between two timber tunnel portals with warning lamps. */
 function cartCrossing(h: Hazard) {
   const p = new Parts(), span = h.amp ?? 0, dir = Math.sign(span), n = Math.round(Math.abs(span) / 1.3);
-  for (const z of [-.75, .75]) p.add(xf(new THREE.BoxGeometry(Math.abs(span) + 4, .1, .14), [span / 2, .05, z]), C.iron, { ao: false });
-  for (let i = 0; i <= n; i++) p.add(xf(new THREE.BoxGeometry(.4, .05, 2.3), [i * span / n, .025, 0]), C.woodDark, { ao: false });
+  // Sleepers and rails sit just proud of the planks: the road renders with a depth offset that would swallow anything flush.
+  for (const z of [-.75, .75]) p.add(xf(new THREE.BoxGeometry(Math.abs(span) + 4, .12, .16), [span / 2, .16, z]), C.iron, { ao: false });
+  for (let i = 0; i <= n; i++) p.add(xf(new THREE.BoxGeometry(.45, .08, 2.4), [i * span / n, .1, 0]), C.woodDark, { ao: false });
   for (const x of [-dir * 1.5, span + dir * 1.5]) {
     for (const z of [-2, 2]) p.add(block(.6, 4.4, .6, [x, 0, z]), grad(C.woodDark, C.wood, 0, 4.4), { flat: true });
     p.add(block(.8, .6, 5.2, [x, 4.4, 0]), C.woodDark, { flat: true, ao: false });
@@ -257,15 +259,14 @@ export const mines: CourseArt = {
     // The hidden rail bed: an old cart line along the shortcut, with lanterns on its walls.
     for (const path of shortcutPaths(kit.id)) {
       const sleeper = kit.prop('sleeper', () => new Parts().add(block(2.3, .14, .42), (_x, _y, _z, out) => out.set(C.woodDark), { ao: false }));
-      const rail = kit.prop('rail piece', () => new Parts().add(xf(new THREE.BoxGeometry(.14, .16, 1.42), [0, .2, 0]), C.iron, { ao: false }));
-      // Only where the bed has left the road, so nothing stands in the road at its mouth or exit.
-      const offRoad = (x: number, z: number) => kit.road(x, z).d > 0 && Math.abs(projectOnTrack(kit.id, x, z).offset) > w + 1.2;
-      for (let d = 2; d < path.length - 2; d += 1.4) {
-        const q = shortcutPoint(path, d / path.length); if (!offRoad(q.x, q.z)) continue;
+      const rail = kit.prop('rail piece', () => new Parts().add(xf(new THREE.BoxGeometry(.14, .12, 1.42), [0, .16, 0]), C.iron, { ao: false }));
+      for (const q of shortcutSpots(kit, path, 1.4)) {
         kit.place(sleeper, q.x, q.y, q.z, { yaw: q.yaw + Math.PI / 2, shortcut: true });
-        for (const o of [-.75, .75]) { const e = shortcutPoint(path, d / path.length, o); kit.place(rail, e.x, e.y, e.z, { yaw: q.yaw, shortcut: true }); }
+        for (const o of [-.75, .75]) { const e = shortcutPoint(path, q.u, o); kit.place(rail, e.x, e.y, e.z, { yaw: q.yaw, shortcut: true }); }
       }
-      for (let d = 10, i = 0; d < path.length - 8; d += 12, i++) { const side = i % 2 ? 1 : -1, q = shortcutPoint(path, d / path.length, side * (path.shortcut.width + .35)); if (offRoad(q.x, q.z)) kit.place(kit.prop('post lamp', () => railPost(true)), q.x, q.y + .5, q.z, { yaw: q.yaw, shortcut: true }); }
+      // Timber frames over its mouth and exit, like the main line's, so the opening reads from the road.
+      for (const u of [.12, .9]) { const q = shortcutPoint(path, u); kit.place(kit.prop('shortcut frame', () => frame(path.shortcut.width)), q.x, q.y, q.z, { yaw: q.yaw, shortcut: true }); }
+      for (const side of [-1, 1]) for (const q of shortcutSpots(kit, path, 24, side * (path.shortcut.width + .35))) kit.place(kit.prop('post lamp', () => railPost(true)), q.x, q.y + 1.2, q.z, { yaw: q.yaw, shortcut: true });
     }
   },
 };
