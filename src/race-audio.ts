@@ -54,7 +54,7 @@ export class RaceAudio {
       case 'steal': case 'receive': play(SOUNDS.steal); return;
       case 'doom-pass': play(SOUNDS.doomPass); return;
       case 'pad': case 'start': case 'spindash': play(SOUNDS.boost); return;
-      case 'ability': play(p.abilityId === 'flap' ? SOUNDS.flap : p.abilityId === 'grip' ? SOUNDS.grip : p.abilityId === 'mug' ? SOUNDS.steal : SOUNDS.boost); return;
+      case 'ability': play(p.abilityId === 'barrier' ? castSound('shield', 1) : p.abilityId === 'flap' ? SOUNDS.flap : p.abilityId === 'grip' ? SOUNDS.grip : p.abilityId === 'mug' ? SOUNDS.steal : SOUNDS.boost); return;
       case 'fall': play(SOUNDS.fall); return;
       case 'recover': if (p === me) play(SOUNDS.recover); return;
       case 'lap': if (p === me) play(SOUNDS.lap); return;

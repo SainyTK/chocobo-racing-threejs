@@ -10,15 +10,14 @@ const BUMP_IMPACT = 2;
 /** Pushes overlapping racers apart and applies contact effects: Doom transfer, Charge and squashing. */
 export function resolveContacts(r: Race) {
   for (let i = 0; i < r.racers.length; i++) for (let j = i + 1; j < r.racers.length; j++) {
-    // Finished racers only push against each other, so they never block or knock a racer still racing.
-    const a = r.racers[i], b = r.racers[j], done = a.finishTime !== null; if (done !== (b.finishTime !== null) || a.falling > 0 || b.falling > 0) continue;
+    const a = r.racers[i], b = r.racers[j]; if (a.finishTime !== null || b.finishTime !== null || a.falling > 0 || b.falling > 0) continue;
     const dx = b.px - a.px, dz = b.pz - a.pz, d = Math.hypot(dx, dz), radius = (RACERS[a.character].size * (a.mini > 0 ? 1 - a.miniLevel * .18 : 1) + RACERS[b.character].size * (b.mini > 0 ? 1 - b.miniLevel * .18 : 1)) * 1.15;
     if (d >= radius) continue;
     const nx = d > .001 ? dx / d : 1, nz = d > .001 ? dz / d : 0, correction = (radius - d) * .5;
     a.px -= nx * correction; a.pz -= nz * correction; b.px += nx * correction; b.pz += nz * correction;
     const impact = (a.vx - b.vx) * nx + (a.vz - b.vz) * nz;
     if (impact > 0) { a.vx -= nx * impact * .4; a.vz -= nz * impact * .4; b.vx += nx * impact * .4; b.vz += nz * impact * .4; }
-    if (done || a.contactCooldown > 0 || b.contactCooldown > 0) continue;
+    if (a.contactCooldown > 0 || b.contactCooldown > 0) continue;
     a.contactCooldown = b.contactCooldown = .7;
     if (impact > BUMP_IMPACT) event(r, a, 'bump', 'Bump!', b.id);
     // Transfer once per collision, never straight back in the reciprocal pair.
