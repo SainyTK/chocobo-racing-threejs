@@ -243,8 +243,8 @@ export class Effects {
       if (live && p.charging > 0) for (let i = 0; i < 2; i++) { const a = rand(0, 6.28); this.glow.emit({ x: p.px + Math.cos(a) * 1.2, y: y + rand(.3, 2.5), z: p.pz + Math.sin(a) * 1.2, vx: -fwd.x * 6, vy: rand(1, 3), vz: -fwd.z * 6, life: rand(.2, .4), size: rand(.5, .9), endSize: .1, color: '#ffd0a0', endColor: '#ff2a10', drag: 2 }); }
       if (live && p.mini > 0 && Math.random() < .2) this.glow.emit({ x: p.px + rand() * .8, y: y + rand(.2, 1.6) * scale, z: p.pz + rand() * .8, vy: .8, life: .6, size: .3, color: '#ffffff', endColor: '#b68bef', shape: Shape.Star });
       if (live && p.flying > 0 && Math.random() < .15) this.smoke.emit({ x: p.px + rand() * .6, y: y + 1.6, z: p.pz + rand() * .6, vx: -fwd.x * 2 + rand(), vy: rand(-.5, .5), vz: -fwd.z * 2 + rand(), life: 1.2, size: .28, color: '#fff6d8', alpha: .9, drag: 1.5, gravity: 1.2, shape: Shape.Shard });
-      // Reflect bubble while the manual shield is up.
-      s.shield.visible = p.shield > 0; if (s.shield.visible) { s.shield.position.set(p.px, y + c.height * .45 * scale, p.pz); s.shield.scale.setScalar(c.height * .6 * scale * (1 + Math.sin(this.time * 6) * .02)); s.shield.rotation.y = this.time * .5; }
+      // Reflect bubble while the manual shield or Barrier is up.
+      s.shield.visible = p.shield > 0 || p.barrier > 0; if (s.shield.visible) { s.shield.position.set(p.px, y + c.height * .45 * scale, p.pz); s.shield.scale.setScalar(c.height * .6 * scale * (1 + Math.sin(this.time * 6) * .02)); s.shield.rotation.y = this.time * .5; }
       // Blizzaga freeze shell.
       const frozen = this.time < s.frozenUntil && p.stun > 0; s.frozen.visible = frozen; if (frozen) { s.frozen.position.set(p.px, y, p.pz); s.frozen.scale.setScalar(scale * c.height / 3.2); }
       // Doom countdown rune.

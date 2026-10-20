@@ -6,8 +6,9 @@ import { ABILITIES } from '../abilities.ts';
 import { integrateDriving, updateDriveMode } from '../driving.ts';
 import { HANDLING } from '../handling.ts';
 import { bounceOffWall } from './walls.ts';
-import { ITEMS, drawStone } from '../items.ts';
-import { addStone, canAddStone, maxLevel, MAX_STACKS } from '../inventory.ts';
+import { ITEMS, drawStone, inBackHalf } from '../items.ts';
+import { addStone, canAddStone, levelUpLatest } from '../inventory.ts';
+import { BARRIER_SECONDS, DOOM, STONE_RESPAWN } from '../spells.ts';
 import { aboveGround, crash, hit } from '../combat.ts';
 import { recover, useAbility, useItem } from '../actions.ts';
 import { event } from '../events.ts';
@@ -19,10 +20,11 @@ export function stepRacer(r: Race, p: Racer, dt: number) {
   const def = TRACKS[r.track], len = trackLength(r.track), objects = courseObjects(r.track);
   if (p.finishTime !== null) { p.speed = 0; p.vx = p.vz = 0; p.drifting = false; return; }
   const input = p.input;
-  for (const key of ['boost', 'shield', 'stun', 'invincible', 'flying', 'gripUp', 'charging', 'mini', 'contactCooldown', 'wallCooldown', 'pickupCooldown'] as const) p[key] = Math.max(0, p[key] - dt);
-  if (p.doom > 0) { p.doom = Math.max(0, p.doom - dt); if (p.doom <= 0) crash(r, p, 3.5, 'Doom!'); }
+  for (const key of ['boost', 'shield', 'barrier', 'stun', 'invincible', 'flying', 'gripUp', 'charging', 'mini', 'contactCooldown', 'wallCooldown', 'pickupCooldown'] as const) p[key] = Math.max(0, p[key] - dt);
+  if (p.doom > 0) { p.doom = Math.max(0, p.doom - dt); if (p.doom <= 0) crash(r, p, DOOM.stun, 'Doom!'); }
   p.ability = Math.min(100, p.ability + dt * 100 / ABILITIES[p.abilityId].recharge);
-  if (p.abilityId === 'magic' && p.ability >= 100 && p.item && p.itemLevel < maxLevel(p.item)) { addStone(p, p.item); p.ability = 0; event(r, p, 'ability', 'Magic Plus!'); }
+  if (p.abilityId === 'magic' && p.ability >= 100 && levelUpLatest(p)) { p.ability = 0; event(r, p, 'ability', 'Magic Plus!'); }
+  if (p.abilityId === 'barrier' && p.ability >= 100) { p.ability = 0; p.barrier = BARRIER_SECONDS; event(r, p, 'ability', 'Barrier!'); }
   if (p.falling > 0) { p.falling -= dt; if (p.falling <= 0) recover(r, p); return; }
   if (input.rescue && r.time - p.lastRescue > 3) { recover(r, p); return; }
   if (input.item && !p.lastItem && p.stun <= 0) useItem(r, p);
@@ -55,12 +57,11 @@ export function stepRacer(r: Race, p: Racer, dt: number) {
       else { p.lap = p.gates / 12 + 1; event(r, p, 'lap', p.lap === r.laps ? 'FINAL LAP' : `LAP ${p.lap}`); }
     }
   }
-  if (r.mode !== 'time' && p.pickupCooldown <= 0) for (const stone of objects.stones) {
-    // A random stone could roll anything, so it needs a free slot.
-    if (r.pickups[stone.id] > 0 || (stone.kind === 'random' ? p.stones.length >= MAX_STACKS : !canAddStone(p, stone.kind))) continue;
+  if (r.mode !== 'time' && p.pickupCooldown <= 0 && canAddStone(p)) for (const stone of objects.stones) {
+    if (r.pickups[stone.id] > 0) continue;
     if (Math.abs(mod(stone.s - p.routeS + len / 2, len) - len / 2) > 2.8 || Math.abs(stone.x - p.x) > 2.1) continue;
-    const kind = stone.kind === 'random' ? drawStone(random(r)) : stone.kind;
-    addStone(p, kind); r.pickups[stone.id] = 1.1; p.pickupCooldown = .25; event(r, p, 'pickup', `${ITEMS[kind].name} Stone`); break;
+    const kind = stone.kind === 'random' ? drawStone(random(r), inBackHalf(p.rank, r.racers.length)) : stone.kind;
+    addStone(p, kind); r.pickups[stone.id] = STONE_RESPAWN; p.pickupCooldown = .25; event(r, p, 'pickup', `${ITEMS[kind].name} Stone`); break;
   }
   if (!aboveGround(p) && p.invincible <= 0) {
     for (const trap of r.traps) if (trap.owner !== p.id && Math.hypot(trap.px - p.px, trap.pz - p.pz) < trap.radius + .7) { const owner = r.racers.find(q => q.id === trap.owner); if (owner) hit(r, p, owner, 'ice'); trap.life = 0; }

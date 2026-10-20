@@ -3,6 +3,7 @@ import { TRACKS } from '../track/tracks.ts';
 import type { TrackId } from '../track/types.ts';
 import { aboveGround } from './combat.ts';
 import { cornerGrip, HANDLING as H } from './handling.ts';
+import { miniScale } from './mini.ts';
 import { RACERS } from './racers.ts';
 import type { Racer } from './types.ts';
 
@@ -33,7 +34,7 @@ export function integrateDriving(track: TrackId, p: Racer, dt: number) {
   const fx = Math.sin(p.yaw), fz = Math.cos(p.yaw), rx = fz, rz = -fx;
   let forward = p.vx * fx + p.vz * fz, lateral = p.vx * rx + p.vz * rz;
   const onGrass = Math.abs(p.x) > def.width && !aboveGround(p);
-  const maxSpeed = ch.speed * p.pace * (p.boost > 0 ? H.boostSpeed : 1) * (p.mini > 0 ? 1 - p.miniLevel * .17 : 1) * (onGrass ? .5 : 1);
+  const maxSpeed = ch.speed * p.pace * (p.boost > 0 ? H.boostSpeed : 1) * miniScale(p) * (onGrass ? .5 : 1);
   if (p.boost > 0 && !p.boosted && p.stun <= 0) forward = Math.max(forward, Math.min(maxSpeed, forward + H.boostKick));
   p.boosted = p.boost > 0;
   if (p.stun > 0) { forward *= Math.exp(-dt * 4); lateral *= Math.exp(-dt * 4); }

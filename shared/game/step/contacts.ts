@@ -1,4 +1,6 @@
 import { RACERS } from '../racers.ts';
+import { miniScale } from '../mini.ts';
+import { CRASH, DOOM } from '../spells.ts';
 import { addStone, canAddStone, stackPositions, takeStack } from '../inventory.ts';
 import { crash, hit } from '../combat.ts';
 import { event } from '../events.ts';
@@ -6,7 +8,7 @@ import type { Race, Racer } from '../types.ts';
 
 const BUMP_BOUNCE = .3, BUMP_SHOVE = 6;
 
-const bodySize = (p: Racer) => RACERS[p.character].size * (p.mini > 0 ? 1 - p.miniLevel * .18 : 1);
+const bodySize = (p: Racer) => RACERS[p.character].size * miniScale(p);
 /** Mass grows with body size. A finished racer weighs nothing, so arrivals shove it aside and are never slowed. */
 const mass = (p: Racer, size: number) => p.finishTime !== null ? 0 : size ** 3;
 /** Separates two overlapping racers along the contact normal (a to b). A heavier racer moves less and shoves a
@@ -29,12 +31,12 @@ export function resolveContacts(r: Race) {
     pushApart(a, b, mass(a, sa), mass(b, sb), d > .001 ? dx / d : 1, d > .001 ? dz / d : 0, radius - d);
     if (a.finishTime !== null || b.finishTime !== null || a.contactCooldown > 0 || b.contactCooldown > 0) continue;
     a.contactCooldown = b.contactCooldown = .7;
-    // Transfer once per collision, never straight back in the reciprocal pair.
+    // Transfer once per collision, never straight back in the reciprocal pair: both racers' contact effects pause for the pass lock.
     const cursed = a.doom > 0 && b.doom <= 0 ? a : b.doom > 0 && a.doom <= 0 ? b : null;
-    if (cursed) { const receiver = cursed === a ? b : a; receiver.doom = cursed.doom; receiver.doomOwner = cursed.doomOwner; cursed.doom = 0; event(r, cursed, 'doom-pass', 'Doom passed!', receiver.id); }
+    if (cursed) { const receiver = cursed === a ? b : a; receiver.doom = cursed.doom; receiver.doomOwner = cursed.doomOwner; cursed.doom = 0; a.contactCooldown = b.contactCooldown = DOOM.passLock; event(r, cursed, 'doom-pass', 'Doom passed!', receiver.id); }
     for (const [p, q] of [[a, b], [b, a]]) {
       if (p.charging > 0) hit(r, q, p, 'charge');
-      if (q.mini > 0 && q.miniLevel === 3 && p.mini <= 0) crash(r, q, 2, 'Squashed!');
+      if (q.mini > 0 && q.miniLevel === 3 && p.mini <= 0) crash(r, q, CRASH.crash, 'Squashed!');
     }
   }
 }
@@ -46,8 +48,8 @@ export function stealStacks(r: Race) {
     const at = stackPositions(holder);
     for (const thief of r.racers) {
       if (thief === holder || thief.finishTime !== null || thief.falling > 0 || thief.stun > 0 || thief.pickupCooldown > 0) continue;
-      const reach = 1.1 * RACERS[thief.character].size * (thief.mini > 0 ? 1 - thief.miniLevel * .18 : 1);
-      let i = at.length - 1; while (i >= 0 && !(Math.hypot(at[i].x - thief.px, at[i].z - thief.pz) < reach && canAddStone(thief, holder.stones[i].kind))) i--;
+      const reach = .8 * RACERS[thief.character].size * miniScale(thief);
+      let i = at.length - 1; while (i >= 0 && !(Math.hypot(at[i].x - thief.px, at[i].z - thief.pz) < reach && canAddStone(thief))) i--;
       if (i < 0) continue;
       const stack = takeStack(holder, i)!; addStone(thief, stack.kind, stack.level); thief.pickupCooldown = .25;
       event(r, thief, 'steal', stack.level > 1 ? `Stole a level ${stack.level} stack!` : 'Stole a Magic Stone!', holder.id); break;
