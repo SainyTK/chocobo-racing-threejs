@@ -19,7 +19,8 @@ export function hit(r: Race, target: Racer, source: Racer, kind: Item | 'charge'
     event(r, target, returnAttack ? 'reflect' : 'block', returnAttack ? 'Reflect!' : 'Magic blocked!', source.id);
     if (returnAttack) hit(r, source, target, kind, level, true); return;
   }
-  if (target.abilityId === 'receive' && target.ability >= 100 && kind !== 'charge' && addStone(target, kind, level)) { target.ability = 0; event(r, target, 'receive', `Received ${spellName(kind, level)}!`); }
+  // A charged Receive catches the spell instead of suffering it, as long as there is room for the stone.
+  if (target.abilityId === 'receive' && target.ability >= 100 && kind !== 'charge' && addStone(target, kind, level)) { target.ability = 0; event(r, target, 'receive', `Received ${spellName(kind, level)}!`); return; }
   // Mini casts stack on a racer who is already small.
   if (kind === 'mini') { target.miniLevel = Math.min(3, (target.mini > 0 ? target.miniLevel : 0) + level); target.mini = MINI_SECONDS[target.miniLevel - 1]; event(r, source, 'mini', `${spellName(kind, level)}!`, target.id); return; }
   if (kind === 'doom') { target.doom = DOOM.fuse; target.doomOwner = source.id; event(r, source, 'doom', 'Doom: 10 seconds!', target.id); return; }
