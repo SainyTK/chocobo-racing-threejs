@@ -22,4 +22,4 @@ export const HANDLING = {
 };
 
 /** Lateral acceleration a racer holds without sliding. Golem and Chubby corner best, Black Magician and Goblin worst. */
-export function cornerGrip(p: Racer) { return (10 + RACERS[p.character].grip * 1.4) * (p.gripUp > 0 ? 1.3 : 1); }
+export function cornerGrip(p: Racer) { return (13 + RACERS[p.character].grip * 1.1) * (p.gripUp > 0 ? 1.3 : 1); }
