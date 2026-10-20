@@ -15,4 +15,4 @@ export const ABILITIES: Record<AbilityId, { name: string; description: string; r
 };
 export const ABILITY_IDS = Object.keys(ABILITIES) as AbilityId[];
 /** Seconds of the timed abilities. Charge is shorter than Dash but recharges fastest. */
-export const ABILITY_SECONDS = { dash: 4, flap: 5, grip: 7, charge: 3 } as const;
+export const ABILITY_SECONDS = { dash: 4, flap: 5, grip: 7, charge: 2 } as const;
