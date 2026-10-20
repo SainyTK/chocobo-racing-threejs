@@ -1,7 +1,7 @@
 import { steerFromOffset } from './touch-steering.ts';
 
 interface Hold { control: HTMLElement; captor: HTMLElement; actions: string[] }
-interface Steering { pointerId: number; pad: HTMLElement; value: number }
+interface Steering { pointerId: number; zone: HTMLElement; pad: HTMLElement; originX: number; travel: number; value: number }
 
 const controlAt = (target: EventTarget | null) => target instanceof Element ? target.closest<HTMLElement>('[data-touch]') : null;
 const actionsOf = (control: HTMLElement) => control.dataset.hold?.split(' ') ?? [control.dataset.touch!];
@@ -31,11 +31,11 @@ export function installTouchControls(options: {
   };
   const release = (pointerId: number) => {
     const hold = holds.get(pointerId);
-    const captor = hold?.captor ?? (steering?.pointerId === pointerId ? steering.pad : null);
+    const captor = hold?.captor ?? (steering?.pointerId === pointerId ? steering.zone : null);
     if (!captor) return;
     holds.delete(pointerId);
     if (steering?.pointerId === pointerId) {
-      steering.pad.style.removeProperty('--steer-offset');
+      for (const name of ['--pad-x', '--pad-y', '--steer-offset']) steering.zone.style.removeProperty(name);
       steering = null;
     }
     render();
@@ -59,11 +59,23 @@ export function installTouchControls(options: {
   window.addEventListener('blur', reset);
   document.addEventListener('visibilitychange', reset);
   updateLayout();
+  // Where the thumb lands is straight ahead. The pad is drawn there, kept inside the zone.
+  const startSteering = (e: PointerEvent, zone: HTMLElement) => {
+    const pad = zone.querySelector<HTMLElement>('.steering-pad')!, knob = pad.querySelector<HTMLElement>('.steer-knob')!;
+    const area = zone.getBoundingClientRect(), size = pad.getBoundingClientRect(), style = getComputedStyle(zone);
+    // The zone's padding is the screen gutter: the zone takes touches there, but the pad is never drawn in it.
+    const left = parseFloat(style.paddingLeft) + size.width / 2, bottom = area.height - parseFloat(style.paddingBottom) - size.height / 2;
+    const x = Math.max(left, Math.min(area.width - size.width / 2, e.clientX - area.left));
+    const y = Math.max(size.height / 2, Math.min(bottom, e.clientY - area.top));
+    zone.style.setProperty('--pad-x', `${x}px`);
+    zone.style.setProperty('--pad-y', `${y}px`);
+    steering = { pointerId: e.pointerId, zone, pad, originX: e.clientX, travel: (size.width - knob.getBoundingClientRect().width) / 2, value: 0 };
+    steerTo(e);
+  };
   const steerTo = (e: PointerEvent) => {
-    const rect = steering!.pad.getBoundingClientRect();
-    const offset = (e.clientX - rect.left - rect.width / 2) / (rect.width / 2);
+    const offset = (e.clientX - steering!.originX) / steering!.travel;
     steering!.value = steerFromOffset(offset);
-    steering!.pad.style.setProperty('--steer-offset', String(Math.max(-1, Math.min(1, offset))));
+    steering!.zone.style.setProperty('--steer-offset', String(Math.max(-1, Math.min(1, offset))));
   };
   document.addEventListener('pointerdown', e => {
     const control = controlAt(e.target);
@@ -73,8 +85,7 @@ export function installTouchControls(options: {
     if (action === 'steer') {
       // A second finger must not take ownership of the steering thumb.
       if (steering) return;
-      steering = { pointerId: e.pointerId, pad: control, value: 0 };
-      steerTo(e);
+      startSteering(e, control);
     } else holds.set(e.pointerId, { control, captor: control, actions: actionsOf(control) });
     control.setPointerCapture(e.pointerId);
     render();

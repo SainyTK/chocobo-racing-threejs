@@ -22,7 +22,8 @@ const controlPaths = {
 const glyph = (path: string) => `<svg viewBox="0 0 48 48" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="${path}"/></svg>`;
 
 /**
- * Two-thumb layout: the left thumb steers on a horizontal pad, the right thumb rests on DRIVE.
+ * Two-thumb layout: the left thumb steers on a small pad that floats to wherever it lands in the left steering zone,
+ * and the right thumb rests on DRIVE.
  * DRIVE, DRIFT and BRAKE share a slide group so the right thumb can roll between them without lifting.
  * DRIFT holds the accelerator too, so sliding off DRIVE keeps the racer driving.
  */
@@ -30,7 +31,7 @@ export function mobileControls(ability: AbilityId) {
   return `<div class="touch-controls" aria-label="Touchscreen gamepad">`
     + `<div class="steering-side" role="group" aria-label="Direction controls">`
     + `<div class="utility-controls"><button data-touch="behind" aria-label="Look behind">${glyph(controlPaths.behind)}</button><button data-touch="rescue" aria-label="Recover racer">${glyph(controlPaths.rescue)}</button><button data-touch="reverse" aria-label="Reverse">${glyph(controlPaths.reverse)}</button></div>`
-    + `<div data-touch="steer" class="steering-pad" role="group" aria-label="Steering pad: slide left or right"><span class="steer-arrow" aria-hidden="true">‹</span><span class="steer-knob"></span><span class="steer-arrow" aria-hidden="true">›</span></div>`
+    + `<div data-touch="steer" class="steering-zone" role="group" aria-label="Steering: put your left thumb down anywhere here and slide left or right"><div class="steering-pad"><span class="steer-arrow" aria-hidden="true">‹</span><span class="steer-knob"></span><span class="steer-arrow" aria-hidden="true">›</span></div></div>`
     + `</div>`
     + `<div class="action-pad" role="group" aria-label="Race actions">`
     + `<button data-touch="ability" aria-label="Activate ability: ${ABILITIES[ability].name}" class="mobile-ability">${glyph(skillPaths[ability])}<small>${ABILITIES[ability].name}</small><span id="mobile-ability-state"></span></button>`

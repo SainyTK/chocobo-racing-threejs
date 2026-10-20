@@ -16,7 +16,7 @@ body.racing #world, body.racing .hud {
   pointer-events: none;
   font-family: 'Barlow Condensed', sans-serif;
 }
-.touch-controls button, .steering-pad {
+.touch-controls button {
   pointer-events: auto;
   touch-action: none;
   -webkit-user-select: none;
@@ -42,15 +42,35 @@ body.racing #world, body.racing .hud {
 .touch-controls button small { font-size: clamp(9px, 1.5vmin, 13px); font-weight: 700; letter-spacing: .5px; line-height: 1.1; max-width: 92%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .touch-controls button.pressed, .steering-pad.pressed { border-color: #ffe594; box-shadow: inset 0 0 0 3px #ffdc6666, 0 0 14px #ffe59466; }
 
-/* Left thumb: steering pad, with the rarely used actions out of its sliding path above it. */
-.steering-side { position: absolute; left: 0; bottom: 0; display: flex; flex-direction: column; align-items: flex-start; gap: var(--touch-reach-gap); }
-.utility-controls { display: flex; gap: var(--touch-gap); }
+/* Left thumb: a small steering pad that floats to wherever the thumb lands in the steering zone.
+   The zone covers the free left side of the screen, out to the screen edges; the rarely used actions sit above the pad's resting spot. */
+.steering-side {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: max(var(--steer-w), calc(3 * var(--utility-size) + 2 * var(--touch-gap)));
+  height: var(--steer-stack-h);
+}
+.utility-controls { position: absolute; left: 0; top: 0; z-index: 1; display: flex; gap: var(--touch-gap); }
 .touch-controls .utility-controls button { width: var(--utility-size); height: var(--utility-size); border-width: 1px; background: #1d3354cc; }
 .touch-controls .utility-controls svg { width: 52%; height: 52%; }
+.steering-zone {
+  position: absolute;
+  left: calc(var(--touch-left) * -1);
+  bottom: calc(var(--touch-bottom) * -1);
+  width: min(50vw, calc(100vw - var(--touch-right) - var(--action-stack-w) - 2 * var(--touch-gap)));
+  height: calc(100dvh - var(--hud-standings-bottom));
+  padding: 0 0 var(--touch-bottom) var(--touch-left);
+  pointer-events: auto;
+  touch-action: none;
+}
 .steering-pad {
-  position: relative;
+  position: absolute;
+  left: var(--pad-x, calc(var(--touch-left) + var(--steer-w) / 2));
+  top: var(--pad-y, calc(100% - var(--touch-bottom) - var(--steer-h) / 2));
   width: var(--steer-w);
   height: var(--steer-h);
+  transform: translate(-50%, -50%);
   border: 2px solid #d5e7f6aa;
   border-radius: calc(var(--steer-h) / 2);
   background: linear-gradient(90deg, #a4d9fc33, #172b4f99 30% 70%, #a4d9fc33);
@@ -58,26 +78,24 @@ body.racing #world, body.racing .hud {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 calc(var(--steer-h) * .2);
+  padding: 0 calc(var(--steer-h) * .14);
   color: #d1e9ff;
-  font-size: calc(var(--steer-h) * .45);
+  font-size: calc(var(--steer-h) * .42);
   line-height: 1;
+  pointer-events: none;
 }
-/* The pad's touch area reaches past its drawn edge, so a thumb that lands slightly outside still steers. */
-.steering-pad::before { content: ''; position: absolute; inset: calc(var(--touch-gap) * -1); border-radius: inherit; }
-.steer-arrow { pointer-events: none; opacity: .75; }
+.steer-arrow { opacity: .75; }
 .steer-knob {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: calc(var(--steer-h) * .76);
+  width: var(--steer-knob);
   aspect-ratio: 1;
   border: 2px solid #d1e9ff;
   border-radius: 50%;
   background: radial-gradient(circle at 40% 35%, #a9cdf0, #5d8bbb);
   box-shadow: 0 3px 12px #0a183b88;
-  transform: translate(calc(-50% + var(--steer-offset, 0) * (var(--steer-w) - var(--steer-h)) / 2), -50%);
-  pointer-events: none;
+  transform: translate(calc(-50% + var(--steer-offset, 0) * var(--steer-travel)), -50%);
 }
 .steering-pad.pressed .steer-knob { border-color: #ffe594; }
 
@@ -125,3 +143,8 @@ body.racing #world, body.racing .hud {
 .mobile-stones .next-stone { position: absolute; width: 22%; height: 28%; right: 4%; top: 2%; }
 .mobile-stones .next-stone + .next-stone { top: 34%; }
 .mobile-stones > span { font-size: calc(var(--drive-w) * .36); opacity: .6; }
+
+/* Start-screen control hints follow the input the player has. */
+.touch-hint { display: none; }
+.touch-device .touch-hint { display: inline; }
+.touch-device .keyboard-hint { display: none; }
