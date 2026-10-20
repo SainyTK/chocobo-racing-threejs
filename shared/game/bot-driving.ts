@@ -8,12 +8,15 @@ import type { Race, Racer } from './types.ts';
 
 const PLAN_BRAKE = 34, PLAN_AHEAD = 96, PLAN_STEP = 6;
 
-/** Fastest speed now that still lets the racer brake into every corner ahead at the given lateral acceleration. */
-export function cornerSpeed(r: Race, p: Racer, lateral: number) {
+/** Fastest speed now that still lets the racer brake into every corner ahead, held both by the lateral acceleration and by
+ * the yaw rate `turn` (rad/s at walking pace, falling with speed as in steerRate). */
+export function cornerSpeed(r: Race, p: Racer, lateral: number, turn: number) {
   let v = Infinity;
   for (let d = 0; d <= PLAN_AHEAD; d += PLAN_STEP) {
     const curve = Math.max(1e-4, Math.abs(pointAt(r.track, p.s + d).curve)), reach = Math.max(0, d - p.speed * .1);
-    v = Math.min(v, Math.sqrt(lateral / curve + 2 * PLAN_BRAKE * reach));
+    // Yaw-rate limit: v * curve = turn / (1 + v / 115), solved for v.
+    const steered = (Math.sqrt(1 + 4 * turn / (115 * curve)) - 1) * 115 / 2;
+    v = Math.min(v, Math.sqrt(Math.min(lateral / curve, steered * steered) + 2 * PLAN_BRAKE * reach));
   }
   return v;
 }
@@ -27,7 +30,8 @@ export function botDriving(r: Race, p: Racer, target: { x: number; z: number }):
   const cls = DIFFICULTIES[r.difficulty], grip = cornerGrip(p);
   const delta = angleDelta(Math.atan2(target.x - p.px, target.z - p.pz), p.yaw);
   const plan = grip * cls.cpuCorner * (1 + H.sharpGain * cls.cpuTaps);
-  const desired = Math.min(RACERS[p.character].speed * p.pace * (p.boost > 0 ? H.boostSpeed : 1), cornerSpeed(r, p, plan));
+  const turn = RACERS[p.character].steering * (p.gripUp > 0 ? 1.25 : 1) * (1 + H.sharpSteer * cls.cpuTaps);
+  const desired = Math.min(RACERS[p.character].speed * p.pace * (p.boost > 0 ? H.boostSpeed : 1), cornerSpeed(r, p, plan, turn));
   const brake = p.speed > Math.max(12, desired + 1);
   const near = Math.max(...[5, 11, 17].map(d => Math.abs(pointAt(r.track, p.s + d).curve)));
   // A tap is one tick of brake with the throttle held; the next tap waits until the sharp-turn window is nearly over.

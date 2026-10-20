@@ -13,8 +13,8 @@ export interface Difficulty {
 }
 export const DIFFICULTIES: Record<DifficultyId, Difficulty> = {
   chocobo: { name: 'Chocobo Class', description: 'Relaxed rivals.', speed: 1, cpuPace: .94, cpuCorner: .85, cpuTaps: 0, catchUp: .03, holdBack: .05 },
-  behemoth: { name: 'Behemoth Class', description: 'Rivals who brake and drift well.', speed: 1, cpuPace: 1, cpuCorner: .95, cpuTaps: 1, catchUp: .04, holdBack: .01 },
-  bahamut: { name: 'Bahamut Class', description: 'Faster racers and rivals at the limit.', speed: 1.1, cpuPace: 1.02, cpuCorner: 1, cpuTaps: 2, catchUp: .06, holdBack: .015 },
+  behemoth: { name: 'Behemoth Class', description: 'Rivals who brake and drift well.', speed: 1, cpuPace: 1.03, cpuCorner: 1, cpuTaps: 1, catchUp: .04, holdBack: .01 },
+  bahamut: { name: 'Bahamut Class', description: 'Faster racers and rivals at the limit.', speed: 1.1, cpuPace: 1.06, cpuCorner: 1, cpuTaps: 2, catchUp: .06, holdBack: .015 },
 };
 export const DIFFICULTY_IDS = Object.keys(DIFFICULTIES) as DifficultyId[];
 export const DEFAULT_DIFFICULTY: DifficultyId = 'behemoth';

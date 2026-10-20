@@ -2,7 +2,7 @@ import { mod } from '../math.ts';
 import { TRACKS } from '../track/tracks.ts';
 import type { TrackId } from '../track/types.ts';
 import { aboveGround } from './combat.ts';
-import { cornerGrip, HANDLING as H } from './handling.ts';
+import { cornerGrip, steerRate, HANDLING as H } from './handling.ts';
 import { RACERS } from './racers.ts';
 import type { Racer } from './types.ts';
 
@@ -26,7 +26,7 @@ export function integrateDriving(track: TrackId, p: Racer, dt: number) {
   const def = TRACKS[track], ch = RACERS[p.character], input = p.input;
   const oldForward = p.vx * Math.sin(p.yaw) + p.vz * Math.cos(p.yaw), grip = cornerGrip(p);
   const limit = grip * (p.drifting ? H.driftGrip : 1 + H.sharpGain * p.sharpTaps);
-  let turn = ch.steering * (p.gripUp > 0 ? 1.25 : 1) * (p.drifting ? H.driftSteer : 1) * Math.min(1, Math.abs(oldForward) / 8) / (1 + p.speed / 115);
+  let turn = steerRate(p, oldForward);
   // Without a drift the nose only turns as fast as the tyres can turn the velocity.
   if (!p.drifting) turn = Math.min(turn, limit / Math.max(1, Math.abs(oldForward)));
   if (p.stun <= 0) p.yaw = mod(p.yaw + input.steer * turn * dt * (oldForward < -1 ? -1 : 1) + Math.PI, Math.PI * 2) - Math.PI;
