@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { Parts, type Kit } from '../kit.ts';
+import { Parts } from '../kit.ts';
 import { hills } from '../terrain.ts';
 import { fbm2, hash2, smoothstep, type Rng } from '../noise.ts';
 import { Shape } from '../../particles/particles.ts';

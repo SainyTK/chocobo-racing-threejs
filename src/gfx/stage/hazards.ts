@@ -6,7 +6,7 @@ import type { HazardArt } from './types.ts';
 
 /** How each kind of hazard moves: dropping from the sky, bursting from the ground, lowering over the road, floating, rolling across, or standing still. */
 type Motion = 'drop' | 'burst' | 'lower' | 'float' | 'roll' | 'fixed';
-const MOTION: Record<HazardKind, Motion> = { boulder: 'drop', geyser: 'burst', cage: 'lower', door: 'lower', ghost: 'float', cart: 'roll', cutlery: 'fixed', barrel: 'fixed' };
+const MOTION: Record<HazardKind, Motion> = { boulder: 'drop', geyser: 'burst', cage: 'lower', door: 'lower', ghost: 'float', cart: 'roll', cutlery: 'fixed' };
 /** Where lowering hazards wait, above the camera's sight line, and where dropping ones start. */
 const RAISED = 9.6, DROP = 38;
 
@@ -33,7 +33,7 @@ function warnMaterial(kit: Kit, color: string) {
   }));
 }
 
-interface View { h: Hazard; motion: Motion; mover: THREE.Group; warn: THREE.ShaderMaterial | null; s: number }
+interface View { h: Hazard; motion: Motion; mover: THREE.Group; warn: THREE.ShaderMaterial | null }
 
 /**
  * Timed hazards drawn from the course's own models and moved from race time with the same pure function the simulation uses,
@@ -56,7 +56,7 @@ export class HazardViews {
         const decal = new THREE.Mesh(new THREE.PlaneGeometry(span + 2, h.length + 2).rotateX(-Math.PI / 2), warn); decal.name = 'hazard warning'; decal.renderOrder = 2;
         decal.position.set(p.x, p.y + .08, p.z); decal.rotation.y = p.yaw; kit.add(decal);
       }
-      this.views.push({ h, motion, mover, warn, s: h.s });
+      this.views.push({ h, motion, mover, warn });
     }
     this.update(0);
   }
@@ -64,7 +64,7 @@ export class HazardViews {
   /** Poses every hazard for race time `time`. */
   update(time: number) {
     for (const v of this.views) {
-      const st = hazardState(v.h, time), p = this.kit.at(v.s, st.x), m = v.mover;
+      const st = hazardState(v.h, time), p = this.kit.at(v.h.s, st.x), m = v.mover;
       m.position.set(p.x, p.y, p.z); m.rotation.set(0, p.yaw, 0); m.scale.setScalar(1); m.visible = true;
       if (v.warn) { v.warn.uniforms.uAmount.value = st.warning > 0 ? Math.min(1, st.warning * 3) : 0; v.warn.uniforms.uTime.value = time; }
       switch (v.motion) {
@@ -82,7 +82,7 @@ export class HazardViews {
           m.position.y += k * RAISED + (st.live ? Math.sin(Math.min(1, st.progress * 30) * Math.PI) * .25 : 0); break;
         }
         case 'float':
-          m.position.y += Math.sin(time * 3 + v.s) * .35;
+          m.position.y += Math.sin(time * 3 + v.h.s) * .35;
           m.rotation.y += Math.cos((time + (v.h.phase ?? 0)) * 2 * Math.PI / (v.h.period ?? 1)) > 0 ? Math.PI / 2 : -Math.PI / 2; break;
         case 'roll':
           // Carts sit at the rail head during the warning, then cross; between runs they are away in their tunnel.

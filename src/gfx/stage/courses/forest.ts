@@ -5,7 +5,7 @@ import { makeLiquid } from '../liquid.ts';
 import { fbm2, smoothstep, type Rng } from '../noise.ts';
 import { stageTime } from '../materials.ts';
 import { Shape } from '../../particles/particles.ts';
-import { boulder, bush, grass, flowers, lampPost, flagPole, bunting, savePoint, blob, block, prism, cone, cyl, ball, bead, disc, ellipsoid, rbox, torus, lathe, tube, sweep, grad, xf } from '../props/common.ts';
+import { boulder, bush, grass, flowers, lampPost, flagPole, bunting, savePoint, blob, block, prism, cone, cyl, ball, disc, ellipsoid, rbox, torus, lathe, tube, sweep, grad, xf } from '../props/common.ts';
 import { shortcutPaths, shortcutPoint } from '../../../../shared/track/index.ts';
 import { shortcutSpots } from '../shortcuts.ts';
 import type { CourseArt } from '../types.ts';

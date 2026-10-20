@@ -44,7 +44,7 @@ function raceObjects(id: TrackId, group: THREE.Group) {
 
 /** Chase camera matching the game's: behind and above the racer, looking a little ahead. Dragging orbits around it. */
 function chase(id: TrackId, course: Course, root: THREE.Group): Pick<Instance, 'camera' | 'update' | 'dispose'> {
-  const len = trackLength(id), rider = createCharacter(0), focus = new THREE.Vector3(), look = new THREE.Vector3(), home = defaultView();
+  const rider = createCharacter(0), focus = new THREE.Vector3(), look = new THREE.Vector3(), home = defaultView();
   root.add(rider.root);
   let s = 0, steer = 0, camera: THREE.Camera = new THREE.PerspectiveCamera();
   const place = (t: number) => {

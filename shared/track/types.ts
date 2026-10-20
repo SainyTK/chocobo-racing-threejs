@@ -46,6 +46,6 @@ export interface Hazard {
   stun: number; text: string;
 }
 /** Which model a hazard draws with; each course's scenery supplies the model. */
-export type HazardKind = 'cart' | 'boulder' | 'geyser' | 'cage' | 'ghost' | 'door' | 'cutlery' | 'barrel';
+export type HazardKind = 'cart' | 'boulder' | 'geyser' | 'cage' | 'ghost' | 'door' | 'cutlery';
 /** Everything on a course that changes how it drives, apart from Magic Stones. */
 export interface CourseLayout { pads: Pad[]; patches: Patch[]; ramps: Ramp[]; gaps: Gap[]; shortcuts: Shortcut[]; hazards: Hazard[] }

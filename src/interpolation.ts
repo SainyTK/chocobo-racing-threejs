@@ -1,4 +1,4 @@
-import type { Race, Racer } from '../shared/game/index.ts';
+import type { Race } from '../shared/game/index.ts';
 import { angleDelta } from '../shared/math.ts';
 /** Server-time interpolation. Arrival spacing only estimates jitter, not pose time. */
 export class Interpolation {

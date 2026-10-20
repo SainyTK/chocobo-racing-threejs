@@ -5,7 +5,7 @@ import { fbm2, ridge2, hash2, noise2, rng, smoothstep, type Rng } from '../noise
 import { stageMaterial, stageGlow, stageTime } from '../materials.ts';
 import { noiseTexture } from '../textures.ts';
 import { Particles, Shape } from '../../particles/particles.ts';
-import { boulder, brazier, blob, block, prism, cone, cyl, bead, disc, rock, lathe, sweep, grad, xf } from '../props/common.ts';
+import { boulder, brazier, blob, block, prism, cone, bead, disc, rock, lathe, sweep, grad, xf } from '../props/common.ts';
 import { horn } from '../props/shapes.ts';
 import type { Hazard } from '../../../../shared/track/index.ts';
 import { layoutHazard } from '../hazards.ts';

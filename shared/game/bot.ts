@@ -16,7 +16,7 @@ export function botInput(r: Race, p: Racer): Input {
   const delta = angleDelta(Math.atan2(target.x - p.px, target.z - p.pz), p.yaw);
   const curve = line.shortcut ? 0 : Math.max(...[12, 25, 40].map(d => Math.abs(pointAt(r.track, p.s + d).curve)));
   const desiredSpeed = Math.min(RACERS[p.character].speed * (.9 + i * .012), Math.sqrt(16 / Math.max(.001, curve)));
-  const brake = p.speed > Math.max(13, desiredSpeed + 1.5) || line.brake && p.speed > 14;
+  const brake = p.speed > Math.max(13, desiredSpeed + 1.5) || p.speed > line.limit;
   const steer = clamp(delta * 2.1, -1, 1);
   return { steer, throttle: !brake, brake, reverse: false, drift: !brake && Math.abs(delta) > .28 && p.speed > 18 && p.drift < 1.8, item: p.stones.length > 0 && Math.sin(r.time * 2 + i) > .65, ability: p.ability >= 100 && (p.abilityId !== 'dash' && p.abilityId !== 'charge' || curve < .014), rescue: p.speed < 2 && r.time > 8 && Math.abs(p.x) > def.width - 2 || p.s > (p.gates + 2) * len / 12 };
 }

@@ -14,8 +14,8 @@ const AIR: Traction = { top: 1, accel: 0, grip: 0, steer: .45, air: true };
 /** Grass and rough ground halve top speed; mud and goo drag; ice and syrup let the vehicle slide. */
 const GROUND: Record<PatchSurface | 'rough', Traction> = {
   rough: { ...FIRM, top: .5 },
-  slow: { ...FIRM, top: .6, accel: .65 },
-  slip: { ...FIRM, grip: .16, steer: .8 },
+  slow: { ...FIRM, top: .45, accel: .5 },
+  slip: { ...FIRM, grip: .1, steer: .7 },
 };
 
 /** The surface under a racer: the road, a shortcut, a patch, or the rough beyond the edge. */
