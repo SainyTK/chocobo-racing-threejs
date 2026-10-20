@@ -1,0 +1,21 @@
+.callout.pop{animation:callout-pop .32s cubic-bezier(.2,1.6,.4,1)}
+.callout.bad{color:#ffb3a0;background:linear-gradient(90deg,transparent,#6a2338d9 15%,#6a2338d9 85%,transparent)}
+.callout.good{color:#fff2a8}
+.callout.info{color:#e6f0ff}
+.callout.status{padding:5px 18px;font-size:22px;font-style:italic;color:#ffe17d;background:linear-gradient(90deg,transparent,#1b244ec0 20%,#1b244ec0 80%,transparent)}
+@keyframes callout-pop{from{transform:translateX(-50%) scale(1.35);opacity:0}to{transform:translateX(-50%) scale(1);opacity:1}}
+.standings .portrait{display:block;transform-origin:50% 60%}
+.standings>div.casting .portrait{animation:portrait-bob .35s ease-in-out 2}
+.standings>div.crashed .portrait{animation:portrait-spin .5s linear infinite}
+.standings>div.crashed{background:#5a2140b8}
+.standings>div.finished{background:linear-gradient(#5d5531c0,#2f2f4bc0)}
+@keyframes portrait-bob{50%{transform:translateY(-9px)}}
+@keyframes portrait-spin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.standings>div.crashed .portrait,.standings>div.casting .portrait,.callout.pop{animation:none}}
+body.finishing .hud-bottom,body.finishing .race-hint,body.finishing .touch-controls,body.finishing .callout{display:none}
+body.finishing .countdown strong{animation:finish-place .5s cubic-bezier(.2,1.5,.4,1)}
+@keyframes finish-place{from{transform:scale(2.2);opacity:0}}
+body.finishing .countdown{top:21%}
+body.podium .hud-top,body.podium .standings,body.podium .countdown{display:none}
+.touch-device .callout{top:calc(var(--hud-standings-bottom) + var(--hud-unit) * 2)}
+body.finishing.touch-device .countdown{top:calc(var(--hud-standings-bottom) + var(--hud-unit) * 2)}

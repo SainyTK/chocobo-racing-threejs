@@ -12,13 +12,14 @@ import { BARRIER_SECONDS, DOOM, STONE_RESPAWN } from '../spells.ts';
 import { aboveGround, crash, hit } from '../combat.ts';
 import { recover, useAbility, useItem } from '../actions.ts';
 import { event } from '../events.ts';
+import { stepFinished } from './finished.ts';
 import { random } from '../random.ts';
 import type { Race, Racer } from '../types.ts';
 
 /** Advances one racer: timers, abilities, driving physics, walls and falls, lap gates, pickups, traps and pads. */
 export function stepRacer(r: Race, p: Racer, dt: number) {
   const def = TRACKS[r.track], len = trackLength(r.track), objects = courseObjects(r.track);
-  if (p.finishTime !== null) { p.speed = 0; p.vx = p.vz = 0; p.drifting = false; return; }
+  if (p.finishTime !== null) { stepFinished(r, p, dt); return; }
   const input = p.input;
   for (const key of ['boost', 'shield', 'barrier', 'stun', 'invincible', 'flying', 'gripUp', 'charging', 'mini', 'contactCooldown', 'wallCooldown', 'pickupCooldown'] as const) p[key] = Math.max(0, p[key] - dt);
   if (p.doom > 0) { p.doom = Math.max(0, p.doom - dt); if (p.doom <= 0) crash(r, p, DOOM.stun, 'Doom!'); }
@@ -53,7 +54,7 @@ export function stepRacer(r: Race, p: Racer, dt: number) {
     p.gates++;
     if (p.gates % 12 === 0) {
       const split = r.time - (p.s - nextGate) / Math.max(1, alignment); p.lapTimes.push(split - p.lapStart); p.lapStart = split;
-      if (p.gates / 12 >= r.laps) { p.finishTime = split; p.speed = 0; p.vx = p.vz = 0; p.drifting = false; if (r.firstFinish === null) r.firstFinish = r.time; event(r, p, 'finish', 'FINISH!'); }
+      if (p.gates / 12 >= r.laps) { p.finishTime = split; if (r.firstFinish === null) r.firstFinish = r.time; event(r, p, 'finish', 'FINISH!'); }
       else { p.lap = p.gates / 12 + 1; event(r, p, 'lap', p.lap === r.laps ? 'FINAL LAP' : `LAP ${p.lap}`); }
     }
   }

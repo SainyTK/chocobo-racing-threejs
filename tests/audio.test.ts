@@ -18,6 +18,7 @@ vi.mock('../src/music/index.ts', () => ({
   STAGE_MUSIC: { test: fixtures.test, forest: fixtures.forest, gate: fixtures.gate, mines: fixtures.mines },
 }));
 import { AudioEngine } from '../src/audio.ts';
+import { SOUNDS } from '../src/sfx/sounds.ts';
 
 class Param {
   value = 0;
@@ -33,7 +34,7 @@ class Node {
   connect(node: Node) { this.connections.push(node); return node; }
 }
 class Gain extends Node { gain = new Param(); }
-class Filter extends Node { type = 'lowpass'; frequency = new Param(); }
+class Filter extends Node { type = 'lowpass'; frequency = new Param(); Q = new Param(); }
 class Panner extends Node { pan = new Param(); }
 class Source extends Node {
   type = 'sine'; frequency = new Param(); detune = new Param(); buffer: Buffer | null = null;
@@ -80,7 +81,7 @@ describe('score playback', () => {
 
   it('defers context creation until unlock and safely tolerates unavailable autoplay APIs', () => {
     const engine = new AudioEngine();
-    engine.update(true, 'forest'); engine.effect('pickup');
+    engine.update(true, 'forest'); engine.play(SOUNDS.pickup);
     expect(engine.context).toBeNull();
     expect(engine.playback.scoreId).toBe('forest');
     vi.stubGlobal('AudioContext', undefined); vi.stubGlobal('webkitAudioContext', undefined);
@@ -91,7 +92,7 @@ describe('score playback', () => {
   it('restarts the current score at beat zero without stopping effects', () => {
     const { engine, ctx } = setup();
     engine.update(true, 'test'); ctx.advance(.4); engine.update(true, 'test');
-    engine.effect('pickup');
+    engine.play(SOUNDS.pickup);
     expect(engine.playback.positionSeconds).toBeGreaterThan(.3);
     engine.restartMusic();
     expect(engine.playback.positionSeconds).toBe(0);
@@ -131,14 +132,15 @@ describe('score playback', () => {
     engine.update(false);
     expect(engine.playback.scoreId).toBe('menu');
     const menu = [...ctx.sources];
-    engine.effect('pickup');
+    engine.play(SOUNDS.pickup);
     const effects = ctx.sources.slice(menu.length);
     const master = ctx.gains[0], musicBus = ctx.gains[1], effectsBus = ctx.gains[2];
     expect(master.connections).toEqual([ctx.destination]);
     expect(musicBus.connections).toEqual([master]);
     expect(effectsBus.connections).toEqual([master]);
-    expect(ctx.panners.every(pan => pan.connections[0] === musicBus)).toBe(true);
-    for (const effect of effects) expect((effect.connections[0] as Gain).connections[0]).toBe(effectsBus);
+    const effectPanners = effects.map(effect => (effect.connections[0] as Gain).connections[0] as Panner);
+    expect(ctx.panners.filter(pan => !effectPanners.includes(pan)).every(pan => pan.connections[0] === musicBus)).toBe(true);
+    for (const pan of effectPanners) expect(pan.connections[0]).toBe(effectsBus);
     engine.update(true, 'test');
     expect(engine.playback.scoreId).toBe('test');
     expect(menu.every(source => source.stop.mock.calls.at(-1)?.[0] === 0)).toBe(true);
@@ -197,13 +199,13 @@ describe('score playback', () => {
   it('mutes master immediately, cancels future music, and resumes without a backlog', () => {
     const { engine, ctx } = setup();
     engine.update(true, 'test'); ctx.advance(.16); engine.update(true, 'test');
-    engine.effect('lap');
+    engine.play(SOUNDS.lap);
     engine.setEnabled(false);
     expect(ctx.gains[0].gain.setValueAtTime).toHaveBeenLastCalledWith(0, .16);
     expect(engine.playback.activeMusicVoices).toBe(0);
     expect(engine.playback.activeEffectVoices).toBe(3);
     const count = ctx.sources.length;
-    ctx.advance(100); engine.update(true, 'test'); engine.effect('pickup');
+    ctx.advance(100); engine.update(true, 'test'); engine.play(SOUNDS.pickup);
     expect(ctx.sources).toHaveLength(count);
     engine.setEnabled(true); engine.update(true, 'test');
     expect(ctx.gains[0].gain.setValueAtTime).toHaveBeenLastCalledWith(.18, 100);
@@ -216,7 +218,7 @@ describe('score playback', () => {
     const { engine, ctx } = setup();
     engine.update(true, 'test'); engine.music = false; engine.update(true, 'test');
     expect(engine.playback.activeMusicVoices).toBe(0);
-    engine.effect('pickup'); expect(engine.playback.activeEffectVoices).toBe(3);
+    engine.play(SOUNDS.pickup); expect(engine.playback.activeEffectVoices).toBe(3);
     ctx.advance(30); engine.music = true; engine.update(true, 'test');
     expect(engine.playback.running).toBe(true);
     ctx.state = 'suspended'; engine.update(true, 'test');
@@ -245,7 +247,7 @@ describe('score playback', () => {
     engine.update(true, 'gate'); engine.update(true, 'gate');
     expect(ctx.sources).toHaveLength(96);
     expect(starts(ctx).every(at => at <= .12)).toBe(true);
-    for (let i = 0; i < 100; i++) engine.tone(440, 100);
+    for (let i = 0; i < 100; i++) engine.play([{ wave: 'sine', freq: 440, length: 100, volume: .3 }]);
     expect(engine.playback.activeEffectVoices).toBe(32);
     expect(ctx.sources.every(source => source.stop.mock.calls[0][0] - source.start.mock.calls[0][0] <= 4.2)).toBe(true);
     ctx.advance(5);
@@ -283,7 +285,7 @@ describe('score playback', () => {
     const first: StageMusic = { ...fixtures.test, bpm: 100, events: [{ ...fixtures.test.events[0], voice: 'piano' }] };
     const second: StageMusic = { ...first, bpm: 160, events: [{ ...first.events[0], note: 79, voice: 'guitar' }] };
     engine.update(true, 'test', false, first);
-    engine.effect('pickup');
+    engine.play(SOUNDS.pickup);
     const music = ctx.sources.filter(source => source.connections[0] instanceof Gain &&
       (source.connections[0] as Gain).connections[0] instanceof Filter);
     const count = ctx.sources.length;

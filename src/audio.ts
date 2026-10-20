@@ -2,6 +2,9 @@ import type { TrackId } from '../shared/track/types.ts';
 import { MENU_MUSIC, STAGE_MUSIC } from './music/index.ts';
 import type { MusicEvent, StageMusic } from './music/types.ts';
 import { INSTRUMENTS } from './music/instruments.ts';
+import { EngineLoop, type DriveState } from './sfx/engine-loop.ts';
+import { ENGINE_VOICES } from './sfx/engines.ts';
+import type { Layer, Sound } from './sfx/types.ts';
 
 const LOOK_AHEAD = .12;
 const START_LEAD = .015;
@@ -32,6 +35,7 @@ export class AudioEngine {
   private effectVoices = new Set<Voice>();
   private scheduledNotes = 0;
   private volume = 1;
+  private engines: Record<'player' | 'rival', EngineLoop | null> = { player: null, rival: null };
 
   get playback() {
     return {
@@ -40,6 +44,7 @@ export class AudioEngine {
       running: this.running,
       activeMusicVoices: this.musicVoices.size,
       activeEffectVoices: this.effectVoices.size,
+      engines: Object.values(this.engines).filter(Boolean).length,
       scheduledNotes: this.scheduledNotes,
       positionSeconds: this.score ? (this.running
         ? Math.max(0, ((this.context?.currentTime ?? 0) - this.origin) * this.score.bpm / 60) % this.score.beats
@@ -73,7 +78,7 @@ export class AudioEngine {
     const now = this.context.currentTime;
     this.master.gain.cancelScheduledValues(now);
     this.master.gain.setValueAtTime(value ? .18 * this.volume : 0, now);
-    if (!value) this.freeze(now);
+    if (!value) { this.freeze(now); this.drive(null); this.drive(null, 'rival'); }
   }
 
   setVolume(value: number) {
@@ -89,30 +94,21 @@ export class AudioEngine {
     this.position = 0;
   }
 
-  tone(freq: number, duration = .15, type: OscillatorType = 'sine', volume = .3, delay = 0) {
-    if (!this.context || !this.effectsBus || !this.enabled || this.context.state !== 'running') return;
-    if (this.effectVoices.size >= MAX_EFFECT_VOICES || !Number.isFinite(freq) || freq <= 0) return;
-    const at = this.context.currentTime + Math.max(0, Math.min(delay, 2));
-    const length = Math.max(.02, Math.min(duration, MAX_NOTE_SECONDS));
-    const osc = this.context.createOscillator();
-    const gain = this.context.createGain();
-    osc.type = type;
-    osc.frequency.value = freq;
-    gain.gain.setValueAtTime(0, at);
-    gain.gain.linearRampToValueAtTime(Math.max(.001, Math.min(volume, 1)), at + .008);
-    gain.gain.exponentialRampToValueAtTime(.001, at + length);
-    osc.connect(gain);
-    gain.connect(this.effectsBus);
-    this.startVoice([osc], [gain], this.effectVoices, at, at + length + .01);
+  /** Plays a synthesized effect. `gain` scales its volume and `pan` places it from left (-1) to right (1). */
+  play(sound: Sound, gain = 1, pan = 0) {
+    if (!this.context || !this.effectsBus || !this.enabled || this.context.state !== 'running' || gain <= 0) return;
+    for (const layer of sound) {
+      if (this.effectVoices.size >= MAX_EFFECT_VOICES) return;
+      this.playLayer(layer, gain, pan);
+    }
   }
 
-  effect(type: string) {
-    if (type === 'pickup') [659, 880, 1046].forEach((f, i) => this.tone(f, .2, 'sine', .45, i * .07));
-    else if (['drift', 'pad', 'haste', 'ability'].includes(type)) [330, 440, 660, 880].forEach((f, i) => this.tone(f, .22, 'triangle', .35, i * .05));
-    else if (['hit', 'slow', 'fire'].includes(type)) { this.tone(110, .25, 'sawtooth', .16); this.tone(82, .3, 'triangle', .4, .08); }
-    else if (type === 'finish') [523, 659, 784, 1046].forEach((f, i) => this.tone(f, .5, 'triangle', .4, i * .15));
-    else if (type === 'lap') [523, 784, 1046].forEach((f, i) => this.tone(f, .3, 'sine', .4, i * .1));
-    else this.tone(660, .1, 'sine', .2);
+  /** Keeps a vehicle sound in step with a racer: the player's own, or the nearest rival's. `null` silences that slot. */
+  drive(state: DriveState | null, slot: 'player' | 'rival' = 'player') {
+    const live = state && this.context && this.effectsBus && this.enabled && this.context.state === 'running', engine = this.engines[slot];
+    if (engine && (!live || engine.character !== state.character)) { engine.stop(); this.engines[slot] = null; }
+    if (!live) return;
+    (this.engines[slot] ??= new EngineLoop(this.context!, this.effectsBus!, this.noiseBuffer(), state.character, ENGINE_VOICES[state.character] ?? ENGINE_VOICES[0])).set(state);
   }
 
   update(racing: boolean, track: TrackId = 'test', paused = false, override?: StageMusic) {
@@ -201,6 +197,45 @@ export class AudioEngine {
     voice.sources.forEach(source => source.disconnect());
     voice.nodes.forEach(node => node.disconnect());
     pool.delete(voice);
+  }
+
+  private playLayer(layer: Layer, gain: number, pan: number) {
+    const ctx = this.context!, at = ctx.currentTime + Math.max(0, Math.min(layer.at ?? 0, 2)), length = Math.max(.02, Math.min(layer.length, MAX_NOTE_SECONDS)), end = at + length;
+    const out = ctx.createGain(), panner = ctx.createStereoPanner(), nodes: AudioNode[] = [out, panner], sources: Source[] = [];
+    panner.pan.value = Math.max(-1, Math.min(pan, 1)); out.connect(panner); panner.connect(this.effectsBus!);
+    const peak = Math.max(.001, Math.min(layer.volume * gain, 1));
+    out.gain.setValueAtTime(0, at);
+    out.gain.linearRampToValueAtTime(peak, at + Math.min(layer.attack ?? .008, length / 2));
+    out.gain.exponentialRampToValueAtTime(.001, end);
+    let source: Source;
+    if (layer.wave === 'noise') {
+      const noise = ctx.createBufferSource(); noise.buffer = this.noiseBuffer(); noise.loop = true; source = noise;
+    } else {
+      const osc = ctx.createOscillator(), freq = Math.max(1, layer.freq ?? 440); osc.type = layer.wave;
+      osc.frequency.setValueAtTime(freq, at);
+      if (layer.to) osc.frequency.exponentialRampToValueAtTime(Math.max(1, layer.to), end);
+      if (layer.vibrato) {
+        const lfo = ctx.createOscillator(), depth = ctx.createGain(); lfo.frequency.value = layer.vibrato.rate; depth.gain.value = layer.vibrato.depth;
+        lfo.connect(depth); depth.connect(osc.frequency); sources.push(lfo); nodes.push(depth);
+      }
+      source = osc;
+    }
+    sources.unshift(source);
+    let tail: AudioNode = source;
+    if (layer.filter) {
+      const f = ctx.createBiquadFilter(), { type, freq, to, q } = layer.filter; f.type = type; f.Q.value = q ?? 1;
+      f.frequency.setValueAtTime(freq, at); if (to) f.frequency.exponentialRampToValueAtTime(to, end);
+      tail.connect(f); tail = f; nodes.push(f);
+    }
+    if (layer.formants) {
+      const { from, to, q } = layer.formants;
+      from.forEach((f0, i) => {
+        const band = ctx.createBiquadFilter(), weight = ctx.createGain(); band.type = 'bandpass'; band.Q.value = q ?? 6; weight.gain.value = i ? .6 : 1;
+        band.frequency.setValueAtTime(f0, at); if (to) band.frequency.linearRampToValueAtTime(to[i], end);
+        tail.connect(band); band.connect(weight); weight.connect(out); nodes.push(band, weight);
+      });
+    } else tail.connect(out);
+    this.startVoice(sources, nodes, this.effectVoices, at, end + .01);
   }
 
   private noiseBuffer() {

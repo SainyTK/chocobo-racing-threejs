@@ -2,24 +2,26 @@ import * as THREE from 'three';
 import type { Race } from '../../../shared/game/index.ts';
 import { shell } from '../materials/shell.ts';
 import { decalMaterial } from '../materials/decal.ts';
-import { sphereGeo, ringGeo, pillarGeo } from './geometries.ts';
+import { sphereGeo, ringGeo, pillarGeo, domeGeo } from './geometries.ts';
 import { floorY } from './util.ts';
 
-export type BurstKind = 'ring' | 'pillar' | 'sphere';
+/** `dome` is a rim-lit expanding shell that stays clear in the middle, so the view through it is never washed out. */
+export type BurstKind = 'ring' | 'pillar' | 'sphere' | 'dome';
 export interface BurstOptions { grow?: number; follow?: string; height?: number }
 interface Burst { mesh: THREE.Mesh; age: number; life: number; size: number; grow: number; follow?: string; kind: BurstKind }
 
-/** Pooled one-shot meshes: shockwave rings, light pillars and blast spheres. */
+/** Pooled one-shot meshes: shockwave rings, light pillars, blast spheres and shockwave domes. */
 export class Bursts {
   private pool: Burst[] = [];
   constructor(private group: THREE.Group) {}
   spawn(kind: BurstKind, at: THREE.Vector3, color: string, size: number, life: number, o: BurstOptions = {}) {
     let b = this.pool.find(x => x.kind === kind && x.age >= x.life && (x.mesh.material as THREE.ShaderMaterial).uniforms.uColor.value.equals(new THREE.Color(color)));
     if (!b) {
-      const mat = kind === 'ring' ? decalMaterial('ring', color) : kind === 'pillar' ? shell(color, '#ffffff', { power: 2.2, intensity: .85 }) : shell(color, '#ffffff', { power: 1.6, intensity: 2.2 });
-      if (kind === 'sphere') mat.side = THREE.DoubleSide;
+      const mat = kind === 'ring' ? decalMaterial('ring', color) : kind === 'pillar' ? shell(color, '#ffffff', { power: 2.2, intensity: .85 }) : kind === 'dome' ? shell('#000000', color, { power: 3, intensity: 1.5 }) : shell(color, '#ffffff', { power: 1.6, intensity: 2.2 });
+      if (kind === 'sphere' || kind === 'dome') mat.side = THREE.DoubleSide;
+      if (kind === 'dome') mat.uniforms.uColor = mat.uniforms.uEdge;
       if (kind === 'pillar') { mat.side = THREE.DoubleSide; mat.uniforms.uColor = mat.uniforms.uInner; } if (kind === 'sphere') mat.uniforms.uColor = mat.uniforms.uInner;
-      b = { mesh: new THREE.Mesh(kind === 'ring' ? ringGeo : kind === 'pillar' ? pillarGeo : sphereGeo, mat), age: 0, life, size, grow: 1, kind }; b.mesh.frustumCulled = false; b.mesh.renderOrder = 3; this.group.add(b.mesh); this.pool.push(b);
+      b = { mesh: new THREE.Mesh(kind === 'ring' ? ringGeo : kind === 'pillar' ? pillarGeo : kind === 'dome' ? domeGeo : sphereGeo, mat), age: 0, life, size, grow: 1, kind }; b.mesh.frustumCulled = false; b.mesh.renderOrder = 3; this.group.add(b.mesh); this.pool.push(b);
     }
     b.age = 0; b.life = life; b.size = size; b.grow = o.grow ?? 1; b.follow = o.follow; b.mesh.visible = true; b.mesh.position.copy(at); b.mesh.userData.height = o.height ?? 12;
   }
@@ -31,6 +33,7 @@ export class Bursts {
       const ease = 1 - (1 - t) ** 3;
       if (b.kind === 'ring') { b.mesh.scale.setScalar(b.size * (.15 + ease * .85)); m.uniforms.uProgress.value = t; }
       if (b.kind === 'pillar') { const w = b.size * (1 - t * .6); b.mesh.scale.set(w, b.mesh.userData.height * Math.min(1, t * 4), w); m.uniforms.uOpacity.value = (1 - t) ** 1.5; }
+      if (b.kind === 'dome') { b.mesh.scale.setScalar(b.size * (.05 + ease * .95)); m.uniforms.uOpacity.value = (1 - t) ** 1.2; }
       if (b.kind === 'sphere') { b.mesh.scale.setScalar(b.size * (b.grow >= 1 ? .2 + ease * .8 * b.grow : 1 + Math.sin(t * Math.PI) * b.grow)); m.uniforms.uOpacity.value = (1 - t) ** 1.6; }
       if (m.uniforms.uTime) m.uniforms.uTime.value = time;
     }

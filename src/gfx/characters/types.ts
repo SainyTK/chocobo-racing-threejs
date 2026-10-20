@@ -1,8 +1,9 @@
 import * as THREE from 'three';
 import type { SkinUniforms } from '../materials/skin.ts';
 import type { Rig } from './rig.ts';
+import type { Pose } from './poses.ts';
 
-export interface AnimState { t: number; dt: number; speed: number; steer: number; drifting: boolean; flying: number; stun: number; boost: number; menu: boolean }
+export interface AnimState { t: number; dt: number; speed: number; steer: number; drifting: boolean; flying: number; stun: number; boost: number; menu: boolean; pose?: Pose }
 /** A rigged, animated racer. The world positions `root`; the model animates everything below it. */
 export interface Character {
   root: THREE.Group; model: THREE.Group; skin: SkinUniforms;
