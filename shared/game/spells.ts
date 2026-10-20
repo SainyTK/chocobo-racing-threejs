@@ -19,11 +19,11 @@ export const BARRIER_SECONDS = 4;
 /** Seconds of the shield a cast Reflect stone raises. A held Reflect stone protects on its own. */
 export const REFLECT_SECONDS = 5;
 
-/** Stun from a crashing spell at a level: level 3 Fire, Ice and Thunder are heavy crashes; Ultima III is worse still. */
-export function crashSeconds(kind: Item | 'charge', level: number) {
-  if (kind === 'charge') return CRASH.spin;
-  if (kind === 'ultima') return [CRASH.spin, CRASH.crash, 3.2][level - 1];
-  if (level >= 3) return CRASH.heavy;
-  if (kind === 'ice' || kind === 'thunder' && level === 1) return CRASH.spin;
-  return CRASH.crash;
+/** Hit tier of a crashing spell: 1 spin-out, 2 crash, 3 heavy crash. Blizzard sheets, Thunder, Ultima and Charge spin; every level 3 spell is heavy. */
+export function crashTier(kind: Item | 'charge', level: number): 1 | 2 | 3 {
+  if (level >= 3) return 3;
+  if (kind === 'charge' || kind === 'ice' || level === 1 && (kind === 'thunder' || kind === 'ultima')) return 1;
+  return 2;
 }
+/** Stun seconds of a crashing spell. Ultima III is a catastrophic crash, longer than the heavy tier. */
+export const crashSeconds = (kind: Item | 'charge', level: number) => kind === 'ultima' && level >= 3 ? 3.2 : [CRASH.spin, CRASH.crash, CRASH.heavy][crashTier(kind, level) - 1];

@@ -2,7 +2,7 @@ export { TICK, GRID_SIZE } from './constants.ts';
 export { ABILITIES, ABILITY_IDS, type AbilityId } from './abilities.ts';
 export { RACERS, type RacerProfile } from './racers.ts';
 export { ITEMS, STONE_POWER, randomStoneChance, drawStone, spellName, type Item } from './items.ts';
-export { SAFE_WINDOW, STONE_RESPAWN, MINI_SHRINK } from './spells.ts';
+export { SAFE_WINDOW, STONE_RESPAWN, MINI_SHRINK, crashTier } from './spells.ts';
 export { miniScale } from './mini.ts';
 export { neutralInput, cleanInput, type Input } from './input.ts';
 export type { Racer, StoneStack, GameEvent, Trap, Projectile, RaceMode, Race } from './types.ts';

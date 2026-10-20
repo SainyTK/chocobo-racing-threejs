@@ -1,7 +1,8 @@
 import type { StoneField, TrackId } from './types.ts';
 
 /**
- * Magic Stone fields per course, on straight road so racers can pick a lane.
+ * Magic Stone fields per course, on straight road so racers can pick a lane. Fields stay clear of shortcut forks, ramps,
+ * the Floating Gardens gap and timed hazards such as Vulcan-O Valley's boulders.
  * Every course uses the stone set the original introduced in its Story chapter: Haste and "?" in Moogle Forest,
  * then Fire, Ice, Thunder, Mini, Reflect and Doom one chapter at a time. The original's first course had no stones;
  * here it shares Moogle Forest's set so a quick race on it still has magic. Ultima only comes from "?" stones.
@@ -36,16 +37,16 @@ export const STONE_LAYOUTS: Record<TrackId, StoneField[]> = {
   gardens: [
     { at: .08, rows: 2, lanes: ['mini', 'fire', 'thunder', 'haste'] },
     { at: .33, rows: 1, lanes: ['ice', 'random', 'mini', 'fire'] },
-    { at: .60, rows: 1, lanes: ['thunder', 'haste', 'ice', 'random'] },
+    { at: .76, rows: 1, lanes: ['thunder', 'haste', 'ice', 'random'] },
   ],
   gingerbread: [
     { at: .08, rows: 2, lanes: ['fire', 'shield', 'ice', 'thunder'] },
     { at: .39, rows: 1, lanes: ['mini', 'random', 'haste', 'fire'] },
-    { at: .73, rows: 1, lanes: ['thunder', 'ice', 'shield', 'random'] },
+    { at: .86, rows: 1, lanes: ['thunder', 'ice', 'shield', 'random'] },
   ],
   volcano: [
     { at: .08, rows: 2, lanes: ['fire', 'thunder', 'doom', 'haste'] },
     { at: .40, rows: 1, lanes: ['ice', 'random', 'mini', 'fire'] },
-    { at: .73, rows: 1, lanes: ['shield', 'thunder', 'random', 'ice'] },
+    { at: .80, rows: 1, lanes: ['shield', 'thunder', 'random', 'ice'] },
   ],
 };

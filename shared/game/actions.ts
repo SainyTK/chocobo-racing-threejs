@@ -1,4 +1,4 @@
-import { pointAt, trackLength } from '../track/sampling.ts';
+import { trackLength } from '../track/sampling.ts';
 import { ABILITIES, ABILITY_SECONDS } from './abilities.ts';
 import { ITEMS, drawStone, inBackHalf, spellName } from './items.ts';
 import { addStone, canAddStone, syncInventory, takeStack, takeStone } from './inventory.ts';
@@ -21,7 +21,9 @@ export function useItem(r: Race, p: Racer) {
   // Fire flies straight, Fira homes on the racer ahead and Firaga sends a homing fireball at every racer ahead, or at everyone from first place.
   else if (kind === 'fire') for (const target of level === 3 ? rivalsAhead(r, p) : [level === 2 ? racerAhead(r, p) : undefined]) fireball(r, p, level, target);
   else if (kind === 'ice' && level < 3) {
-    for (let i = 0; i < (level === 2 ? 6 : 1); i++) { const q = pointAt(r.track, p.s - 4 - Math.floor(i / 3) * 4, p.x + (level === 2 ? (i % 3 - 1) * 3 : 0)); r.traps.push({ id: ++r.eventId, px: q.x, pz: q.z, radius: 2.2, owner: p.id, life: 18 }); }
+    // Sheets drop behind the racer in world space, so they land where it drives, shortcuts included.
+    const fx = Math.sin(p.yaw), fz = Math.cos(p.yaw);
+    for (let i = 0; i < (level === 2 ? 6 : 1); i++) { const back = 4 + Math.floor(i / 3) * 4, side = level === 2 ? (i % 3 - 1) * 3 : 0; r.traps.push({ id: ++r.eventId, px: p.px - fx * back + fz * side, pz: p.pz - fz * back - fx * side, radius: 2.2, owner: p.id, life: 18 }); }
   } else {
     // Ultima and level 3 spells hit every rival; the rest hit one racer.
     const targets = kind === 'ultima' || level === 3 ? activeRivals(r, p) : [spellTarget(r, p)];
