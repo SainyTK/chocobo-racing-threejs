@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import type { SkinUniforms } from './skin.ts';
+import { DITHER_FADE, type SkinUniforms } from './skin.ts';
 
 /** Three-band ramp shared by every toon material. */
 const ramp = (() => {
@@ -14,8 +14,9 @@ export function toon(color: string, u: SkinUniforms, o: ToonOptions = {}) {
   const m = new THREE.MeshToonMaterial({ color, gradientMap: ramp, side: o.side ?? THREE.FrontSide });
   if (o.emissive) { m.emissive.set(o.emissive); m.emissiveIntensity = o.emissiveIntensity ?? 1; }
   m.onBeforeCompile = s => {
-    s.uniforms.uFlash = u.flash; s.uniforms.uFlashColor = u.flashColor; s.uniforms.uRim = u.rim;
-    s.fragmentShader = 'uniform float uFlash;\nuniform vec3 uFlashColor;\nuniform float uRim;\n' + s.fragmentShader.replace('#include <opaque_fragment>', `
+    s.uniforms.uFlash = u.flash; s.uniforms.uFlashColor = u.flashColor; s.uniforms.uRim = u.rim; s.uniforms.uFade = u.fade;
+    s.fragmentShader = 'uniform float uFlash;\nuniform vec3 uFlashColor;\nuniform float uRim;\nuniform float uFade;\n' + s.fragmentShader.replace('#include <opaque_fragment>', `
+      ${DITHER_FADE}
       float rimF = 1.0 - clamp(dot(normalize(normal), normalize(vViewPosition)), 0.0, 1.0);
       outgoingLight += diffuseColor.rgb * smoothstep(0.62, 0.86, rimF) * uRim;
       outgoingLight = mix(outgoingLight, uFlashColor, uFlash);

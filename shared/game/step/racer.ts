@@ -3,7 +3,9 @@ import { TRACKS } from '../../track/tracks.ts';
 import { pointAt, projectOnTrack, trackLength } from '../../track/sampling.ts';
 import { courseObjects } from '../../track/objects.ts';
 import { ABILITIES } from '../abilities.ts';
-import { integrateDriving } from '../driving.ts';
+import { integrateDriving, updateDriveMode } from '../driving.ts';
+import { HANDLING } from '../handling.ts';
+import { bounceOffWall } from './walls.ts';
 import { ITEMS, drawStone } from '../items.ts';
 import { addStone, canAddStone, maxLevel, MAX_STACKS } from '../inventory.ts';
 import { aboveGround, crash, hit } from '../combat.ts';
@@ -28,13 +30,12 @@ export function stepRacer(r: Race, p: Racer, dt: number) {
   p.lastItem = input.item; p.lastAbility = input.ability;
   if (p.stun > 0 && p.spinDash) {
     if (!input.throttle && !input.brake) p.spinReleased = true;
-    if (p.spinReleased && input.throttle && !p.lastThrottle) { p.stun = 0; p.boost = 1.4; p.spinDash = false; event(r, p, 'spindash', 'Spin Dash!'); }
+    if (p.spinReleased && input.throttle && !p.lastThrottle) { p.stun = 0; p.boost = HANDLING.spinDash; p.spinDash = false; event(r, p, 'spindash', 'Spin Dash!'); }
   }
   p.lastThrottle = input.throttle;
-  const drifting = (input.drift || input.throttle && input.brake) && Math.abs(input.steer) > .12 && p.speed > 9 && p.stun <= 0;
-  if (drifting) p.drift += dt; else p.drift = Math.max(0, p.drift - dt * 3);
-  if (p.drift > 2.8) { crash(r, p, 1.4, 'Over-drift! Release, then accelerate for Spin Dash.'); p.spinDash = true; p.spinReleased = false; }
-  p.drifting = drifting && p.stun <= 0;
+  updateDriveMode(p, dt);
+  if (p.drifting) p.drift += dt; else p.drift = Math.max(0, p.drift - dt * 3);
+  if (p.drift > HANDLING.overDrift) { crash(r, p, 1.4, 'Over-drift! Release, then accelerate for Spin Dash.'); p.spinDash = true; p.spinReleased = false; }
   integrateDriving(r.track, p, dt);
   const oldS = p.s, projection = projectOnTrack(r.track, p.px, p.pz, p.routeS);
   const delta = mod(projection.s - p.routeS + len / 2, len) - len / 2;
@@ -43,12 +44,8 @@ export function stepRacer(r: Race, p: Racer, dt: number) {
   const tangent = pointAt(r.track, p.routeS), alignment = p.vx * Math.sin(tangent.yaw) + p.vz * Math.cos(tangent.yaw);
   p.wrongWay = alignment < -3;
   if (Math.abs(p.x) < def.width - 1 && alignment > 3 && p.s < (p.gates + 1) * len / 12 + 4) p.lastSafeS = p.s;
-  if (def.wall && Math.abs(p.x) > def.width + .7) {
-    const side = Math.sign(p.x), outward = (p.vx * projection.nx + p.vz * projection.nz) * side;
-    p.px = projection.px + projection.nx * side * (def.width + .65); p.pz = projection.pz + projection.nz * side * (def.width + .65);
-    if (outward > 0) { p.vx -= projection.nx * side * outward * 1.25; p.vz -= projection.nz * side * outward * 1.25; p.vx *= .82; p.vz *= .82; }
-    if (outward > 9 && p.wallCooldown <= 0) { p.wallCooldown = .7; event(r, p, 'wall', 'Wall hit!'); }
-  } else if ((def.cliff && Math.abs(p.x) > def.width + 5 || Math.abs(p.x) > def.width + 35) && p.flying <= 0) { p.falling = 1.3; p.vx = p.vz = p.speed = 0; event(r, p, 'fall', 'Watch the edge!'); }
+  if (def.wall && Math.abs(p.x) > def.width + .7) bounceOffWall(r, p, projection);
+  else if ((def.cliff && Math.abs(p.x) > def.width + 5 || Math.abs(p.x) > def.width + 35) && p.flying <= 0) { p.falling = 1.3; p.vx = p.vz = p.speed = 0; event(r, p, 'fall', 'Watch the edge!'); }
   const nextGate = (p.gates + 1) * len / 12;
   if (oldS < nextGate && p.s >= nextGate && Math.abs(p.x) < def.width + 7) {
     p.gates++;
@@ -69,5 +66,5 @@ export function stepRacer(r: Race, p: Racer, dt: number) {
     for (const trap of r.traps) if (trap.owner !== p.id && Math.hypot(trap.px - p.px, trap.pz - p.pz) < trap.radius + .7) { const owner = r.racers.find(q => q.id === trap.owner); if (owner) hit(r, p, owner, 'ice'); trap.life = 0; }
     for (const hazard of objects.hazards) if (Math.abs(mod(hazard.s - p.routeS + len / 2, len) - len / 2) < 2.5 && Math.abs(hazard.x - p.x) < 2.5) { p.vx *= .96; p.vz *= .96; }
   }
-  for (const pad of objects.pads) if (oldS < p.s && Math.floor((oldS - pad.s) / len) !== Math.floor((p.s - pad.s) / len) && Math.abs(p.x - pad.x) < 3) { p.boost = Math.max(p.boost, 1.1); event(r, p, 'pad', 'BOOST'); }
+  for (const pad of objects.pads) if (oldS < p.s && Math.floor((oldS - pad.s) / len) !== Math.floor((p.s - pad.s) / len) && Math.abs(p.x - pad.x) < 3) { p.boost = Math.max(p.boost, HANDLING.boostPad); event(r, p, 'pad', 'BOOST'); }
 }

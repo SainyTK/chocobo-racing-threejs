@@ -4,12 +4,12 @@ import { randomBytes, randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { Server } from 'socket.io';
-import { cleanInput, createRace, makeRacer, neutralInput, stepRace, TICK, RACERS, ABILITY_IDS, GRID_SIZE, type AbilityId, type Race } from '../shared/game/index.ts';
+import { cleanInput, createRace, makeRacer, neutralInput, stepRace, TICK, RACERS, ABILITY_IDS, GRID_SIZE, DIFFICULTY_IDS, DEFAULT_DIFFICULTY, type AbilityId, type DifficultyId, type Race } from '../shared/game/index.ts';
 import { encodeSnapshot } from '../shared/wire.ts';
 import { TRACKS, type TrackId } from '../shared/track/index.ts';
 
 interface Member { id: string; name: string; character: number; abilityId: AbilityId; connected: boolean }
-interface Room { code: string; host: string; track: TrackId; laps: number; members: Member[]; race: Race | null; lastActive: number }
+interface Room { code: string; host: string; track: TrackId; laps: number; difficulty: DifficultyId; members: Member[]; race: Race | null; lastActive: number }
 interface Session { id: string; token: string; socket: string | null; room: string | null; seen: number; inputAt: number; inputSeq: number; appliedSeq: number; actionSeq: number; pendingActions: ('item' | 'ability' | 'rescue')[] }
 export async function createGameServer({ development = false, diagnostics = false } = {}) {
   const app = express(), http = createServer(app);
@@ -77,7 +77,7 @@ export async function createGameServer({ development = false, diagnostics = fals
       if (rooms.size >= 100) throw Error('The server is full. Try again shortly.');
       leave(s);
       let code: string; do { code = randomBytes(4).toString('hex').slice(0, 6).toUpperCase(); } while (rooms.has(code));
-      const room: Room = { code, host: s.id, track: typeof data?.track === 'string' && Object.hasOwn(TRACKS, data.track) ? data.track : 'test', laps: [1, 2, 3].includes(data?.laps) ? data.laps : 3, members: [{ id: s.id, ...profile(data), connected: true }], race: null, lastActive: Date.now() };
+      const room: Room = { code, host: s.id, track: typeof data?.track === 'string' && Object.hasOwn(TRACKS, data.track) ? data.track : 'test', laps: [1, 2, 3].includes(data?.laps) ? data.laps : 3, difficulty: DIFFICULTY_IDS.includes(data?.difficulty) ? data.difficulty : DEFAULT_DIFFICULTY, members: [{ id: s.id, ...profile(data), connected: true }], race: null, lastActive: Date.now() };
       rooms.set(code, room); s.room = code; join(socket, code); broadcast(room); return { ok: true, code };
     });
     handle('join', data => {
@@ -101,7 +101,7 @@ export async function createGameServer({ development = false, diagnostics = fals
       const room = rooms.get(s.room || '');
       if (!room || room.host !== s.id) throw Error('Only the host can start the race.');
       if (room.race) throw Error('A race is already running.');
-      room.race = createRace(room.track, room.members.map(m => makeRacer(m.id, m.name, m.character, false, m.abilityId)), room.laps, randomBytes(4).readUInt32LE());
+      room.race = createRace(room.track, room.members.map(m => makeRacer(m.id, m.name, m.character, false, m.abilityId)), room.laps, randomBytes(4).readUInt32LE(), 'race', 1, room.difficulty);
       for (const member of room.members) { const session = [...sessions.values()].find(s => s.id === member.id); if (session) { session.inputSeq = session.appliedSeq = session.actionSeq = 0; session.pendingActions = []; } const racer = room.race.racers.find(p => p.id === member.id); if (racer) racer.connected = member.connected; }
       broadcast(room); for (const socket of io.sockets.sockets.values()) if (socket.rooms.has(room.code)) sendInitial(socket, room.race); return { ok: true };
     });

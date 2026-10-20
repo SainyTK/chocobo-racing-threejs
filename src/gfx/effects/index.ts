@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { ITEMS, stackPositions, type Race, type Racer, type Item } from '../../../shared/game/index.ts';
+import { HANDLING, ITEMS, stackPositions, type Race, type Racer, type Item } from '../../../shared/game/index.ts';
 import { TRACKS } from '../../../shared/track/index.ts';
 import { Particles, Shape, type Emit } from '../particles/particles.ts';
 import type { Character } from '../characters/index.ts';
@@ -231,7 +231,7 @@ export class Effects {
       s.trails.forEach((tr, i) => { const anchor = c.contacts[i] || c.contacts[0]; if (anchor) anchor.getWorldPosition(v); else v.copy(c.root.position); v.y = y + .5 * scale; tr.color.copy(s.boostColor); if (live) tr.update(dt, v, side, boosting && Math.abs(p.speed) > 6); });
       // Drift sparks colour-coded by spin-out risk, plus tyre smoke.
       if (live && p.drifting && Math.abs(p.speed) > 5) {
-        const col = p.drift < 1.2 ? '#7fd0ff' : p.drift < 2.1 ? '#ffa040' : '#ff4f8a';
+        const risk = p.drift / HANDLING.overDrift, col = risk < .45 ? '#7fd0ff' : risk < .75 ? '#ffa040' : '#ff4f8a';
         c.contacts.forEach(ct => { ct.getWorldPosition(v); for (let i = 0; i < 2; i++) this.glow.emit({ x: v.x, y: v.y + .05, z: v.z, vx: -fwd.x * rand(3, 7) + side.x * rand(-3, 3), vy: rand(1.5, 4.5), vz: -fwd.z * rand(3, 7) + side.z * rand(-3, 3), life: rand(.18, .35), size: .07, color: '#ffffff', endColor: col, gravity: 14, stretch: .035, shape: Shape.Shard }); if (Math.random() < .35) this.smoke.emit({ x: v.x, y: v.y + .2, z: v.z, vx: rand(), vy: rand(.3, 1), vz: rand(), life: rand(.6, 1), size: .5, endSize: 1.8, color: '#d9d4cc', alpha: .3, drag: 1.5, shape: Shape.Smoke }); });
       }
       // Off-road dust.

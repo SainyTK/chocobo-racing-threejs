@@ -1,6 +1,6 @@
 import type { Input, Race, Racer } from '../shared/game/index.ts';
 import { TICK } from '../shared/game/index.ts';
-import { integrateDriving } from '../shared/game/driving.ts';
+import { integrateDriving, updateDriveMode } from '../shared/game/driving.ts';
 import { projectOnTrack, trackLength } from '../shared/track/index.ts';
 import { angleDelta, mod } from '../shared/math.ts';
 type Command = { seq: number; dt: number; input: Input };
@@ -19,7 +19,7 @@ export class Prediction {
     while (remaining > .000001) {
       const dt = Math.min(TICK, remaining); remaining -= dt;
       for (const k of ['boost','stun','flying','gripUp','mini'] as const) p[k] = Math.max(0,p[k]-dt);
-      p.drifting = (input.drift || input.throttle && input.brake) && Math.abs(input.steer) > .12 && p.speed > 9 && p.stun <= 0;
+      updateDriveMode(p,dt);
       integrateDriving(this.race.track,p,dt);
       const projection = projectOnTrack(this.race.track,p.px,p.pz,p.routeS), len = trackLength(this.race.track);
       p.s += mod(projection.s-p.routeS+len/2,len)-len/2; p.routeS = projection.s; p.x = projection.offset;
