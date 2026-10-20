@@ -1,0 +1,24 @@
+/* Geometry of the two-thumb touch layout. The gamepad and the touch HUD both place themselves from these tokens,
+   so a new HUD element can sit above a thumb cluster with calc(var(--touch-bottom) + var(--steer-stack-h)). */
+.touch-device {
+  --touch-left: max(16px, env(safe-area-inset-left));
+  --touch-right: max(16px, env(safe-area-inset-right));
+  --touch-top: max(10px, env(safe-area-inset-top));
+  --touch-bottom: max(12px, env(safe-area-inset-bottom));
+  --touch-gap: clamp(8px, 1.5vmin, 14px);
+  /* Extra space that keeps the upper buttons out of a resting thumb's path. */
+  --touch-reach-gap: clamp(14px, 2.6vmin, 24px);
+  --steer-w: clamp(150px, 34vmin, 300px);
+  --steer-h: clamp(70px, 12vmin, 108px);
+  --utility-size: clamp(40px, 6vmin, 52px);
+  --pedal-size: clamp(56px, 9.5vmin, 86px);
+  --drive-w: clamp(74px, 13vmin, 116px);
+  --steer-stack-h: calc(var(--utility-size) + var(--touch-reach-gap) + var(--steer-h));
+  --action-stack-w: calc(var(--pedal-size) + var(--touch-gap) + var(--drive-w));
+  --action-stack-h: calc(var(--drive-w) + var(--touch-reach-gap) + 2 * var(--pedal-size) + var(--touch-gap));
+  /* Readout text scales with the screen, so an iPad gets a larger HUD than a phone. */
+  --hud-unit: clamp(6px, 1.05vmin, 11px);
+}
+@media (max-width: 359px) {
+  .touch-device { --steer-w: 132px; --pedal-size: 50px; --drive-w: 66px; --utility-size: 38px; }
+}

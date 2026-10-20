@@ -1,13 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { joystickActions } from '../src/touch-controls.ts';
+import { steerFromOffset } from '../src/touch-steering.ts';
 
-describe('joystick arrow mappings', () => {
+describe('steering pad mapping', () => {
   it.each([
-    [0, 0, []], [.1, -.1, []], [0, -1, ['throttle']], [0, 1, ['brake']],
-    [-1, 0, ['left']], [1, 0, ['right']], [-.7, -.7, ['left', 'throttle']],
-    [.7, -.7, ['right', 'throttle']], [-.7, .7, ['left', 'brake']],
-    [10, -10, ['right', 'throttle']],
-  ])('maps (%s, %s)', (x, y, actions) => {
-    expect(joystickActions(x as number, y as number)).toEqual(actions);
+    [0, 0], [.1, 0], [-.1, 0], [.78, -1], [-.78, 1], [1, -1], [-1, 1], [5, -1],
+  ])('maps offset %s to steer %s', (offset, steer) => {
+    expect(steerFromOffset(offset)).toBeCloseTo(steer);
+  });
+  it('turns progressively between the deadzone and full lock', () => {
+    const half = steerFromOffset(-.45);
+    expect(half).toBeGreaterThan(.4);
+    expect(half).toBeLessThan(.6);
+    expect(steerFromOffset(-.3)).toBeLessThan(half);
   });
 });
