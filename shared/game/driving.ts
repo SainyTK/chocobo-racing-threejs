@@ -2,6 +2,7 @@ import { mod } from '../math.ts';
 import { TRACKS } from '../track/tracks.ts';
 import type { TrackId } from '../track/types.ts';
 import { aboveGround } from './combat.ts';
+import { miniScale } from './mini.ts';
 import { RACERS } from './racers.ts';
 import type { Racer } from './types.ts';
 /** Driving only. No inventory, events, collisions, RNG, abilities or race results.
@@ -13,7 +14,7 @@ export function integrateDriving(track: TrackId, p: Racer, dt: number) {
   if (p.stun <= 0) p.yaw = mod(p.yaw + input.steer * turn * dt * (oldForward < -1 ? -1 : 1) + Math.PI, Math.PI * 2) - Math.PI;
   const fx = Math.sin(p.yaw), fz = Math.cos(p.yaw), rx = fz, rz = -fx;
   let forward = p.vx * fx + p.vz * fz, lateral = p.vx * rx + p.vz * rz;
-  const onGrass = Math.abs(p.x) > def.width, maxSpeed = ch.speed * (p.boost > 0 ? 1.55 : 1) * (p.mini > 0 ? 1 - p.miniLevel * .17 : 1) * (onGrass && !aboveGround(p) ? .5 : 1);
+  const onGrass = Math.abs(p.x) > def.width, maxSpeed = ch.speed * (p.boost > 0 ? 1.55 : 1) * miniScale(p) * (onGrass && !aboveGround(p) ? .5 : 1);
   if (p.stun > 0) { forward *= Math.exp(-dt * 4); lateral *= Math.exp(-dt * 4); }
   else {
     const accel = ch.acceleration * (p.gripUp > 0 ? 1.45 : 1) * (p.boost > 0 ? 1.5 : 1);

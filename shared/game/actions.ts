@@ -1,40 +1,48 @@
-import { mod } from '../math.ts';
 import { pointAt, trackLength } from '../track/sampling.ts';
-import { ABILITIES } from './abilities.ts';
-import { spellName } from './items.ts';
-import { addStone, canAddStone, syncInventory, takeStack } from './inventory.ts';
+import { ABILITIES, ABILITY_SECONDS } from './abilities.ts';
+import { ITEMS, drawStone, inBackHalf, spellName } from './items.ts';
+import { addStone, canAddStone, syncInventory, takeStack, takeStone } from './inventory.ts';
 import { hit } from './combat.ts';
 import { event } from './events.ts';
+import { random } from './random.ts';
 import { placeRacer } from './setup.ts';
+import { HASTE_SECONDS, REFLECT_SECONDS } from './spells.ts';
+import { activeRivals, racerAhead, rivalsAhead, spellTarget } from './targeting.ts';
 import type { Race, Racer } from './types.ts';
 
-function ahead(r: Race, p: Racer) { const len = trackLength(r.track); return r.racers.filter(q => q !== p && q.finishTime === null).sort((a, b) => mod(a.s - p.s, len) - mod(b.s - p.s, len))[0]; }
+function fireball(r: Race, p: Racer, level: number, target: Racer | undefined) {
+  r.projectiles.push({ id: ++r.eventId, px: p.px + Math.sin(p.yaw) * 3, pz: p.pz + Math.cos(p.yaw) * 3, yaw: p.yaw, owner: p.id, target: target?.id || null, level, life: level === 3 ? 12 : 5 });
+}
 export function useItem(r: Race, p: Racer) {
   syncInventory(p); if (!p.item) return;
   const { kind, level } = takeStack(p)!;
-  if (kind === 'haste') p.boost = Math.max(p.boost, 1.5 + level * 1.1);
-  else if (kind === 'shield') p.shield = 5;
-  else if (kind === 'fire') {
-    const targets = level === 3 ? r.racers.filter(q => q !== p && q.finishTime === null) : [level === 2 ? ahead(r, p) : undefined];
-    for (const target of targets) r.projectiles.push({ id: ++r.eventId, px: p.px + Math.sin(p.yaw) * 3, pz: p.pz + Math.cos(p.yaw) * 3, yaw: p.yaw, owner: p.id, target: target?.id || null, level, life: level === 3 ? 12 : 5 });
-  } else if (kind === 'ice' && level < 3) {
+  if (kind === 'haste') p.boost = Math.max(p.boost, HASTE_SECONDS[level - 1]);
+  else if (kind === 'shield') p.shield = REFLECT_SECONDS;
+  // Fire flies straight, Fira homes on the racer ahead and Firaga sends a homing fireball at every racer ahead, or at everyone from first place.
+  else if (kind === 'fire') for (const target of level === 3 ? rivalsAhead(r, p) : [level === 2 ? racerAhead(r, p) : undefined]) fireball(r, p, level, target);
+  else if (kind === 'ice' && level < 3) {
     for (let i = 0; i < (level === 2 ? 6 : 1); i++) { const q = pointAt(r.track, p.s - 4 - Math.floor(i / 3) * 4, p.x + (level === 2 ? (i % 3 - 1) * 3 : 0)); r.traps.push({ id: ++r.eventId, px: q.x, pz: q.z, radius: 2.2, owner: p.id, life: 18 }); }
   } else {
-    const targets = kind === 'ultima' || kind === 'mini' || level === 3 ? r.racers.filter(q => q !== p) : [ahead(r, p)];
+    // Ultima and level 3 spells hit every rival; the rest hit one racer.
+    const targets = kind === 'ultima' || level === 3 ? activeRivals(r, p) : [spellTarget(r, p)];
     for (const target of targets) if (target) hit(r, target, p, kind, level);
   }
   event(r, p, kind, `${spellName(kind, level)}!`);
 }
+/** Mug takes one stone from the latest stack of the best placed rival holding stones. With nobody to rob, it conjures a random stone. */
+function mug(r: Race, p: Racer) {
+  const victim = activeRivals(r, p).filter(q => q.stones.length).sort((a, b) => a.rank - b.rank)[0];
+  if (victim) { const kind = takeStone(victim)!; addStone(p, kind); event(r, p, 'steal', `Mugged a ${ITEMS[kind].name} Stone!`, victim.id); }
+  else { const kind = drawStone(random(r), inBackHalf(p.rank, r.racers.length)); addStone(p, kind); event(r, p, 'pickup', `${ITEMS[kind].name} Stone`); }
+}
 export function useAbility(r: Race, p: Racer) {
   if (p.ability < 100 || ABILITIES[p.abilityId].passive) return;
-  if (p.abilityId === 'mug') {
-    const target = r.racers.filter(q => q !== p && q.stones.length && Math.hypot(q.px - p.px, q.pz - p.pz) < 150).sort((a, b) => Math.hypot(a.px - p.px, a.pz - p.pz) - Math.hypot(b.px - p.px, b.pz - p.pz))[0];
-    if (!target || !canAddStone(p, target.item!)) return; const stack = takeStack(target)!; addStone(p, stack.kind, stack.level);
-  }
-  if (p.abilityId === 'dash') p.boost = 3;
-  if (p.abilityId === 'flap') p.flying = 5;
-  if (p.abilityId === 'grip') p.gripUp = 7;
-  if (p.abilityId === 'charge') { p.boost = 3; p.charging = 3; }
+  // Mug fails while the inventory is full, and keeps its charge.
+  if (p.abilityId === 'mug') { if (!canAddStone(p)) return; mug(r, p); }
+  if (p.abilityId === 'dash') p.boost = ABILITY_SECONDS.dash;
+  if (p.abilityId === 'flap') p.flying = ABILITY_SECONDS.flap;
+  if (p.abilityId === 'grip') p.gripUp = ABILITY_SECONDS.grip;
+  if (p.abilityId === 'charge') { p.boost = ABILITY_SECONDS.charge; p.charging = ABILITY_SECONDS.charge; }
   p.ability = 0; event(r, p, 'ability', `${ABILITIES[p.abilityId].name}!`);
 }
 export function recover(r: Race, p: Racer) {

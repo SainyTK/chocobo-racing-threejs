@@ -1,11 +1,13 @@
 export { TICK, GRID_SIZE } from './constants.ts';
 export { ABILITIES, ABILITY_IDS, type AbilityId } from './abilities.ts';
 export { RACERS, type RacerProfile } from './racers.ts';
-export { ITEMS, RANDOM_STONE_CHANCE, STONE_POWER, drawStone, spellName, type Item } from './items.ts';
+export { ITEMS, STONE_POWER, randomStoneChance, drawStone, spellName, type Item } from './items.ts';
+export { SAFE_WINDOW, STONE_RESPAWN, MINI_SHRINK } from './spells.ts';
+export { miniScale } from './mini.ts';
 export { neutralInput, cleanInput, type Input } from './input.ts';
 export type { Racer, StoneStack, GameEvent, Trap, Projectile, RaceMode, Race } from './types.ts';
 export { makeRacer, createRace, placeRacer } from './setup.ts';
-export { syncInventory, addStone, canAddStone, takeStack, stackPositions, maxLevel, MAX_STACKS } from './inventory.ts';
+export { syncInventory, addStone, canAddStone, takeStack, stackPositions, maxLevel, MAX_STONES } from './inventory.ts';
 export { aboveGround, hit } from './combat.ts';
 export { useItem, useAbility, recover } from './actions.ts';
 export { botInput } from './bot.ts';
