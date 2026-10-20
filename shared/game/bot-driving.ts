@@ -40,7 +40,9 @@ export function botDriving(r: Race, p: Racer, target: { x: number; z: number }):
   return { steer: clamp(delta * 2.1, -1, 1), throttle: !brake, brake: brake || tap, drift };
 }
 
-/** CPU top speed: the class pace, a small per-racer spread, and mild catch-up keyed on the leading human. */
+/** CPU top speed: the class pace, a small per-racer spread, and mild catch-up keyed on the leading human.
+ * Within 30 m of that human there is no lift or cut, so catch-up can bring a CPU back into the fight but never carries it
+ * past the human. It ramps to full at 150 m behind; CPUs ahead of the human are held back instead. */
 export function botPace(r: Race, p: Racer) {
   const cls = DIFFICULTIES[r.difficulty], i = r.racers.indexOf(p), spread = 1 + ((i * 3) % 5 - 2) * .008;
   const humans = r.racers.filter(q => !q.bot && q.connected);
