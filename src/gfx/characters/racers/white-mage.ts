@@ -4,6 +4,7 @@ import { sweep, horn } from '../../geometry/sweep.ts';
 import { xf } from '../../geometry/transform.ts';
 import { clamp } from '../math.ts';
 import { Rig } from '../rig.ts';
+import { toon } from '../../materials/toon.ts';
 import type { Build } from '../types.ts';
 import { eyes } from '../parts/eyes.ts';
 import { carpet } from '../parts/carpet.ts';
@@ -11,7 +12,7 @@ import { carpet } from '../parts/carpet.ts';
 export function whiteMage(): Build {
   const r = new Rig(), robe = r.t('#f7f2ea'), red = r.t('#cf3557'), skinM = r.t('#ffdcc0'), hair = r.t('#9a5d3a'), exhausts: THREE.Object3D[] = [], contacts: THREE.Object3D[] = [];
   const geo = new THREE.PlaneGeometry(2.3, 3.1, 10, 16); geo.rotateX(-Math.PI / 2); const base = Float32Array.from(geo.attributes.position.array as Float32Array);
-  const rugMat = new THREE.MeshToonMaterial({ map: carpet(), side: THREE.DoubleSide, gradientMap: (r.t('#fff') as THREE.MeshToonMaterial).gradientMap });
+  const rugMat = toon('#ffffff', r.skin, { side: THREE.DoubleSide }); rugMat.map = carpet();
   const rug = new THREE.Mesh(geo, rugMat); rug.position.y = .5; rug.castShadow = true; r.model.add(rug);
   const tassels = Array.from({ length: 4 }, () => { const m = new THREE.Mesh(new THREE.SphereGeometry(.09, 10, 8), r.t('#ffcf6a')); r.model.add(m); return m; });
   for (const s of [-1, 1]) { exhausts.push(r.joint(r.model, [s * .9, .5, -1.6])); contacts.push(r.joint(r.model, [s * .9, .1, -1.4])); }
