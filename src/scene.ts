@@ -1,9 +1,11 @@
 import * as THREE from 'three';
 import type { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { courseObjects, pointAt, type TrackId } from '../shared/track/index.ts';
-import type { Item, Race } from '../shared/game/index.ts';
+import { miniScale, type Item, type Race } from '../shared/game/index.ts';
 import { createCharacter, type Character } from './gfx/characters/index.ts';
 import { Effects } from './gfx/effects/index.ts';
+import { Reactions } from './gfx/reactions.ts';
+import { FinishStage, type FinishView } from './gfx/finish-stage.ts';
 import { makePickup, type Pickup } from './gfx/effects/pickup.ts';
 import { makeOrb, setOrbDetail, ORB_GEOMETRIES } from './gfx/orbs/index.ts';
 import { FX_GEOMETRIES } from './gfx/effects/geometries.ts';
@@ -36,13 +38,13 @@ export class World {
   readonly software = softwareRenderer(); readonly recommendedQuality = this.software ? 'low' : 'high';
   renderer: THREE.WebGLRenderer; scene = new THREE.Scene(); camera = new THREE.PerspectiveCamera(58, 1, .2, 1500);
   course: Course | null = null; dynamic = new THREE.Group(); racers = new Map<string, RacerView>(); hero = createCharacter(0); heroIndex = 0; track: TrackId = 'test'; raceId = ''; mode: 'menu' | 'race' = 'menu'; clock = 0; cameraReady = false; stones: Pickup[] = []; ghost: Character | null = null;
-  fx: Effects; hemi: THREE.HemisphereLight; sun: THREE.DirectionalLight;
+  fx: Effects; reactions = new Reactions(); finish: FinishView | null = null; private finishStage: FinishStage; hemi: THREE.HemisphereLight; sun: THREE.DirectionalLight;
   private composer: EffectComposer; private quality = 'high'; private ghostMat = ghostMaterial(); private portraits: string[] = []; private icons = new Map<Item, string>(); private sunOffset = new THREE.Vector3();
   constructor(canvas: HTMLCanvasElement) {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: !this.software, powerPreference: 'high-performance' }); this.renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5)); this.renderer.info.autoReset = false; configureRenderer(this.renderer);
     ({ hemi: this.hemi, sun: this.sun } = createLights());
     this.scene.add(this.hemi, this.sun, this.sun.target, this.dynamic, this.hero.root);
-    this.fx = new Effects(this.scene);
+    this.fx = new Effects(this.scene); this.finishStage = new FinishStage(this.scene, this.fx);
     this.composer = createComposer(this.renderer, this.scene, this.camera);
     this.buildTrack('test'); this.resize(); addEventListener('resize', () => this.resize());
   }
@@ -97,7 +99,7 @@ export class World {
   }
   private clearRacers() { this.racers.forEach(r => { this.scene.remove(r.c.root); if (r.label) { r.label.material.map?.dispose(); r.label.material.dispose(); } r.c.dispose(); }); this.racers.clear(); }
   enterRace(race: Race) { this.mode = 'race'; this.hero.root.visible = false; if (this.track !== race.track) this.buildTrack(race.track); if (race.id !== this.raceId) { this.clearRacers(); for (const p of race.racers) this.addRacer(p.id, p.character, p.name); this.raceId = race.id; this.cameraReady = false; } }
-  menu() { this.mode = 'menu'; this.hero.root.visible = true; this.racers.forEach(r => r.c.root.visible = false); if (this.ghost) this.ghost.root.visible = false; }
+  menu() { this.finish = null; this.finishStage.clear(); this.mode = 'menu'; this.hero.root.visible = true; this.racers.forEach(r => r.c.root.visible = false); if (this.ghost) this.ghost.root.visible = false; }
   render(dt: number, race: Race | null, playerId: string, steer = 0, lookBack = false, ghost?: GhostPoint, paused = false) {
     const live = paused ? 0 : dt; this.clock += live; const t = this.clock;
     padMaterial.uniforms.uTime.value = t;
@@ -117,18 +119,21 @@ export class World {
     } else {
       this.camera.clearViewOffset();
       const self = race.racers.find(q => q.id === playerId) || race.racers[0], chars = new Map<string, Character>();
+      this.reactions.update(race, t);
       for (const p of race.racers) {
         const r = this.racers.get(p.id); if (!r) continue; const c = r.c; chars.set(p.id, c); c.root.visible = true;
         const floor = pointAt(race.track, p.s).y; c.root.position.set(p.px, floor + (p.flying > 0 ? 2.4 + Math.sin(t * 4) * .15 : 0) - (p.falling > 0 ? (1.3 - p.falling) * 12 : 0), p.pz); c.root.rotation.y = p.yaw;
-        r.scale += ((p.mini > 0 ? 1 - p.miniLevel * .18 : 1) - r.scale) * (1 - Math.exp(-live * 10)); c.root.scale.setScalar(r.scale);
-        c.animate({ t: t + p.character * 1.7, dt: live, speed: p.speed, steer: p.input.steer, drifting: p.drifting, flying: p.flying, stun: p.stun, boost: p.boost, menu: false });
-        if (r.label) { const ahead = (p.px - self.px) * Math.sin(self.yaw) + (p.pz - self.pz) * Math.cos(self.yaw); const distance = this.camera.position.distanceTo(c.root.position); r.label.visible = p.id !== playerId && distance > 7 && distance < 60 && ahead * (lookBack ? -1 : 1) > 0; }
+        r.scale += (miniScale(p) - r.scale) * (1 - Math.exp(-live * 10)); c.root.scale.setScalar(r.scale);
+        c.animate({ t: t + p.character * 1.7, dt: live, speed: p.speed, steer: p.input.steer, drifting: p.drifting, flying: p.flying, stun: p.stun, boost: p.boost, menu: false, pose: this.reactions.pose(p.id, t) });
+        if (r.label) { const ahead = (p.px - self.px) * Math.sin(self.yaw) + (p.pz - self.pz) * Math.cos(self.yaw); const distance = this.camera.position.distanceTo(c.root.position); r.label.visible = p.id !== playerId && !this.finish && race.time > .8 && distance > 7 && distance < 60 && ahead * (lookBack ? -1 : 1) > 0; }
       }
+      if (this.finish) this.finishStage.stageRacers(this.finish, race, new Map([...this.racers].map(([id, r]) => [id, r.c])), chars); else this.finishStage.clear();
       const p = self, floor = pointAt(race.track, p.s).y, a = p.yaw + (lookBack ? Math.PI : 0), distance = 10.5 + Math.min(4, Math.abs(p.speed) * .055);
       const desired = new THREE.Vector3(p.px - Math.sin(a) * distance, floor + 6.3 + (p.flying > 0 ? 2 : 0), p.pz - Math.cos(a) * distance);
       if (!this.cameraReady || desired.distanceTo(this.camera.position) > 55) this.camera.position.copy(desired); else this.camera.position.lerp(desired, 1 - Math.exp(-dt * 8)); this.cameraReady = true;
       target.set(p.px + Math.sin(a) * 8, floor + 1.8, p.pz + Math.cos(a) * 8); this.camera.lookAt(target);
       const fov = 58 + Math.min(1, p.boost) * 7; if (Math.abs(this.camera.fov - fov) > .05) { this.camera.fov += (fov - this.camera.fov) * (1 - Math.exp(-dt * 5)); this.camera.updateProjectionMatrix(); }
+      const focus = this.racers.get(self.id); if (this.finish && focus) target.copy(this.finishStage.aim(this.finish, this.camera, focus.c, self.yaw));
       if (this.ghost) { this.ghost.root.visible = !!ghost; if (ghost) { this.ghost.root.position.set(ghost.x, pointAt(race.track, ghost.s).y, ghost.z); this.ghost.root.rotation.y = ghost.yaw; this.ghost.animate({ t, dt: live, speed: 30, steer: 0, drifting: false, flying: 0, stun: 0, boost: 0, menu: false }); } }
       this.ghostMat.uniforms.uTime.value = t;
       this.scene.updateMatrixWorld();

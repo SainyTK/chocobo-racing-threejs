@@ -1,9 +1,11 @@
 import * as THREE from 'three';
 import { ITEMS, type Item } from '../../shared/game/index.ts';
+import { crashTier } from '../../src/race-events.ts';
 import { every, type StudioContext, type StudioElement } from '../types.ts';
 
 const at = (y = 1.5) => new THREE.Vector3(0, y, 0);
 const levels = (names: string[]) => names.map((label, i) => ({ id: String(i + 1), label }));
+const forward = new THREE.Vector3(0, 0, 1), KINDS = Object.keys(ITEMS) as Item[];
 
 /** A one-shot effect replayed every `period` seconds at the pane centre. */
 function oneShot(id: string, name: string, tags: string[], variants: { id: string; label: string }[], period: number, distance: number, play: (ctx: StudioContext, variant: string) => void, y = 2): StudioElement {
@@ -11,11 +13,9 @@ function oneShot(id: string, name: string, tags: string[], variants: { id: strin
 }
 
 export const effects: StudioElement[] = [
-  oneShot('explosion', 'Fire Explosion', ['fireball', 'hit', 'blast'], levels(ITEMS.fire.names), 2, 16, ({ fx }, v) => fx.explode(at(), [1, 1.15, 1.4][Number(v) - 1])),
-  oneShot('lightning', 'Lightning Strike', ['thunder', 'bolt', 'hit'], levels(ITEMS.thunder.names), 1.6, 26, ({ fx }, v) => fx.strike(at(0), Number(v)), 6),
-  oneShot('shatter', 'Ice Shatter', ['blizzard', 'ice', 'freeze', 'hit'], [{ id: 'hit', label: 'Hit' }, { id: 'cast', label: 'Cast' }], 1.6, 12, ({ fx }, v) => fx.shatter(at(), v === 'cast' ? 14 : 26)),
-  oneShot('ultima-cast', 'Ultima Cast', ['ultima', 'nova', 'flash'], [{ id: 'cast', label: 'Cast' }], 3, 46, ({ fx }) => fx.ultimaCast(at())),
-  oneShot('ultima-hit', 'Ultima Hit', ['ultima', 'pillar', 'crash'], [{ id: 'hit', label: 'Hit' }], 2, 22, ({ fx }) => fx.ultimaHit(at())),
+  ...KINDS.map(kind => oneShot(`cast.${kind}`, `${ITEMS[kind].name} Cast`, ['spell', 'cast', kind], levels(ITEMS[kind].names), kind === 'ultima' || kind === 'ice' ? 3 : 2, kind === 'ultima' ? 60 : kind === 'ice' ? 40 : 16, ({ fx }, v) => fx.spells.cast(kind, Number(v), at(), forward, 'studio', false))),
+  ...(['fire', 'ice', 'thunder', 'ultima'] as Item[]).map(kind => oneShot(`hit.${kind}`, `${ITEMS[kind].name} Hit`, ['spell', 'hit', 'crash', kind], levels(ITEMS[kind].names), 2, kind === 'thunder' ? 26 : 18, ({ fx }, v) => fx.spells.impact({ kind, level: Number(v), tier: crashTier(kind, Number(v)) }, at(), 'studio', false), kind === 'thunder' ? 6 : 2)),
+  oneShot('mini-hit', 'Mini Hit', ['mini', 'shrink', 'poof'], levels(ITEMS.mini.names), 1.6, 12, ({ fx }, v) => fx.spells.shrink(at(), Number(v), 'studio')),
   oneShot('doom', 'Doom Detonation', ['doom', 'curse', 'smoke'], [{ id: 'hit', label: 'Hit' }], 2.5, 14, ({ fx }) => fx.doomHit(at())),
   oneShot('sparkle', 'Sparkle Burst', ['pickup', 'cast', 'stars'], (Object.keys(ITEMS) as Item[]).map(k => ({ id: k, label: ITEMS[k].name })), 1.4, 9, ({ fx }, v) => fx.sparkle(at(), ITEMS[v as Item].color, 24)),
   oneShot('swirl', 'Swirl', ['haste', 'mini', 'doom', 'receive', 'spiral'], [{ id: 'haste', label: 'Haste' }, { id: 'mini', label: 'Mini' }, { id: 'doom', label: 'Doom curse (inward)' }, { id: 'receive', label: 'Receive (inward)' }], 1.4, 10,

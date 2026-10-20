@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { RACERS, type RacerProfile } from '../../../shared/game/index.ts';
 import { clamp, damp } from './math.ts';
 import type { Build, Character } from './types.ts';
+import { applyPose } from './poses.ts';
 import { chocobo } from './racers/chocobo.ts';
 import { mog } from './racers/mog.ts';
 import { golem } from './racers/golem.ts';
@@ -12,6 +13,7 @@ import { chubby } from './racers/chubby.ts';
 import { behemoth } from './racers/behemoth.ts';
 
 export type { AnimState, Character } from './types.ts';
+export { POSE_SECONDS, type Pose } from './poses.ts';
 
 const BUILDERS: ((c: RacerProfile) => Build)[] = [chocobo, mog, golem, goblin, blackMage, whiteMage, chubby, behemoth];
 
@@ -32,7 +34,10 @@ export function createCharacter(index: number): Character {
       if (hop > 0) s = { ...s, flying: 1 };
       for (const w of b.wheels) w.j.rotation.x += s.speed * s.dt / w.r;
       for (const st of b.steer) st.rotation.y = damp(st.rotation.y, s.steer * .45, 12, s.dt);
+      b.r.model.rotation.x = 0; b.head.rotation.x = 0;
+      if (s.pose?.kind === 'win') s = { ...s, flying: 1 };
       b.update?.(s, k);
+      if (s.pose) applyPose(b.r.model, b.head, s.pose);
     },
     dispose() {
       b.r.root.traverse(o => { if (o instanceof THREE.Mesh) { o.geometry.dispose(); for (const m of Array.isArray(o.material) ? o.material : [o.material]) m.dispose(); } });
