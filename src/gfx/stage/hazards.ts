@@ -72,7 +72,8 @@ export class HazardViews {
           // Falls in during the warning, lands as the strike begins, then sinks away into the ground.
           m.visible = st.warning > 0 || st.live;
           m.position.y += st.live ? -(st.progress ** 3) * 3 : DROP * (1 - st.warning) ** 2;
-          m.rotation.x = time * 2.2; break;
+          // Tumbles about its own vertical axis, which passes through its base, so it stays over its strike zone.
+          m.rotation.y += time * 2.2; break;
         case 'burst':
           // A low simmer while idle, swelling during the warning, then a full column for the strike.
           m.scale.set(1, st.live ? Math.max(.08, Math.sin(Math.min(1, st.progress * 1.4) * Math.PI / 2) * (st.progress > .8 ? (1 - st.progress) * 5 : 1)) : .05 + st.warning * .12, 1);
