@@ -15,5 +15,9 @@ export const ABILITIES: Record<AbilityId, { name: string; description: string; r
   charge: { name: 'Charge', description: 'A short boost. Ram rivals to spin them out.', recharge: 14 },
 };
 export const ABILITY_IDS = Object.keys(ABILITIES) as AbilityId[];
-/** Seconds of the timed abilities. Charge is shorter than Dash but recharges sooner. */
-export const ABILITY_SECONDS = { dash: 4, flap: 5, grip: 7, charge: 2 } as const;
+/**
+ * Seconds of the timed abilities. Boosts reach 1.55x top speed through nearly every corner with the current grip, so
+ * the original's 3 to 5 s Dash made Chocobo and Behemoth win far more than the rest. Charge is shorter than Dash but
+ * recharges sooner.
+ */
+export const ABILITY_SECONDS = { dash: 2, flap: 5, grip: 7, charge: 1 } as const;
