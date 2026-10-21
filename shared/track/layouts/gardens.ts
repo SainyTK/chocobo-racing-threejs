@@ -6,6 +6,6 @@ export const gardens: CourseLayout = {
   patches: [{ s: 708, length: 30, x: 4, width: 14, surface: 'slip' }],
   ramps: [{ s: 882, x: 0, width: 22, length: 8, height: 1.2, lift: .3 }],
   gaps: [{ s: 885, length: 13 }],
-  shortcuts: [{ from: 332, to: 452, side: 1, bulge: 8, width: 2.6, edge: 'fall' }],
+  shortcuts: [{ from: 315, to: 478, side: 1, join: 20, width: 2.6, edge: 'fall' }],
   hazards: [],
 };

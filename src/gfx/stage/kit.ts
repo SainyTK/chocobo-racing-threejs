@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { TRACKS, inGap, pointAt, projectOnShortcut, shortcutPaths, trackLength, type ShortcutPath, type TrackId, type TrackDefinition, type TrackPoint } from '../../../shared/track/index.ts';
+import { OPENING, TRACKS, inGap, pointAt, projectOnShortcut, shortcutPaths, trackLength, type ShortcutPath, type TrackId, type TrackDefinition, type TrackPoint } from '../../../shared/track/index.ts';
 import { STAGE, type Layer } from './materials.ts';
 import { rng, smoothstep, type Rng } from './noise.ts';
 
@@ -142,7 +142,7 @@ export class Kit {
   onShortcut(x: number, z: number, margin = 2.5) {
     for (const path of shortcutPaths(this.id)) {
       const box = this.shortcutBox(path); if (x < box[0] || x > box[1] || z < box[2] || z > box[3]) continue;
-      const q = projectOnShortcut(path, x, z), end = 4 / path.length; if (q.u > -end && q.u < 1 + end && Math.abs(q.x) < path.shortcut.width + margin) return true;
+      const q = projectOnShortcut(path, x, z), end = OPENING / path.length; if (q.u > -end && q.u < 1 + end && Math.abs(q.x) < path.shortcut.width + margin) return true;
     }
     return false;
   }

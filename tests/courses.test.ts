@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { TRACK_IDS, TRACKS, courseLayout, hazardState, locate, pointAt, projectOnTrack, shortcutPaths, shortcutPoint, trackLength } from '../shared/track/index.ts';
+import { angleDelta } from '../shared/math.ts';
 import { createRace, makeRacer, neutralInput, placeRacer, stepRace, type Race } from '../shared/game/index.ts';
 import { decodeSnapshot, encodeSnapshot } from '../shared/wire.ts';
 
@@ -20,6 +21,11 @@ describe('course layouts', () => {
       for (const u of [0, 1]) { const q = shortcutPoint(path, u); expect(Math.abs(Math.abs(projectOnTrack(id, q.x, q.z).offset) - w)).toBeLessThan(.5); }
       // In the middle a shortcut is its own route, clear of the road on either side.
       const mid = shortcutPoint(path, .5); expect(Math.abs(projectOnTrack(id, mid.x, mid.z).offset)).toBeGreaterThan(w + path.shortcut.width + 2);
+      // It turns off the road at its join angle and back on at the same angle, and no stretch of it, ends included, turns sharply.
+      const sc = path.shortcut, join = sc.side * sc.join * Math.PI / 180;
+      expect(angleDelta(shortcutPoint(path, 0).yaw, pointAt(id, sc.from).yaw)).toBeCloseTo(join, 1);
+      expect(angleDelta(pointAt(id, sc.to).yaw, shortcutPoint(path, 1).yaw)).toBeCloseTo(join, 1);
+      for (let m = 0; m + 5 < path.length; m++) expect(Math.abs(angleDelta(shortcutPoint(path, (m + 5) / path.length).yaw, shortcutPoint(path, m / path.length).yaw)) / 5).toBeLessThan(2 * Math.PI / 180);
     }
   });
   it('timed hazards are a pure function of race time', () => {

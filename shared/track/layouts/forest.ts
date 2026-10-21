@@ -10,6 +10,6 @@ export const forest: CourseLayout = {
   ],
   ramps: [],
   gaps: [],
-  shortcuts: [{ from: 580, to: 716, side: 1, bulge: 16, width: 3.6, edge: 'rough' }],
+  shortcuts: [{ from: 590, to: 766, side: 1, join: 20, width: 3.6, edge: 'rough' }],
   hazards: [],
 };

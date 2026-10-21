@@ -1,38 +1,56 @@
-import { clamp, mod } from '../math.ts';
+import { angleDelta, clamp, mod } from '../math.ts';
 import type { Shortcut, TrackId } from './types.ts';
 import { TRACKS } from './tracks.ts';
-import { pointAt, projectOnTrack, trackLength } from './sampling.ts';
+import { pointAt, trackLength } from './sampling.ts';
 import { courseLayout } from './layouts/index.ts';
 
-/** A shortcut's centre line, sampled finely: world points with their height and cumulative length. */
-export interface ShortcutPath { shortcut: Shortcut; x: Float64Array; y: Float64Array; z: Float64Array; d: Float64Array; length: number; skipped: number }
+/**
+ * A shortcut's centre line, sampled finely: world points with their height and cumulative length.
+ * `lead` is how far before its mouth (as a fraction of its length) a racer can already turn into it: the road's wall opens that much early.
+ */
+export interface ShortcutPath { shortcut: Shortcut; x: Float64Array; y: Float64Array; z: Float64Array; d: Float64Array; length: number; skipped: number; lead: number }
 /** Where a world position sits on a shortcut: `u` runs 0 at the mouth to 1 where it rejoins, `x` is metres left of its centre line. */
 export interface ShortcutProjection { u: number; x: number; distance: number; px: number; pz: number; nx: number; nz: number; yaw: number }
 
 const SAMPLES = 240;
+/** Metres before a shortcut's mouth, and after its exit, where the road's wall is already open. */
+export const OPENING = 4;
 const paths = new Map<TrackId, ShortcutPath[]>();
 const smooth = (t: number) => t * t * (3 - 2 * t);
 
 /**
- * Builds the centre line: a nearly straight cubic curve that eases out of the road edge along the road's heading and back in,
- * bowed square to its chord by `bulge`. The bow eases in and out, so the shortcut meets the road along the road's heading. Height blends between the road heights at both ends.
+ * Heading of a shortcut's centre line at fraction `t`: an even turn from `start`, plus `bend` times a bump that vanishes, with its slope,
+ * at both ends. The bump moves the turning earlier or later without changing the heading or the curvature at the ends.
+ */
+const heading = (start: number, turn: number, bend: number, t: number) => start + turn * t + bend * Math.sin(Math.PI * t) ** 2;
+
+/** Points of a line of unit length with that heading, from the origin. */
+function trace(start: number, turn: number, bend: number) {
+  const x = new Float64Array(SAMPLES + 1), z = new Float64Array(SAMPLES + 1);
+  for (let i = 1; i <= SAMPLES; i++) { const h = heading(start, turn, bend, (i - .5) / SAMPLES); x[i] = x[i - 1] + Math.sin(h) / SAMPLES; z[i] = z[i - 1] + Math.cos(h) / SAMPLES; }
+  return { x, z };
+}
+
+/**
+ * Builds the centre line from its heading. It turns off the road edge `join` degrees towards its side, turns evenly to meet the road
+ * edge again at the same angle, and `bend` is solved so the line lands exactly on its exit. The turning spreads along the whole
+ * shortcut, so neither end tightens; racers make the turn at the join on the road. Height blends between the road heights at both ends.
  */
 function buildPath(id: TrackId, shortcut: Shortcut): ShortcutPath {
   const w = TRACKS[id].width, len = trackLength(id), a = pointAt(id, shortcut.from, shortcut.side * w), b = pointAt(id, shortcut.to, shortcut.side * w);
-  const chord = Math.hypot(b.x - a.x, b.z - a.z), k = chord * .33;
-  // The bow pushes square to the chord, towards the shortcut's side of the road.
-  const perp = { x: (b.z - a.z) / chord, z: -(b.x - a.x) / chord }, mid = { x: (a.x + b.x) / 2, z: (a.z + b.z) / 2 };
-  const away = (k: number) => shortcut.side * projectOnTrack(id, mid.x + perp.x * k, mid.z + perp.z * k).offset, flip = away(4) > away(-4) ? 1 : -1, out = { x: perp.x * flip, z: perp.z * flip };
-  const c1 = { x: a.x + Math.sin(a.yaw) * k, z: a.z + Math.cos(a.yaw) * k }, c2 = { x: b.x - Math.sin(b.yaw) * k, z: b.z - Math.cos(b.yaw) * k };
-  const x = new Float64Array(SAMPLES + 1), y = new Float64Array(SAMPLES + 1), z = new Float64Array(SAMPLES + 1), d = new Float64Array(SAMPLES + 1);
-  for (let i = 0; i <= SAMPLES; i++) {
-    const t = i / SAMPLES, m = 1 - t, bow = (1 - Math.cos(t * Math.PI * 2)) / 2 * shortcut.bulge;
-    x[i] = m * m * m * a.x + 3 * m * m * t * c1.x + 3 * m * t * t * c2.x + t * t * t * b.x + out.x * bow;
-    z[i] = m * m * m * a.z + 3 * m * m * t * c1.z + 3 * m * t * t * c2.z + t * t * t * b.z + out.z * bow;
-    y[i] = a.y + (b.y - a.y) * smooth(t);
-    d[i] = i ? d[i - 1] + Math.hypot(x[i] - x[i - 1], z[i] - z[i - 1]) : 0;
-  }
-  return { shortcut, x, y, z, d, length: d[SAMPLES], skipped: mod(shortcut.to - shortcut.from, len) };
+  // The road's own turn over the stretch, summed metre by metre so a bend of more than half a turn keeps its direction.
+  let roadTurn = 0;
+  for (let s = shortcut.from; s < shortcut.from + mod(shortcut.to - shortcut.from, len); s++) roadTurn += angleDelta(pointAt(id, s + 1).yaw, pointAt(id, s).yaw);
+  const join = shortcut.side * shortcut.join * Math.PI / 180, start = a.yaw + join, turn = roadTurn - 2 * join;
+  const chord = Math.hypot(b.x - a.x, b.z - a.z), want = Math.atan2(b.x - a.x, b.z - a.z);
+  const miss = (bend: number) => { const e = trace(start, turn, bend); return angleDelta(Math.atan2(e.x[SAMPLES], e.z[SAMPLES]), want); };
+  // Newton's method on the direction to the exit; a fixed number of steps keeps it deterministic.
+  let bend = 0;
+  for (let n = 0; n < 12; n++) bend -= miss(bend) / ((miss(bend + 1e-4) - miss(bend)) / 1e-4);
+  const unit = trace(start, turn, bend), length = chord / Math.hypot(unit.x[SAMPLES], unit.z[SAMPLES]);
+  const x = unit.x.map(v => a.x + v * length), z = unit.z.map(v => a.z + v * length);
+  const y = new Float64Array(SAMPLES + 1).map((_, i) => a.y + (b.y - a.y) * smooth(i / SAMPLES)), d = new Float64Array(SAMPLES + 1).map((_, i) => i * length / SAMPLES);
+  return { shortcut, x, y, z, d, length, skipped: mod(shortcut.to - shortcut.from, len), lead: OPENING / length };
 }
 
 /** Every shortcut on a course, built once. */

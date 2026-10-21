@@ -27,14 +27,14 @@ export function locate(id: TrackId, px: number, pz: number, route: number, route
   const onRoad = Math.abs(main.offset) < def.width + .3;
   if (path) {
     const q = projectOnShortcut(path, px, pz), inside = Math.abs(q.x) < path.shortcut.width;
-    if (q.u > 0 && q.u < 1 && (inside || !onRoad)) return { route, s: mod(shortcutS(path, q.u), len), x: q.x, yaw: q.yaw, main, shortcut: q };
+    if (q.u > -path.lead && q.u < 1 && (inside || !onRoad)) return { route, s: mod(shortcutS(path, q.u), len), x: q.x, yaw: q.yaw, main, shortcut: q };
   } else if (Math.abs(main.offset) > def.width - .5) {
     for (let k = 0; k < paths.length; k++) {
       const sc = paths[k].shortcut;
       if (Math.sign(main.offset) !== sc.side || mod(main.s - sc.from + 8, len) > paths[k].skipped * MOUTH + 8) continue;
       const q = projectOnShortcut(paths[k], px, pz);
       // A little slack beyond the shortcut's edge, so a racer turning in at an angle is caught by its walls, not the road's.
-      if (q.u > 0 && q.u < MOUTH && Math.abs(q.x) < sc.width + 1) return { route: k, s: mod(shortcutS(paths[k], q.u), len), x: q.x, yaw: q.yaw, main, shortcut: q };
+      if (q.u > -paths[k].lead && q.u < MOUTH && Math.abs(q.x) < sc.width + 1) return { route: k, s: mod(shortcutS(paths[k], q.u), len), x: q.x, yaw: q.yaw, main, shortcut: q };
     }
   }
   return { route: MAIN_ROUTE, s: main.s, x: main.offset, yaw: pointAt(id, main.s).yaw, main, shortcut: null };

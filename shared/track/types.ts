@@ -32,11 +32,12 @@ export interface Gap { s: number; length: number }
 /** What happens beyond a shortcut's edge: a wall, a drop, or rough ground that slows like grass. */
 export type ShortcutEdge = 'wall' | 'fall' | 'rough';
 /**
- * A side route that leaves the road at `from` and rejoins it at `to`. It leaves and rejoins on `side` (+1 left, -1 right),
- * and between those it bows `bulge` metres sideways from the straight line joining its ends (positive bows further out to `side`).
+ * A side route that leaves the road at `from` and rejoins it at `to`, both on the edge of `side` (+1 left, -1 right),
+ * turning evenly in between. `side` is the inside of the bend it cuts. It turns off the road edge, and back onto it, `join` degrees
+ * towards `side`: a wider angle swings it further from the road. `width` is its half width, like the road's.
  * Progress along it counts as the main-road distance it skips, so a shortcut is shorter to drive but never skips a lap gate.
  */
-export interface Shortcut { from: number; to: number; side: 1 | -1; bulge: number; width: number; edge: ShortcutEdge; surface?: PatchSurface }
+export interface Shortcut { from: number; to: number; side: 1 | -1; join: number; width: number; edge: ShortcutEdge; surface?: PatchSurface }
 /**
  * A timed hazard, deterministic from race time so the server, prediction and every client agree.
  * Each `period` seconds (shifted by `phase`), it warns for `warn` seconds and then strikes for `strike` seconds; with no period it is always live.
