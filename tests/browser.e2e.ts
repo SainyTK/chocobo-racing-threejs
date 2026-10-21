@@ -9,9 +9,12 @@ async function pilot(page: Page) {
   const points = Array.from({ length: 1600 }, (_, i) => pointAt(id, i / 1600 * len));
   await page.evaluate(({ points, len }) => {
     const win = window as any; if (win.__pilotTimer) clearInterval(win.__pilotTimer);
-    const held = new Set<string>(); let density = 0, lastDirection = 0; const seen = new Set<string>(); let maxSpeed = 0;
     win.__pilotStats = { events: [], maxSpeed: 0, keyEvents: 0 };
     const send = (code: string, down: boolean) => { document.body.dispatchEvent(new KeyboardEvent(down ? 'keydown' : 'keyup', { code, bubbles: true })); win.__pilotStats.keyEvents++; };
+    // A pilot restarted mid-race first lets go of every key the previous one still held, or a held brake would stay down for good.
+    for (const k of win.__pilotHeld ?? []) send(k, false);
+    const held = new Set<string>(); let density = 0, lastDirection = 0; const seen = new Set<string>(); let maxSpeed = 0;
+    win.__pilotHeld = held;
     const point = (s: number) => points[Math.floor(((s % len + len) % len) / len * points.length) % points.length];
     win.__pilotTimer = setInterval(() => {
       const d = win.__raceDebug, r = d.race, desired = new Set<string>();
