@@ -2,17 +2,17 @@ import * as THREE from 'three';
 import { RACERS, type Race, type Racer } from '../../../shared/game/index.ts';
 import { routeHeight } from '../../../shared/track/index.ts';
 import { angleDelta, clamp } from '../../../shared/math.ts';
+import { chaseFraming } from './framing.ts';
 
-const HEIGHT = 4.2, BACK = 8, BOOST_PULL = 1.5, LOOK_AHEAD = 8, LOOK_HEIGHT = 1.6;
-const FOV_REST = 56, FOV_TOP = 64, FOV_BOOST = 72;
-/** Portrait screens keep at least this horizontal view, so the road ahead stays visible on phones and tablets. */
-const MIN_HORIZONTAL_FOV = 64, MAX_VERTICAL_FOV = 100;
+const BOOST_PULL = 1.5;
+const FOV_REST = 56, FOV_TOP = 64, FOV_BOOST = 72, MAX_VERTICAL_FOV = 100;
 const toDegrees = 180 / Math.PI;
-const fitWidth = (fov: number, aspect: number) => Math.min(MAX_VERTICAL_FOV, Math.max(fov, 2 * Math.atan(Math.tan(MIN_HORIZONTAL_FOV / 2 / toDegrees) / aspect) * toDegrees));
+/** Widens a vertical `fov` until the horizontal view is at least `minHorizontal`, scaled up with `fov` so narrow screens keep the speed widening. */
+const fitWidth = (fov: number, aspect: number, minHorizontal: number) => Math.min(MAX_VERTICAL_FOV, Math.max(fov, 2 * Math.atan(Math.tan(minHorizontal * fov / FOV_REST / 2 / toDegrees) / aspect) * toDegrees));
 
-/** Low chase camera behind the player. It follows a smoothed heading that leans toward the travel direction while the
- * racer slides (drift, wall bounce, spin), pulls back briefly when a boost starts, widens its field of view with speed
- * and jolts lightly on wall hits. `speed` is the 0 to 1 speed feel the speed lines read. */
+/** Low chase camera behind the player, framed for the screen shape (see `chaseFraming`). It follows a smoothed heading
+ * that leans toward the travel direction while the racer slides (drift, wall bounce, spin), pulls back briefly when a
+ * boost starts, widens its field of view with speed and jolts lightly on wall hits. `speed` is the 0 to 1 speed feel the speed lines read. */
 export class ChaseCamera {
   speed = 0;
   private heading = 0; private ready = false; private pull = 0; private boosted = false; private jolt = 0; private lastEvent = 0;
@@ -27,14 +27,15 @@ export class ChaseCamera {
     this.boosted = p.boost > 0; this.pull = Math.max(0, this.pull - dt * 1.6);
     for (const e of race.events) if (e.id > this.lastEvent && e.type === 'wall' && e.player === p.id) this.jolt = .35;
     this.lastEvent = race.eventId; this.jolt *= Math.exp(-dt * 7);
-    const a = this.heading + (lookBack ? Math.PI : 0), back = BACK + BOOST_PULL * Math.sin(this.pull * Math.PI / 2), floor = routeHeight(race.track, p.route, p.s) + p.alt * .6;
-    const height = Math.max(floor, routeHeight(race.track, p.route, p.s - back)) + HEIGHT + (p.flying > 0 ? 2 : 0);
+    const frame = chaseFraming(camera.aspect);
+    const a = this.heading + (lookBack ? Math.PI : 0), back = frame.back + BOOST_PULL * Math.sin(this.pull * Math.PI / 2), floor = routeHeight(race.track, p.route, p.s) + p.alt * .6;
+    const height = Math.max(floor, routeHeight(race.track, p.route, p.s - back)) + frame.height + (p.flying > 0 ? 2 : 0);
     this.at.set(p.px - Math.sin(a) * back, height, p.pz - Math.cos(a) * back);
     if (!this.ready || this.at.distanceTo(camera.position) > 55) camera.position.copy(this.at); else camera.position.lerp(this.at, 1 - Math.exp(-dt * 9));
     if (this.jolt > .01) camera.position.add(this.look.set(Math.random() - .5, Math.random() - .5, Math.random() - .5).multiplyScalar(this.jolt));
-    this.look.set(p.px + Math.sin(a) * LOOK_AHEAD, floor + LOOK_HEIGHT, p.pz + Math.cos(a) * LOOK_AHEAD); camera.lookAt(this.look);
+    this.look.set(p.px + Math.sin(a) * frame.lookAhead, floor + frame.lookHeight, p.pz + Math.cos(a) * frame.lookAhead); camera.lookAt(this.look);
     const top = RACERS[p.character].speed * p.pace, fraction = clamp(Math.abs(p.speed) / top, 0, 1);
-    const fov = fitWidth(p.boost > 0 && p.stun <= 0 ? FOV_BOOST : FOV_REST + (FOV_TOP - FOV_REST) * fraction, camera.aspect);
+    const fov = fitWidth(p.boost > 0 && p.stun <= 0 ? FOV_BOOST : FOV_REST + (FOV_TOP - FOV_REST) * fraction, camera.aspect, frame.minHorizontalFov);
     if (!this.ready) camera.fov = fov; else camera.fov += (fov - camera.fov) * (1 - Math.exp(-dt * 4));
     camera.updateProjectionMatrix();
     this.speed = p.boost > 0 && p.stun <= 0 ? 1 : clamp((fraction - .85) / .15, 0, 1) * .6;
