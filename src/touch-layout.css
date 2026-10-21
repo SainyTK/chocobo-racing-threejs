@@ -8,8 +8,11 @@
   --touch-gap: clamp(8px, 1.5vmin, 14px);
   /* Extra space that keeps the upper buttons out of a resting thumb's path. */
   --touch-reach-gap: clamp(14px, 2.6vmin, 24px);
-  --steer-w: clamp(150px, 34vmin, 300px);
-  --steer-h: clamp(70px, 12vmin, 108px);
+  /* Steering is sized for thumb travel: full lock is this far from where the thumb lands. */
+  --steer-travel: clamp(44px, 7.5vmin, 64px);
+  --steer-h: clamp(54px, 8.5vmin, 76px);
+  --steer-knob: calc(var(--steer-h) * .76);
+  --steer-w: calc(2 * var(--steer-travel) + var(--steer-knob));
   --utility-size: clamp(40px, 6vmin, 52px);
   --pedal-size: clamp(56px, 9.5vmin, 86px);
   --drive-w: clamp(74px, 13vmin, 116px);
@@ -20,5 +23,5 @@
   --hud-unit: clamp(6px, 1.05vmin, 11px);
 }
 @media (max-width: 359px) {
-  .touch-device { --steer-w: 132px; --pedal-size: 50px; --drive-w: 66px; --utility-size: 38px; }
+  .touch-device { --pedal-size: 50px; --drive-w: 66px; --utility-size: 38px; }
 }

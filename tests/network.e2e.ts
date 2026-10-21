@@ -11,8 +11,9 @@ test('impaired desktop and mobile six-racer driving, one-shot recovery and reloa
     await a.getByRole('button',{name:'START ONLINE RACE'}).click(); await expect(b.locator('#place')).toBeVisible();
     await expect.poll(async()=>(await debug(a)).race.phase).toBe('racing');
     await a.evaluate(()=>document.body.dispatchEvent(new KeyboardEvent('keydown',{code:'KeyW',bubbles:true})));
-    const cdp = await contexts[1].newCDPSession(b), gas = (await b.getByRole('button', { name: 'Drive', exact: true }).boundingBox())!, pad = (await b.locator('.steering-pad').boundingBox())!, steer = { x: pad.x + pad.width * .9, y: pad.y, width: 0, height: pad.height };
-    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: gas.x + gas.width / 2, y: gas.y + gas.height / 2, id: 0 }, { x: steer.x + steer.width / 2, y: steer.y + steer.height / 2, id: 1 }] });
+    const cdp = await contexts[1].newCDPSession(b), gas = (await b.getByRole('button', { name: 'Drive', exact: true }).boundingBox())!, pad = (await b.locator('.steering-pad').boundingBox())!, steer = { x: pad.x + pad.width / 2, y: pad.y, width: 0, height: pad.height };
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: gas.x + gas.width / 2, y: gas.y + gas.height / 2, id: 0 }, { x: steer.x, y: steer.y + steer.height / 2, id: 1 }] });
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: gas.x + gas.width / 2, y: gas.y + gas.height / 2, id: 0 }, { x: steer.x + pad.width, y: steer.y + steer.height / 2, id: 1 }] });
     await expect.poll(async()=>{const d=await debug(b);return d.race.racers.find((p:any)=>p.id===d.playerId).speed;}).toBeGreaterThan(1);
     await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
     await expect.poll(async()=>{const d=await debug(a);return d.race.racers.find((p:any)=>p.id===d.playerId).speed;}).toBeGreaterThan(1);

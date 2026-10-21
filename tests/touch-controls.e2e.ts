@@ -1,5 +1,5 @@
 import { test, expect, type Browser, type Page } from '@playwright/test';
-import { centerOf, driveLapByTouch, playerOf, raceDebug, steeringPoint, touchScreen } from './touch-pilot.ts';
+import { centerOf, driveLapByTouch, playerOf, raceDebug, steeringThumb, touchScreen } from './touch-pilot.ts';
 
 type Box = { x: number; y: number; width: number; height: number };
 const overlaps = (a: Box, b: Box) => a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
@@ -39,13 +39,19 @@ test('two-thumb layout fits iPad and phone screens without covering the HUD or t
           return width ? { x, y, width, height } : null;
         };
         return {
-          left: rect('.steering-side')!, right: rect('.action-pad')!,
+          left: rect('.steering-side')!, right: rect('.action-pad')!, zone: rect('.steering-zone')!, pad: rect('.steering-pad')!, pause: rect('[data-action="pause"]')!,
           controls: controlSelectors.map(rect) as Box[], hud: hudSelectors.map(rect).filter(Boolean) as Box[],
           position: rect('.position')!, speed: rect('.speed-box')!, standings: rect('#standings')!, countdown: rect('#countdown strong'),
           fits: document.documentElement.scrollWidth <= innerWidth && document.documentElement.scrollHeight <= innerHeight,
         };
       }, { controlSelectors, hudSelectors: ['.hud-top', '#standings', '.position', '.speed-box', '#minimap'] });
       expect(rects.left.x + rects.left.width, `${at} clusters`).toBeLessThan(rects.right.x);
+      // The steering zone takes the free left side of the screen but never the right thumb's buttons or pause; the pad itself stays thumb-sized.
+      expect(overlaps(rects.zone, rects.right), `${at} steering zone over actions`).toBe(false);
+      expect(overlaps(rects.zone, rects.pause), `${at} steering zone over pause`).toBe(false);
+      expect(rects.zone.x).toBe(0);
+      expect(rects.zone.y + rects.zone.height).toBeCloseTo(viewport.height, 0);
+      expect(rects.pad.width, `${at} steering pad width`).toBeLessThanOrEqual(200);
       for (const box of rects.controls) {
         expect(box.width, `${at} target size`).toBeGreaterThanOrEqual(38);
         expect(box.x).toBeGreaterThanOrEqual(0);
@@ -78,24 +84,29 @@ test('right thumb drives, drifts and brakes while the left thumb steers and othe
     const touch = await touchScreen(context, page), input = inputOf(page);
     const drive = await centerOf(page, '.mobile-drive', 2), drift = await centerOf(page, '.mobile-drift', 2), brake = await centerOf(page, '.mobile-brake', 2);
     const item = await centerOf(page, '.mobile-item', 3), ability = await centerOf(page, '.mobile-ability', 4);
-    await touch.start([await steeringPoint(page, -.95, 1), drive]);
-    await expect.poll(input).toMatchObject({ throttle: true, steer: 1, drift: false, brake: false });
+    const thumb = await steeringThumb(page, 1);
+    // Wherever the thumb lands is straight ahead; full lock is one travel away, a short thumb movement.
+    expect(thumb.travel).toBeLessThanOrEqual(64);
+    await touch.start([thumb.at(0), drive]);
+    await expect.poll(input).toMatchObject({ throttle: true, steer: 0, drift: false, brake: false });
+    await touch.move([thumb.at(-1.3)]);
+    await expect.poll(input).toMatchObject({ throttle: true, steer: 1 });
     await touch.start([item, ability]);
     await expect.poll(input).toMatchObject({ throttle: true, steer: 1, item: true, ability: true });
     await touch.end([item, ability]);
     await expect.poll(input).toMatchObject({ throttle: true, steer: 1, item: false, ability: false });
-    // Steering is proportional across the pad and centres when the thumb returns.
-    await touch.move([await steeringPoint(page, .45, 1)]);
+    // Steering is proportional along the travel and centres when the thumb returns.
+    await touch.move([thumb.at(.6)]);
     await expect.poll(async () => (await input()).steer).toBeLessThan(-.4);
     expect((await input()).steer).toBeGreaterThan(-.65);
-    await touch.move([await steeringPoint(page, 0, 1)]);
+    await touch.move([thumb.at(0)]);
     await expect.poll(input).toMatchObject({ steer: 0 });
-    // A second finger landing on the pad does not take the steering from the first.
-    await touch.start([await steeringPoint(page, .95, 5)]);
+    // A second finger landing in the steering zone does not take the steering from the first.
+    await touch.start([{ ...thumb.at(1.3), id: 5 }]);
     await expect.poll(input).toMatchObject({ steer: 0 });
     await touch.end([{ x: 0, y: 0, id: 5 }]);
     // The right thumb rolls from DRIVE onto DRIFT and BRAKE without lifting.
-    await touch.move([await steeringPoint(page, .95, 1), drift]);
+    await touch.move([thumb.at(1.3), drift]);
     await expect.poll(input).toMatchObject({ throttle: true, drift: true, brake: false, steer: -1 });
     await expect(page.locator('.mobile-drift')).toHaveClass(/pressed/);
     await expect(page.locator('.mobile-drive')).not.toHaveClass(/pressed/);
@@ -105,8 +116,20 @@ test('right thumb drives, drifts and brakes while the left thumb steers and othe
     await expect.poll(input).toMatchObject({ throttle: true, brake: false });
     await touch.cancel();
     await expect.poll(input).toMatchObject({ throttle: false, steer: 0, drift: false, brake: false });
+    // The pad floats to a landing point higher up and to the right, and steers from there.
+    const zone = (await page.locator('.steering-zone').boundingBox())!, landing = { x: zone.x + zone.width * .6, y: zone.y + zone.height * .45 };
+    const floating = await steeringThumb(page, 1, landing);
+    await touch.start([floating.at(0)]);
+    await expect.poll(input).toMatchObject({ steer: 0 });
+    const moved = (await page.locator('.steering-pad').boundingBox())!;
+    expect(Math.abs(moved.x + moved.width / 2 - landing.x)).toBeLessThan(2);
+    expect(Math.abs(moved.y + moved.height / 2 - landing.y)).toBeLessThan(2);
+    await touch.move([floating.at(1.3)]);
+    await expect.poll(input).toMatchObject({ steer: -1 });
+    await touch.end();
+    await expect.poll(input).toMatchObject({ steer: 0 });
     for (const action of ['blur', 'orientationchange', 'menu']) {
-      await touch.start([await steeringPoint(page, -.9, 1), drift]);
+      await touch.start([thumb.at(0), drift]);
       await expect(page.locator('.steering-pad')).toHaveClass(/pressed/);
       await page.evaluate(action => {
         if (action === 'menu') (document.querySelector('[data-action="pause"]') as HTMLButtonElement).click();

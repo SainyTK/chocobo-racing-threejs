@@ -37,10 +37,20 @@ export async function centerOf(page: Page, selector: string, id: number): Promis
   return { x: box.x + box.width / 2, y: box.y + box.height / 2, id };
 }
 
-/** A finger on the steering pad at an offset from its centre, -1 at the left edge and 1 at the right edge. */
-export async function steeringPoint(page: Page, offset: number, id: number): Promise<TouchPoint> {
-  const box = (await page.locator('.steering-pad').boundingBox())!;
-  return { x: box.x + box.width / 2 * (1 + offset), y: box.y + box.height / 2, id };
+/**
+ * The left thumb on the floating steering pad. It lands at `landing` (the pad's resting centre by default),
+ * and `at(offset)` is that finger moved by a fraction of the pad's travel: -1 is full lock left, 1 full lock right.
+ */
+export async function steeringThumb(page: Page, id: number, landing?: { x: number; y: number }) {
+  const { pad, knob } = await page.evaluate(() => {
+    const box = (selector: string) => {
+      const { x, y, width, height } = document.querySelector(selector)!.getBoundingClientRect();
+      return { x, y, width, height };
+    };
+    return { pad: box('.steering-pad'), knob: box('.steer-knob') };
+  });
+  const origin = landing ?? { x: pad.x + pad.width / 2, y: pad.y + pad.height / 2 }, travel = (pad.width - knob.width) / 2;
+  return { travel, at: (offset: number): TouchPoint => ({ x: origin.x + offset * travel, y: origin.y, id }) };
 }
 
 /** The telemetry the pilot reads, taken from one cloned debug snapshot per tick. */
@@ -51,15 +61,14 @@ const telemetry = (page: Page) => page.evaluate(() => {
 
 /**
  * Black-box touch pilot for one lap. It reads cloned telemetry and only sends touches:
- * the left thumb slides on the steering pad, the right thumb rolls between DRIVE, DRIFT and BRAKE,
+ * the left thumb lands on the steering zone and slides, the right thumb rolls between DRIVE, DRIFT and BRAKE,
  * and a third finger taps MAGIC when a stone is ready.
  */
 export async function driveLapByTouch(context: BrowserContext, page: Page, timeout = 150000) {
   const touch = await touchScreen(context, page), steerId = 1, pedalId = 2, castId = 3, rescueId = 4;
   const track = (await raceDebug(page)).race.track as TrackId, len = trackLength(track);
   const point = (s: number) => pointAt(track, ((s % len) + len) % len);
-  const pad = (await page.locator('.steering-pad').boundingBox())!;
-  const steerAt = (offset: number) => ({ x: pad.x + pad.width / 2 * (1 + offset), y: pad.y + pad.height / 2, id: steerId });
+  const steerAt = (await steeringThumb(page, steerId)).at;
   const pedals = { drive: await centerOf(page, '.mobile-drive', pedalId), drift: await centerOf(page, '.mobile-drift', pedalId), brake: await centerOf(page, '.mobile-brake', pedalId) };
   const magic = await centerOf(page, '.mobile-item', castId), rescue = await centerOf(page, '[aria-label="Recover racer"]', rescueId);
   const used = { drive: 0, drift: 0, brake: 0, drifting: 0, casts: 0, rescues: 0, steerLeft: 0, steerRight: 0, maxSpeed: 0 };
@@ -76,8 +85,8 @@ export async function driveLapByTouch(context: BrowserContext, page: Page, timeo
     const curve = Math.max(...[12, 25, 40].map(v => Math.abs(point(p.s + v).curve)));
     const steer = Math.max(-1, Math.min(1, delta * 2.1));
     const pedal = p.speed > Math.max(13, Math.min(34, Math.sqrt(14 / Math.max(.001, curve))) + 1) ? 'brake' : curve > .02 && p.speed > 18 && Math.abs(steer) > .45 ? 'drift' : 'drive';
-    // Positive steer turns left, so the thumb moves to the left half of the pad.
-    await touch.move([steerAt(-steer * .8), pedals[pedal]]);
+    // Positive steer turns left, so the thumb slides left. The offset includes the deadzone so small corrections still turn.
+    await touch.move([steerAt(-Math.sign(steer) * (.15 + Math.abs(steer) * .85)), pedals[pedal]]);
     used[pedal]++;
     if (steer > .2) used.steerLeft++;
     if (steer < -.2) used.steerRight++;
