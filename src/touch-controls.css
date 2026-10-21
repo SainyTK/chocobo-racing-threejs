@@ -43,17 +43,8 @@ body.racing #world, body.racing .hud {
 .touch-controls button.pressed, .steering-pad.pressed { border-color: #ffe594; box-shadow: inset 0 0 0 3px #ffdc6666, 0 0 14px #ffe59466; }
 
 /* Left thumb: a small steering pad that floats to wherever the thumb lands in the steering zone.
-   The zone covers the free left side of the screen, out to the screen edges; the rarely used actions sit above the pad's resting spot. */
-.steering-side {
-  position: absolute;
-  left: 0;
-  bottom: 0;
-  width: max(var(--steer-w), calc(3 * var(--utility-size) + 2 * var(--touch-gap)));
-  height: var(--steer-stack-h);
-}
-.utility-controls { position: absolute; left: 0; top: 0; z-index: 1; display: flex; gap: var(--touch-gap); }
-.touch-controls .utility-controls button { width: var(--utility-size); height: var(--utility-size); border-width: 1px; background: #1d3354cc; }
-.touch-controls .utility-controls svg { width: 52%; height: 52%; }
+   The zone covers the free left side of the screen, out to the screen edges. */
+.steering-side { position: absolute; left: 0; bottom: 0; width: var(--steer-w); height: var(--steer-stack-h); }
 .steering-zone {
   position: absolute;
   left: calc(var(--touch-left) * -1);
@@ -99,18 +90,30 @@ body.racing #world, body.racing .hud {
 }
 .steering-pad.pressed .steer-knob { border-color: #ffe594; }
 
-/* Right thumb rests on DRIVE; DRIFT and BRAKE sit one roll to the left, magic and the skill one reach above. */
+/* Right thumb rests on DRIVE; DRIFT and BRAKE sit one roll to the left, magic and the skill one reach above,
+   and the rarely used look behind, recover and reverse one more reach above those. */
 .touch-controls > .action-pad {
   position: absolute;
   right: 0;
   bottom: 0;
   display: grid;
   grid-template-columns: var(--pedal-size) var(--drive-w);
-  grid-template-rows: var(--drive-w) calc(var(--touch-reach-gap) - var(--touch-gap)) var(--pedal-size) var(--pedal-size);
-  grid-template-areas: 'ability item' '. .' 'drift drive' 'brake drive';
+  grid-template-rows: var(--utility-size) calc(var(--touch-reach-gap) - var(--touch-gap)) var(--drive-w) calc(var(--touch-reach-gap) - var(--touch-gap)) var(--pedal-size) var(--pedal-size);
+  grid-template-areas: 'utility utility' '. .' 'ability item' '. .' 'drift drive' 'brake drive';
   gap: var(--touch-gap);
   place-items: center;
 }
+@media (orientation: landscape) and (max-height: 500px) {
+  .touch-controls > .action-pad {
+    grid-template-columns: var(--utility-row-w) var(--pedal-size) var(--drive-w);
+    grid-template-rows: var(--drive-w) calc(var(--touch-reach-gap) - var(--touch-gap)) var(--pedal-size) var(--pedal-size);
+    grid-template-areas: 'utility ability item' '. . .' '. drift drive' '. brake drive';
+  }
+  .touch-controls .utility-controls { align-self: end; }
+}
+.touch-controls .utility-controls { grid-area: utility; justify-self: end; display: flex; gap: var(--utility-gap); }
+.touch-controls .utility-controls button { width: var(--utility-size); height: var(--utility-size); border-width: 1px; background: #1d3354cc; }
+.touch-controls .utility-controls svg { width: 52%; height: 52%; }
 .touch-controls .pedals { display: contents; }
 .touch-controls .mobile-ability { grid-area: ability; align-self: end; width: var(--pedal-size); height: var(--pedal-size); background: conic-gradient(#4c719c var(--charge, 0%), #20344fe6 0); }
 .touch-controls .mobile-ability.ready { border-color: #ffe594; }

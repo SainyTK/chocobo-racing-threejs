@@ -3,6 +3,8 @@ import { centerOf, driveLapByTouch, playerOf, raceDebug, steeringThumb, touchScr
 
 type Box = { x: number; y: number; width: number; height: number };
 const overlaps = (a: Box, b: Box) => a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+const inside = (a: Box, b: Box) => a.x >= b.x - .5 && a.y >= b.y - .5 && a.x + a.width <= b.x + b.width + .5 && a.y + a.height <= b.y + b.height + .5;
+const distance = (a: Box, b: Box) => Math.hypot(Math.max(0, b.x - a.x - a.width, a.x - b.x - b.width), Math.max(0, b.y - a.y - a.height, a.y - b.y - b.height));
 const iPadLandscape = { width: 1180, height: 820 };
 const viewports = [iPadLandscape, { width: 820, height: 1180 }, { width: 1366, height: 1024 }, { width: 1024, height: 1366 }, { width: 390, height: 844 }, { width: 320, height: 568 }, { width: 844, height: 390 }, { width: 667, height: 375 }];
 const controlSelectors = ['.mobile-drive', '.mobile-brake', '.mobile-drift', '.mobile-item', '.mobile-ability', '.steering-pad', '[data-touch="behind"]', '[data-touch="rescue"]', '[data-touch="reverse"]'];
@@ -52,6 +54,12 @@ test('two-thumb layout fits iPad and phone screens without covering the HUD or t
       expect(rects.zone.x).toBe(0);
       expect(rects.zone.y + rects.zone.height).toBeCloseTo(viewport.height, 0);
       expect(rects.pad.width, `${at} steering pad width`).toBeLessThanOrEqual(200);
+      // Look behind, recover and reverse live in the right cluster, a deliberate reach from the pedals the right thumb rolls across.
+      const [driveBox, brakeBox, driftBox] = rects.controls, utilities = rects.controls.slice(6);
+      for (const utility of utilities) {
+        expect(inside(utility, rects.right), `${at} utility button outside the right cluster`).toBe(true);
+        for (const pedal of [driveBox, brakeBox, driftBox]) expect(distance(utility, pedal), `${at} utility button too close to a pedal`).toBeGreaterThanOrEqual(14);
+      }
       for (const box of rects.controls) {
         expect(box.width, `${at} target size`).toBeGreaterThanOrEqual(38);
         expect(box.x).toBeGreaterThanOrEqual(0);
