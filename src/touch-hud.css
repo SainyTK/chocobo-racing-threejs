@@ -5,7 +5,7 @@
   /* Bottom edge of the standings strip: race-wide banners start below it. */
   --hud-standings-bottom: calc(var(--touch-top) + var(--hud-top-band) + var(--hud-unit) * 6.2 + 12px);
   --readout-left-bottom: calc(var(--touch-bottom) + var(--steer-stack-h) + var(--touch-reach-gap));
-  --readout-right-bottom: calc(var(--touch-bottom) + var(--action-stack-h) + var(--touch-reach-gap));
+  --readout-right-bottom: calc(var(--touch-bottom) + var(--action-stack-h) + 1.5 * var(--touch-reach-gap));
 }
 .touch-device .powers, .touch-device .race-hint { display: none; }
 

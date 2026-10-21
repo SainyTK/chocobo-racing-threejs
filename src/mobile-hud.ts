@@ -26,14 +26,15 @@ const glyph = (path: string) => `<svg viewBox="0 0 48 48" aria-hidden="true" fil
  * and the right thumb rests on DRIVE.
  * DRIVE, DRIFT and BRAKE share a slide group so the right thumb can roll between them without lifting.
  * DRIFT holds the accelerator too, so sliding off DRIVE keeps the racer driving.
+ * Look behind, recover and reverse sit in a small row on the right, a deliberate reach away from the pedals.
  */
 export function mobileControls(ability: AbilityId) {
   return `<div class="touch-controls" aria-label="Touchscreen gamepad">`
     + `<div class="steering-side" role="group" aria-label="Direction controls">`
-    + `<div class="utility-controls"><button data-touch="behind" aria-label="Look behind">${glyph(controlPaths.behind)}</button><button data-touch="rescue" aria-label="Recover racer">${glyph(controlPaths.rescue)}</button><button data-touch="reverse" aria-label="Reverse">${glyph(controlPaths.reverse)}</button></div>`
     + `<div data-touch="steer" class="steering-zone" role="group" aria-label="Steering: put your left thumb down anywhere here and slide left or right"><div class="steering-pad"><span class="steer-arrow" aria-hidden="true">‹</span><span class="steer-knob"></span><span class="steer-arrow" aria-hidden="true">›</span></div></div>`
     + `</div>`
     + `<div class="action-pad" role="group" aria-label="Race actions">`
+    + `<div class="utility-controls"><button data-touch="behind" aria-label="Look behind">${glyph(controlPaths.behind)}</button><button data-touch="rescue" aria-label="Recover racer">${glyph(controlPaths.rescue)}</button><button data-touch="reverse" aria-label="Reverse">${glyph(controlPaths.reverse)}</button></div>`
     + `<button data-touch="ability" aria-label="Activate ability: ${ABILITIES[ability].name}" class="mobile-ability">${glyph(skillPaths[ability])}<small>${ABILITIES[ability].name}</small><span id="mobile-ability-state"></span></button>`
     + `<button data-touch="item" aria-label="Activate item" class="mobile-item"><span id="mobile-stones" class="mobile-stones"></span><small id="mobile-item-label">NO STONES</small></button>`
     + `<div class="pedals" data-touch-slide>`

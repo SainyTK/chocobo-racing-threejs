@@ -1,5 +1,5 @@
 /* Geometry of the two-thumb touch layout. The gamepad and the touch HUD both place themselves from these tokens,
-   so a new HUD element can sit above a thumb cluster with calc(var(--touch-bottom) + var(--steer-stack-h)). */
+   so a new HUD element can sit above a thumb cluster with calc(var(--touch-bottom) + var(--action-stack-h)). */
 .touch-device {
   --touch-left: max(16px, env(safe-area-inset-left));
   --touch-right: max(16px, env(safe-area-inset-right));
@@ -14,14 +14,27 @@
   --steer-knob: calc(var(--steer-h) * .76);
   --steer-w: calc(2 * var(--steer-travel) + var(--steer-knob));
   --utility-size: clamp(40px, 6vmin, 52px);
+  --utility-gap: var(--touch-gap);
   --pedal-size: clamp(56px, 9.5vmin, 86px);
   --drive-w: clamp(74px, 13vmin, 116px);
-  --steer-stack-h: calc(var(--utility-size) + var(--touch-reach-gap) + var(--steer-h));
-  --action-stack-w: calc(var(--pedal-size) + var(--touch-gap) + var(--drive-w));
-  --action-stack-h: calc(var(--drive-w) + var(--touch-reach-gap) + 2 * var(--pedal-size) + var(--touch-gap));
+  --steer-stack-h: var(--steer-h);
+  --utility-row-w: calc(3 * var(--utility-size) + 2 * var(--utility-gap));
+  /* The pedals with MAGIC and ABILITY above them. */
+  --action-core-w: calc(var(--pedal-size) + var(--touch-gap) + var(--drive-w));
+  --action-core-h: calc(var(--drive-w) + var(--touch-reach-gap) + 2 * var(--pedal-size) + var(--touch-gap));
+  /* The utility row sits on top of the right cluster. */
+  --action-stack-w: var(--action-core-w);
+  --action-stack-h: calc(var(--action-core-h) + var(--touch-reach-gap) + var(--utility-size));
   /* Readout text scales with the screen, so an iPad gets a larger HUD than a phone. */
   --hud-unit: clamp(6px, 1.05vmin, 11px);
 }
+/* Short landscape phones have no height for a row on top, so the utility row moves beside ABILITY instead. */
+@media (orientation: landscape) and (max-height: 500px) {
+  .touch-device {
+    --action-stack-w: calc(var(--utility-row-w) + var(--touch-gap) + var(--action-core-w));
+    --action-stack-h: var(--action-core-h);
+  }
+}
 @media (max-width: 359px) {
-  .touch-device { --pedal-size: 50px; --drive-w: 66px; --utility-size: 38px; }
+  .touch-device { --pedal-size: 50px; --drive-w: 66px; --utility-size: 38px; --utility-gap: 5px; }
 }
