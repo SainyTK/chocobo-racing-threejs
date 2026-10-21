@@ -32,7 +32,8 @@ export function botDriving(r: Race, p: Racer, target: { x: number; z: number }):
   const plan = grip * cls.cpuCorner * (1 + H.sharpGain * cls.cpuTaps);
   const turn = RACERS[p.character].steering * (p.gripUp > 0 ? 1.25 : 1) * (1 + H.sharpSteer * cls.cpuTaps);
   const desired = Math.min(RACERS[p.character].speed * p.pace * (p.boost > 0 ? H.boostSpeed : 1), cornerSpeed(r, p, plan, turn));
-  const brake = p.speed > Math.max(12, desired + 1);
+  // Facing well away from its line (after a spin), it slows to turn round instead of driving off the course.
+  const brake = p.speed > Math.max(12, desired + 1) || Math.abs(delta) > 1.2 && p.speed > 12;
   const near = Math.max(...[5, 11, 17].map(d => Math.abs(pointAt(r.track, p.s + d).curve)));
   // A tap is one tick of brake with the throttle held; the next tap waits until the sharp-turn window is nearly over.
   const tap = cls.cpuTaps > 0 && !brake && !p.lastBrake && p.sharp < .1 && p.speed * p.speed * near > grip;

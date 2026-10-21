@@ -10,11 +10,13 @@ export interface Difficulty {
   cpuTaps: number;
   /** Largest CPU top-speed lift when far behind the leading human, and cut when far ahead. */
   catchUp: number; holdBack: number;
+  /** Share of timed hazards a CPU racer misreads each lap, and how often it takes a shortcut it reaches. */
+  cpuMisread: number; cpuShortcut: number;
 }
 export const DIFFICULTIES: Record<DifficultyId, Difficulty> = {
-  chocobo: { name: 'Chocobo Class', description: 'Relaxed rivals.', speed: 1, cpuPace: .94, cpuCorner: .85, cpuTaps: 0, catchUp: .03, holdBack: .05 },
-  behemoth: { name: 'Behemoth Class', description: 'Rivals who brake and drift well.', speed: 1, cpuPace: .99, cpuCorner: 1, cpuTaps: 1, catchUp: .03, holdBack: .03 },
-  bahamut: { name: 'Bahamut Class', description: 'Faster racers and rivals at the limit.', speed: 1.1, cpuPace: 1.02, cpuCorner: 1, cpuTaps: 2, catchUp: .04, holdBack: .02 },
+  chocobo: { name: 'Chocobo Class', description: 'Relaxed rivals.', speed: 1, cpuPace: .94, cpuCorner: .85, cpuTaps: 0, catchUp: .03, holdBack: .05, cpuMisread: .3, cpuShortcut: .1 },
+  behemoth: { name: 'Behemoth Class', description: 'Rivals who brake and drift well.', speed: 1, cpuPace: .975, cpuCorner: 1, cpuTaps: 1, catchUp: .03, holdBack: .03, cpuMisread: .1, cpuShortcut: .5 },
+  bahamut: { name: 'Bahamut Class', description: 'Faster racers and rivals at the limit.', speed: 1.1, cpuPace: 1.02, cpuCorner: 1, cpuTaps: 2, catchUp: .04, holdBack: .02, cpuMisread: .04, cpuShortcut: .85 },
 };
 export const DIFFICULTY_IDS = Object.keys(DIFFICULTIES) as DifficultyId[];
 export const DEFAULT_DIFFICULTY: DifficultyId = 'behemoth';
