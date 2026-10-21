@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { TRACKS, TRACK_IDS, pointAt, trackLength, courseObjects, type TrackId } from '../../shared/track/index.ts';
+import { TRACKS, TRACK_IDS, courseLayout, pointAt, trackLength, courseObjects, type TrackId } from '../../shared/track/index.ts';
 import { createCharacter } from '../../src/gfx/characters/index.ts';
 import { makePickup } from '../../src/gfx/effects/pickup.ts';
 import { makeBoostPad, padMaterial } from '../../src/gfx/stage/boost-pad.ts';
@@ -14,11 +14,24 @@ import { defaultView, type ViewState } from '../viewport.ts';
 export const CRUISE = 32;
 const SECTIONS = 6;
 
-export const COURSE_VARIANTS: Variant[] = [
+/** Every gimmick in a course's layout, in lap order, with the spot a racer approaches it on. */
+function gimmicks(id: TrackId) {
+  const L = courseLayout(id), list: { label: string; s: number; x: number }[] = [
+    ...L.pads.map(p => ({ label: 'Boost pad', s: p.s, x: p.x })),
+    ...L.patches.map(p => ({ label: p.surface === 'slip' ? 'Slippery patch' : 'Slow patch', s: p.s, x: p.x })),
+    ...L.ramps.map(r => ({ label: L.gaps.some(g => Math.abs(g.s - r.s) < 10) ? 'Jump over a gap' : 'Jump ramp', s: r.s - r.length, x: r.x })),
+    ...L.shortcuts.map(c => ({ label: 'Shortcut', s: c.from, x: c.side * TRACKS[id].width * .5 })),
+    ...L.hazards.map(h => ({ label: `${h.kind[0].toUpperCase()}${h.kind.slice(1)}`, s: h.s, x: h.motion === 'cross' ? 0 : h.x })),
+  ];
+  return list.sort((a, b) => a.s - b.s);
+}
+
+const variants = (id: TrackId): Variant[] => [
   { id: 'drive', label: 'Race camera lap' },
   { id: 'aerial', label: 'Aerial overview' },
   { id: 'start', label: 'Start line' },
   ...Array.from({ length: SECTIONS }, (_, i) => ({ id: `s${i + 1}`, label: `Trackside ${i + 1} of ${SECTIONS}` })),
+  ...gimmicks(id).map((g, i) => ({ id: `g${i + 1}`, label: `${g.label} at ${Math.round(g.s)} m` })),
   { id: 'props', label: 'Prop sheet' },
 ];
 
@@ -31,7 +44,7 @@ function raceObjects(id: TrackId, group: THREE.Group) {
 
 /** Chase camera matching the game's: behind and above the racer, looking a little ahead. Dragging orbits around it. */
 function chase(id: TrackId, course: Course, root: THREE.Group): Pick<Instance, 'camera' | 'update' | 'dispose'> {
-  const len = trackLength(id), rider = createCharacter(0), focus = new THREE.Vector3(), look = new THREE.Vector3(), home = defaultView();
+  const rider = createCharacter(0), focus = new THREE.Vector3(), look = new THREE.Vector3(), home = defaultView();
   root.add(rider.root);
   let s = 0, steer = 0, camera: THREE.Camera = new THREE.PerspectiveCamera();
   const place = (t: number) => {
@@ -99,6 +112,21 @@ function create(id: TrackId, variant: string): Instance {
     return { ...base, camera: c.camera, update(t, dt) { objects.update(t); c.update!(t, dt); }, dispose() { c.dispose!(); base.dispose!(); } };
   }
   let cam: THREE.Camera = new THREE.PerspectiveCamera();
+  if (variant.startsWith('g')) {
+    // A racer's view of the gimmick: chase-camera height, 24 m short of it along the road, looking at it. Dragging circles it.
+    const g = gimmicks(id)[Number(variant.slice(1)) - 1], spot = pointAt(id, g.s, g.x), from = pointAt(id, g.s - 24, g.x * .5), look = new THREE.Vector3(spot.x, spot.y + 1.5, spot.z);
+    const base0 = Math.atan2(look.x - from.x, look.z - from.z), reach = Math.hypot(look.x - from.x, look.z - from.z);
+    return {
+      ...base,
+      camera(c, view) {
+        cam = c; const a = base0 + (view.az - defaultView().az), d = reach * view.zoom;
+        c.position.set(look.x - Math.sin(a) * d, from.y + 4.2 + Math.max(-.4, (view.el - defaultView().el) * 30), look.z - Math.cos(a) * d); c.lookAt(look);
+        if (c.fov !== 58 || c.far !== 1500) { c.fov = 58; c.near = .2; c.far = 1500; c.updateProjectionMatrix(); }
+        return look;
+      },
+      update(t, dt) { objects.update(t); course.update(t, dt, cam); },
+    };
+  }
   const at = variant === 'start' ? -4 : variant.startsWith('s') ? (Number(variant.slice(1)) - .5) * len / SECTIONS : 0, p = pointAt(id, at);
   const focus = variant === 'aerial'
     ? { target: new THREE.Vector3(), distance: 0, near: 1, far: 4000 }
@@ -118,6 +146,6 @@ function create(id: TrackId, variant: string): Instance {
 }
 
 export const courses: StudioElement[] = TRACK_IDS.map(id => ({
-  id: `course.${id}`, name: TRACKS[id].name, category: 'Courses', tags: ['course', 'track', 'stage', 'scenery', id, TRACKS[id].surface], variants: COURSE_VARIANTS,
+  id: `course.${id}`, name: TRACKS[id].name, category: 'Courses', tags: ['course', 'track', 'stage', 'scenery', 'gimmick', id, TRACKS[id].surface], variants: variants(id),
   create: variant => create(id, variant),
 }));

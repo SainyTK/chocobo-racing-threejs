@@ -1,11 +1,11 @@
 import { mod } from '../../math.ts';
 import { TRACKS } from '../../track/tracks.ts';
-import { pointAt, projectOnTrack, trackLength } from '../../track/sampling.ts';
+import { trackLength } from '../../track/sampling.ts';
+import { locate, MAIN_ROUTE } from '../../track/route.ts';
 import { courseObjects } from '../../track/objects.ts';
 import { ABILITIES } from '../abilities.ts';
 import { integrateDriving, updateDriveMode } from '../driving.ts';
 import { HANDLING } from '../handling.ts';
-import { bounceOffWall } from './walls.ts';
 import { ITEMS, drawStone, inBackHalf } from '../items.ts';
 import { addStone, canAddStone, levelUpLatest } from '../inventory.ts';
 import { BARRIER_SECONDS, DOOM, STONE_RESPAWN } from '../spells.ts';
@@ -14,9 +14,12 @@ import { recover, useAbility, useItem } from '../actions.ts';
 import { event } from '../events.ts';
 import { stepFinished } from './finished.ts';
 import { random } from '../random.ts';
+import { stepAir } from '../air.ts';
+import { keepOnCourse } from './edges.ts';
+import { stepCourse } from './course.ts';
 import type { Race, Racer } from '../types.ts';
 
-/** Advances one racer: timers, abilities, driving physics, walls and falls, lap gates, pickups, traps and pads. */
+/** Advances one racer: timers, abilities, driving physics, route, walls, jumps and falls, lap gates, pickups, traps and course gimmicks. */
 export function stepRacer(r: Race, p: Racer, dt: number) {
   const def = TRACKS[r.track], len = trackLength(r.track), objects = courseObjects(r.track);
   if (p.finishTime !== null) { stepFinished(r, p, dt); return; }
@@ -40,17 +43,19 @@ export function stepRacer(r: Race, p: Racer, dt: number) {
   if (p.drifting) p.drift += dt; else p.drift = Math.max(0, p.drift - dt * 3);
   if (p.drift > HANDLING.overDrift) { crash(r, p, 1.4, 'Over-drift! Release, then accelerate for Spin Dash.'); p.spinDash = true; p.spinReleased = false; }
   integrateDriving(r.track, p, dt);
-  const oldS = p.s, projection = projectOnTrack(r.track, p.px, p.pz, p.routeS);
-  const delta = mod(projection.s - p.routeS + len / 2, len) - len / 2;
-  if (Math.abs(delta) < Math.max(8, p.speed * dt * 4)) p.s += delta;
-  p.routeS = projection.s; p.x = projection.offset;
-  const tangent = pointAt(r.track, p.routeS), alignment = p.vx * Math.sin(tangent.yaw) + p.vz * Math.cos(tangent.yaw);
+  const oldS = p.s, place = locate(r.track, p.px, p.pz, p.route, p.routeS);
+  const delta = mod(place.s - p.routeS + len / 2, len) - len / 2;
+  // Switching between the road and a shortcut is the one place a racer's lap distance may jump.
+  if (Math.abs(delta) < Math.max(8, p.speed * dt * 4) || place.route !== p.route) p.s += delta;
+  p.routeS = place.s; p.x = place.x; p.route = place.route;
+  const alignment = p.vx * Math.sin(place.yaw) + p.vz * Math.cos(place.yaw);
   p.wrongWay = alignment < -3;
-  if (Math.abs(p.x) < def.width - 1 && alignment > 3 && p.s < (p.gates + 1) * len / 12 + 4) p.lastSafeS = p.s;
-  if (def.wall && Math.abs(p.x) > def.width + .7) bounceOffWall(r, p, projection);
-  else if ((def.cliff && Math.abs(p.x) > def.width + 5 || Math.abs(p.x) > def.width + 35) && p.flying <= 0) { p.falling = 1.3; p.vx = p.vz = p.speed = 0; event(r, p, 'fall', 'Watch the edge!'); }
+  if (p.route === MAIN_ROUTE && Math.abs(p.x) < def.width - 1 && alignment > 3 && p.s < (p.gates + 1) * len / 12 + 4) p.lastSafeS = p.s;
+  const edge = keepOnCourse(r.track, p, place), fell = stepAir(r.track, p, dt);
+  if (edge?.kind === 'wall' && edge.impact > 6 && p.wallCooldown <= 0) { p.wallCooldown = .7; event(r, p, 'wall', 'Wall hit!'); }
+  if (edge?.kind === 'fall' || fell) { p.falling = 1.3; p.vx = p.vz = p.speed = 0; event(r, p, 'fall', fell ? 'Fell into the gap!' : 'Watch the edge!'); }
   const nextGate = (p.gates + 1) * len / 12;
-  if (oldS < nextGate && p.s >= nextGate && Math.abs(p.x) < def.width + 7) {
+  if (oldS < nextGate && p.s >= nextGate && (p.route !== MAIN_ROUTE || Math.abs(p.x) < def.width + 7)) {
     p.gates++;
     if (p.gates % 12 === 0) {
       const split = r.time - (p.s - nextGate) / Math.max(1, alignment); p.lapTimes.push(split - p.lapStart); p.lapStart = split;
@@ -58,7 +63,7 @@ export function stepRacer(r: Race, p: Racer, dt: number) {
       else { p.lap = p.gates / 12 + 1; event(r, p, 'lap', p.lap === r.laps ? 'FINAL LAP' : `LAP ${p.lap}`); }
     }
   }
-  if (r.mode !== 'time' && p.pickupCooldown <= 0 && canAddStone(p)) for (const stone of objects.stones) {
+  if (r.mode !== 'time' && p.route === MAIN_ROUTE && p.pickupCooldown <= 0 && canAddStone(p)) for (const stone of objects.stones) {
     if (r.pickups[stone.id] > 0) continue;
     if (Math.abs(mod(stone.s - p.routeS + len / 2, len) - len / 2) > 2.8 || Math.abs(stone.x - p.x) > 2.1) continue;
     const kind = stone.kind === 'random' ? drawStone(random(r), inBackHalf(p.rank, r.racers.length)) : stone.kind;
@@ -66,7 +71,6 @@ export function stepRacer(r: Race, p: Racer, dt: number) {
   }
   if (!aboveGround(p) && p.invincible <= 0) {
     for (const trap of r.traps) if (trap.owner !== p.id && Math.hypot(trap.px - p.px, trap.pz - p.pz) < trap.radius + .7) { const owner = r.racers.find(q => q.id === trap.owner); if (owner) hit(r, p, owner, 'ice'); trap.life = 0; }
-    for (const hazard of objects.hazards) if (Math.abs(mod(hazard.s - p.routeS + len / 2, len) - len / 2) < 2.5 && Math.abs(hazard.x - p.x) < 2.5) { p.vx *= .96; p.vz *= .96; }
   }
-  for (const pad of objects.pads) if (oldS < p.s && Math.floor((oldS - pad.s) / len) !== Math.floor((p.s - pad.s) / len) && Math.abs(p.x - pad.x) < 3) { p.boost = Math.max(p.boost, HANDLING.boostPad); event(r, p, 'pad', 'BOOST'); }
+  stepCourse(r, p, oldS);
 }

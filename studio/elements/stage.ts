@@ -1,4 +1,3 @@
-import * as THREE from 'three';
 import { ITEMS } from '../../shared/game/index.ts';
 import { makeBoostPad, padMaterial } from '../../src/gfx/stage/boost-pad.ts';
 import type { StudioElement } from '../types.ts';

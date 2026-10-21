@@ -1,12 +1,14 @@
 import * as THREE from 'three';
 import { Parts, type Kit } from '../kit.ts';
 import { makeLiquid } from '../liquid.ts';
-import { fbm2, ridge2, hash2, noise2, smoothstep, type Rng } from '../noise.ts';
+import { fbm2, ridge2, hash2, noise2, rng, smoothstep, type Rng } from '../noise.ts';
 import { stageMaterial, stageGlow, stageTime } from '../materials.ts';
 import { noiseTexture } from '../textures.ts';
 import { Particles, Shape } from '../../particles/particles.ts';
-import { boulder, brazier, blob, block, prism, cone, cyl, bead, disc, rock, lathe, sweep, grad, xf } from '../props/common.ts';
+import { boulder, brazier, blob, block, prism, cone, bead, disc, rock, lathe, sweep, grad, xf } from '../props/common.ts';
 import { horn } from '../props/shapes.ts';
+import type { Hazard } from '../../../../shared/track/index.ts';
+import { layoutHazard } from '../hazards.ts';
 import type { CourseArt } from '../types.ts';
 
 /** Lava sea level. The road ridge never dips below about -5, so the cliffs always show. */
@@ -47,6 +49,37 @@ function magmaRock(r: Rng, size = 1) {
     p.add(rock([size * .62, size * .52, size * .62], [dx, size * (.42 + (i % 2) * .12), dz], r() * 99, [0, a, 0]), grad(C.basaltDark, C.basalt, 0, size), { flat: true, ao: [0, size * .5, .6] });
   }
   p.add(rock([size * .5, size * .4, size * .5], [0, size * .92, 0], r() * 99), C.basalt, { flat: true, ao: false });
+  return p;
+}
+
+/** Falling boulder as wide as its footprint: dark crust plates split over a molten core, kept deep red so it reads as hot rock. */
+function fallingBoulder(h: Hazard) {
+  const p = new Parts(), r = rng(Math.round(h.s)), size = Math.min(h.width, h.length) * .5;
+  p.add(rock([size * .8, size * .7, size * .8], [0, size * .75, 0], r() * 9), '#9a2a08', { layer: 'glow', flat: true, ao: false });
+  for (let i = 0; i < 6; i++) {
+    const a = i / 6 * 6.28 + r() * .4, up = i % 2 ? .35 : -.2;
+    p.add(rock([size * .6, size * .5, size * .6], [Math.cos(a) * size * .4, size * (.75 + up), Math.sin(a) * size * .4], r() * 99, [0, a, 0]), grad(C.basaltDark, C.basalt, 0, size * 1.6), { flat: true, ao: false });
+  }
+  return p;
+}
+
+/** Geyser vent flush with the road: a cracked, glowing crust ring a racer drives straight over between eruptions. */
+function geyserVent(h: Hazard) {
+  const p = new Parts(), R = Math.min(h.width, h.length) * .5;
+  // Lifted clear of the road, which renders with a depth offset of its own.
+  p.add(disc(R, 18, [0, .12, 0]), C.basaltDark, { ao: false });
+  p.add(disc(R * .62, 14, [0, .16, 0]), '#8a2a0a', { layer: 'glow', ao: false });
+  for (let i = 0; i < 9; i++) { const a = i / 9 * 6.28; p.add(rock([R * .22, .16, R * .18], [Math.cos(a) * R * .82, .02, Math.sin(a) * R * .82], i * 7, [0, a, 0]), C.basalt, { flat: true, ao: false }); }
+  return p;
+}
+
+/** Erupting lava plume, unit height scaled by the animation: a molten core wrapped in lumpy surging blobs, splashing over at the top. */
+function lavaColumn(h: Hazard) {
+  const p = new Parts(), R = Math.min(h.width, h.length) * .4, H = 11, r = rng(Math.round(h.s));
+  // Glow colours are kept deep: the bloom pass lifts them to molten orange instead of washing them out to white.
+  p.add(lathe([[R * .8, 0], [R * .62, H * .35], [R * .55, H * .8], [R * .4, H], [0, H * 1.04]], [0, 0, 0], [0, 0, 0], 10), grad('#7a1804', '#b04a14', 0, H), { layer: 'glow', ao: false });
+  for (let i = 0; i < 9; i++) { const y = H * (.08 + i * .1), a = r() * 6.28; p.add(blob(R * (.75 - i * .04), [Math.cos(a) * R * .2, y, Math.sin(a) * R * .2], i * 3, .3), i % 2 ? '#8a2206' : '#a8380c', { layer: 'glow', ao: false }); }
+  for (let i = 0; i < 7; i++) { const a = i / 7 * 6.28; p.add(blob(R * .32, [Math.cos(a) * R * .95, H * (.9 + (i % 3) * .06), Math.sin(a) * R * .95], i * 5, .3), '#c0581a', { layer: 'glow', ao: false }); }
   return p;
 }
 
@@ -270,9 +303,14 @@ export const volcano: CourseArt = {
     },
     detail: 'ash',
   },
-  road: { kind: 'basalt', glow: .2, palette: { base: '#463f4a', dark: '#26222a', light: '#655d6a', accent: '#8a3018' } },
+  // Cool grey ash paving with dark joints: nothing on the road glows, so lava always reads as danger.
+  road: { kind: 'basalt', palette: { base: '#6f6870', dark: '#3c363e', light: '#8c8590', accent: '#28232a' } },
   start: { pillar: '#3a2a2e', trim: '#c8a070', banner: '#8a1f1a', text: '#ffd27a', light: '#ff9a3a', flags: ['#c22a1a', '#ffb347', '#2a1a1e'] },
-  hazard: 'lava',
+  patches: { slow: 'tar', slip: 'oil' },
+  hazards: {
+    boulder: { mover: fallingBoulder, warn: '#ffb347' },
+    geyser: { mover: lavaColumn, base: geyserVent, warn: '#ff7a1a' },
+  },
   signs: { board: '#2a2226', arrow: '#ff9a3a', post: '#5a4a48' },
   ambient: [
     { color: '#ffd27a', endColor: '#ff3a0a', rate: 26, size: .14, life: 3.5, glow: true, height: [0, 5], drift: [.3, 1.4, .2], wander: .8, radius: 36 },
@@ -281,6 +319,7 @@ export const volcano: CourseArt = {
   catalog: {
     'Basalt columns': r => basaltColumns(r, 13).bake(), 'Obsidian spire': obsidianSpire, 'Magma rock': r => magmaRock(r, 2), 'Charred tree': charredTree,
     'Rib arch': r => rib(10.5, r), 'Horned skull': skull, 'Edge bollard': () => bollard(), 'Bridge post': () => bollard(true), Brazier: () => brazier(C.basalt, C.bronze, C.flame, 1.2), Boulder: r => boulder(r, C.basalt, 1.6),
+    'Falling boulder': () => fallingBoulder(layoutHazard('volcano', 'boulder')), 'Geyser vent': () => geyserVent(layoutHazard('volcano', 'geyser')), 'Lava column': () => lavaColumn(layoutHazard('volcano', 'geyser')),
   },
   build(kit) {
     const r = kit.r, w = kit.w, len = kit.len, terrainAt = kit.groundAt;

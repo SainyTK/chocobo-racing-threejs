@@ -6,6 +6,7 @@ import { noiseTexture } from '../textures.ts';
 import { fbm2, noise3, rng, type Rng } from '../noise.ts';
 import { Shape } from '../../particles/particles.ts';
 import { grass, flowers, lampPost, savePoint, blob, block, prism, cone, cyl, bead, ellipsoid, rbox, rock, torus, lathe, sweep, grad, xf , disc } from '../props/common.ts';
+import { courseLayout } from '../../../../shared/track/index.ts';
 import type { CourseArt } from '../types.ts';
 
 const C = {
@@ -337,7 +338,9 @@ export const gardens: CourseArt = {
   terrain: null,
   road: { kind: 'flagstone', palette: { base: '#e9dfcf', dark: '#a8977e', light: '#fbf6ec', accent: '#d8c8b0' } },
   start: { pillar: '#f4f0fa', trim: '#e2b85a', banner: '#5b74c8', text: '#fff6d0', light: '#bff4ff', flags: ['#c9a8ff', '#e2b85a', '#79ded8', '#ff9fd6'] },
-  hazard: 'water',
+  patches: { slow: 'mud', slip: 'ice' },
+  ramp: { deck: C.marble, stripe: C.gold, side: C.marbleShade },
+  shortcut: { wall: C.rockDark, cap: C.gold },
   signs: { board: '#f6f2ff', arrow: '#5b74c8', post: '#c9a54e' },
   ambient: [
     { color: '#ffc2dc', endColor: '#ffffff', rate: 12, size: .2, life: 6, height: [1, 10], drift: [1.3, -.45, .5], wander: .6, shape: Shape.Shard, radius: 34, alpha: .95 },
@@ -376,5 +379,9 @@ export const gardens: CourseArt = {
     waterfalls(kit, falls);
     rainbow(kit, new THREE.Vector3(cx + Math.cos(ca - .9) * (extent + 260), -40, cz + Math.sin(ca - .9) * (extent + 260)), -(ca - .9) + Math.PI / 2);
     hoveringCrystals(kit);
+    // Broken island edges on both sides of every gap: rock hanging below the road line, never above it.
+    for (const g of courseLayout(kit.id).gaps) for (const [s, dir] of [[g.s, -1], [g.s + g.length, 1]] as const) for (let x = -w - 1; x <= w + 1; x += 2.6) {
+      kit.onTrack(kit.prop('gap edge', rr => new Parts().add(rock([1.6, 1.3, 1.4], [0, -1.55, 0], rr() * 9), grad(C.rockDeep, C.rock, -3, -.3), { flat: true, ao: false }), r.int(0, 3)), s + dir * .9, x, { yaw: r() * 6, scale: r.range(.8, 1.2) });
+    }
   },
 };

@@ -1,7 +1,8 @@
 import type { Input, Race, Racer } from '../shared/game/index.ts';
 import { TICK } from '../shared/game/index.ts';
 import { integrateDriving, updateDriveMode } from '../shared/game/driving.ts';
-import { projectOnTrack, trackLength } from '../shared/track/index.ts';
+import { stepAir } from '../shared/game/air.ts';
+import { locate, trackLength } from '../shared/track/index.ts';
 import { angleDelta, mod } from '../shared/math.ts';
 type Command = { seq: number; dt: number; input: Input };
 /** Approximate acknowledged held-input replay, bounded to 250ms/120 commands.
@@ -21,8 +22,9 @@ export class Prediction {
       for (const k of ['boost','stun','flying','gripUp','mini'] as const) p[k] = Math.max(0,p[k]-dt);
       updateDriveMode(p,dt);
       integrateDriving(this.race.track,p,dt);
-      const projection = projectOnTrack(this.race.track,p.px,p.pz,p.routeS), len = trackLength(this.race.track);
-      p.s += mod(projection.s-p.routeS+len/2,len)-len/2; p.routeS = projection.s; p.x = projection.offset;
+      const place = locate(this.race.track,p.px,p.pz,p.route,p.routeS), len = trackLength(this.race.track);
+      p.s += mod(place.s-p.routeS+len/2,len)-len/2; p.routeS = place.s; p.x = place.x; p.route = place.route;
+      stepAir(this.race.track,p,dt);
     }
   }
   reconcile(race: Race, id: string, ack: number) {
@@ -49,5 +51,5 @@ export class Prediction {
     return this.seq;
   }
   private view(p: Racer): Racer { return { ...p, px: p.px+this.offset.x,pz:p.pz+this.offset.z,yaw:p.yaw+this.offset.yaw }; }
-  render(authority: Racer) { if (!this.pose) return authority; const p = this.view(this.pose); return { ...authority, px:p.px,pz:p.pz,yaw:p.yaw,vx:p.vx,vz:p.vz,speed:p.speed,s:p.s,routeS:p.routeS,x:p.x,drifting:p.drifting }; }
+  render(authority: Racer) { if (!this.pose) return authority; const p = this.view(this.pose); return { ...authority, px:p.px,pz:p.pz,yaw:p.yaw,vx:p.vx,vz:p.vz,speed:p.speed,s:p.s,routeS:p.routeS,x:p.x,route:p.route,alt:p.alt,vy:p.vy,drifting:p.drifting }; }
 }

@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { RACERS, type Race, type Racer } from '../../../shared/game/index.ts';
-import { pointAt } from '../../../shared/track/index.ts';
+import { routeHeight } from '../../../shared/track/index.ts';
 import { angleDelta, clamp } from '../../../shared/math.ts';
 
 const HEIGHT = 4.2, BACK = 8, BOOST_PULL = 1.5, LOOK_AHEAD = 8, LOOK_HEIGHT = 1.6;
@@ -27,8 +27,8 @@ export class ChaseCamera {
     this.boosted = p.boost > 0; this.pull = Math.max(0, this.pull - dt * 1.6);
     for (const e of race.events) if (e.id > this.lastEvent && e.type === 'wall' && e.player === p.id) this.jolt = .35;
     this.lastEvent = race.eventId; this.jolt *= Math.exp(-dt * 7);
-    const a = this.heading + (lookBack ? Math.PI : 0), back = BACK + BOOST_PULL * Math.sin(this.pull * Math.PI / 2), floor = pointAt(race.track, p.s).y;
-    const height = Math.max(floor, pointAt(race.track, p.s - back).y) + HEIGHT + (p.flying > 0 ? 2 : 0);
+    const a = this.heading + (lookBack ? Math.PI : 0), back = BACK + BOOST_PULL * Math.sin(this.pull * Math.PI / 2), floor = routeHeight(race.track, p.route, p.s) + p.alt * .6;
+    const height = Math.max(floor, routeHeight(race.track, p.route, p.s - back)) + HEIGHT + (p.flying > 0 ? 2 : 0);
     this.at.set(p.px - Math.sin(a) * back, height, p.pz - Math.cos(a) * back);
     if (!this.ready || this.at.distanceTo(camera.position) > 55) camera.position.copy(this.at); else camera.position.lerp(this.at, 1 - Math.exp(-dt * 9));
     if (this.jolt > .01) camera.position.add(this.look.set(Math.random() - .5, Math.random() - .5, Math.random() - .5).multiplyScalar(this.jolt));

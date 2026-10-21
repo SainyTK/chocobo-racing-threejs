@@ -5,7 +5,9 @@ import { makeLiquid } from '../liquid.ts';
 import { fbm2, smoothstep, type Rng } from '../noise.ts';
 import { stageTime } from '../materials.ts';
 import { Shape } from '../../particles/particles.ts';
-import { boulder, bush, grass, flowers, lampPost, flagPole, bunting, savePoint, blob, block, prism, cone, cyl, ball, bead, disc, ellipsoid, rbox, torus, lathe, tube, sweep, grad, xf } from '../props/common.ts';
+import { boulder, bush, grass, flowers, lampPost, flagPole, bunting, savePoint, blob, block, prism, cone, cyl, ball, disc, ellipsoid, rbox, torus, lathe, tube, sweep, grad, xf } from '../props/common.ts';
+import { shortcutPaths } from '../../../../shared/track/index.ts';
+import { shortcutGate, shortcutSpots } from '../shortcuts.ts';
 import type { CourseArt } from '../types.ts';
 
 const C = {
@@ -144,8 +146,10 @@ function sunbeams(kit: Kit) {
   }));
   const geo = kit.own(new THREE.CylinderGeometry(1.6, 3.8, 26, 14, 1, true).translate(0, 13, 0)), group = new THREE.Group(); group.name = 'sunbeams';
   for (let i = 0, s = 80; s < kit.len; s += kit.r.range(90, 150), i++) {
-    const side = i % 2 ? 1 : -1, p = kit.at(s, side * (kit.w + kit.r.range(4, 14))), m = new THREE.Mesh(geo, mat);
-    m.position.set(p.x, kit.groundAt(p.x, p.z) - 1, p.z); m.rotation.set(.32, kit.r() * 6, -.22); m.renderOrder = 4; group.add(m);
+    const side = i % 2 ? 1 : -1, p = kit.at(s, side * (kit.w + kit.r.range(4, 14))), yaw = kit.r() * 6;
+    // Shafts lean over the ground beside them, so none may start on the woodland trail.
+    if (kit.onShortcut(p.x, p.z, 6)) continue;
+    const m = new THREE.Mesh(geo, mat); m.position.set(p.x, kit.groundAt(p.x, p.z) - 1, p.z); m.rotation.set(.32, yaw, -.22); m.renderOrder = 4; group.add(m);
   }
   kit.add(group);
 }
@@ -177,7 +181,8 @@ export const forest: CourseArt = {
   },
   road: { kind: 'dirt', palette: { base: '#c19a5e', dark: '#8f6c3f', light: '#e2c896', accent: '#5c9a3a', edge: '#86c04f' } },
   start: { pillar: '#b37a48', trim: '#f6ead2', banner: '#3d8a4a', text: '#fff2b8', light: '#ffd36a', flags: ['#e0473f', '#3d8a4a', '#ffd84a', '#4a8fe0'] },
-  hazard: 'mud',
+  patches: { slow: 'mud', slip: 'ice' },
+  shortcut: { wall: C.barkDark, cap: C.dirt },
   signs: { board: '#f4e2b8', arrow: '#c1452f', post: '#7c5132' },
   ambient: [
     { color: '#fff7a0', endColor: '#c8ff7a', rate: 16, size: .16, life: 4, glow: true, height: [.4, 3], wander: .5, drift: [0, .1, 0], radius: 34, alpha: .9 },
@@ -235,5 +240,10 @@ export const forest: CourseArt = {
     kit.onTrack(kit.prop('save', () => savePoint()), -30, -(w + 9), { onGround: true });
     kit.onTrack(kit.prop('flag', () => flagPole('#3d8a4a', '#ffd84a', 9)), 12, w + 5, { onGround: true });
     sunbeams(kit);
+    // The woodland trail: a small log arch marks its mouth and fallen logs line its edges.
+    for (const path of shortcutPaths(kit.id)) {
+      const q = shortcutGate(kit, path, 'mouth'); kit.place(kit.prop('trail arch', () => forestArch(path.shortcut.width)), q.x, q.y, q.z, { yaw: q.yaw, shortcut: true });
+      for (const side of [-1, 1]) for (const e of shortcutSpots(kit, path, 7, side * (path.shortcut.width + 1.4))) kit.place(kit.prop('log', log, r.int(0, 3)), e.x, e.y, e.z, { yaw: e.yaw + Math.PI / 2 + r.range(-.15, .15), shortcut: true });
+    }
   },
 };

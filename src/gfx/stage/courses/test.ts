@@ -229,7 +229,8 @@ export const test: CourseArt = {
   },
   road: { kind: 'asphalt', palette: { base: '#6e717c', dark: '#4a4d57', light: '#f2efe6' } },
   start: { pillar: '#2f5bb8', trim: '#f2bf3a', banner: '#c8372d', text: '#fff4d0', light: '#fff1a8', flags: [C.red, C.blue, C.gold, '#ffffff'] },
-  hazard: 'water',
+  patches: { slow: 'mud', slip: 'oil' },
+  ramp: { deck: C.base, stripe: C.gold, side: C.blue },
   signs: { board: '#ffd84a', arrow: '#2a2a3a', post: '#5d6876' },
   ambient: [
     { color: '#fff6c8', rate: 6, size: .09, life: 5, glow: true, height: [.5, 5], wander: .3, drift: [.4, .05, .2], radius: 30, alpha: .55 },

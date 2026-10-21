@@ -6,6 +6,8 @@ import { fbm2, smoothstep, type Rng } from '../noise.ts';
 import { Shape } from '../../particles/particles.ts';
 import { arch } from '../props/shapes.ts';
 import { lampPost, flagPole, bunting, savePoint, blob, block, prism, cone, cyl, bead, disc, lathe, torus, sweep, rbox, grad, stripes, xf } from '../props/common.ts';
+import type { Hazard } from '../../../../shared/track/index.ts';
+import { layoutHazard } from '../hazards.ts';
 import type { CourseArt } from '../types.ts';
 
 const C = {
@@ -15,6 +17,29 @@ const C = {
 };
 const CANDY = [C.red, C.pink, C.mintDeep, C.lemon, C.grape, C.sky, C.orange];
 const col = (s: string) => new THREE.Color(s);
+
+/**
+ * Giant cutlery stabbed into the road, leaning back towards oncoming racers: a fork left of the centre line, a knife right of it.
+ * Silver with a candy-striped handle, so it reads as an obstacle from far down the road.
+ */
+function cutlery(h: Hazard) {
+  const p = new Parts(), silver = grad('#8e97a8', '#eef2f8', 0, 6), lean: [number, number, number] = [-.18, 0, h.x > 0 ? .1 : -.1], g = new Parts();
+  if (h.x > 0) {
+    for (const x of [-.6, -.2, .2, .6]) g.add(prism(.07, .1, 1.8, 6, [x, 0, 0]), silver, { ao: false });
+    g.add(rbox(1.5, .55, .22, .1, [0, 1.95, 0]), silver, { ao: false });
+    g.add(prism(.16, .3, 1.2, 8, [0, 2.2, 0]), silver, { ao: false });
+  } else {
+    g.add(xf(new THREE.CylinderGeometry(.62, .62, .12, 16, 1, false, 0, Math.PI).rotateX(Math.PI / 2).rotateZ(Math.PI / 2), [0, 1.4, 0], [0, 0, 0], [1, 2.2, 1]), silver, { ao: false });
+    g.add(block(1.24, 1.4, .12), silver, { ao: false });
+    g.add(rbox(1.4, .3, .3, .1, [0, 2.75, 0]), '#c9d0dc', { ao: false });
+  }
+  g.add(lathe([[.24, 0], [.3, 1.4], [.36, 2.6], [.3, 3], [0, 3.05]], [0, 3.1, 0], [0, 0, 0], 10), stripes(C.red, C.icing, .45, 'y', .6), { ao: false });
+  p.include(g, [0, 0, 0], 0, 1.6); for (const list of p.layers.values()) for (const geo of list) geo.rotateX(lean[0]).rotateZ(lean[2]);
+  g.dispose();
+  // A crack in the biscuit where it went in, lifted clear of the road's depth offset.
+  p.add(disc(1.6, 14, [0, .12, 0]), C.chocDark, { ao: false });
+  return p;
+}
 
 /** Red-and-white candy cane with its hook turned towards +z. */
 function candyCane(r: Rng, h = r.range(3.2, 5), a = C.red, b = C.icing) {
@@ -238,7 +263,10 @@ export const gingerbread: CourseArt = {
   },
   road: { kind: 'biscuit', palette: { base: '#dca660', dark: '#a8703a', light: '#f2cc8c', edge: '#fff4ea' } },
   start: { pillar: '#f78fb3', trim: '#fff6ea', banner: '#c2306f', text: '#fff6ea', light: '#ffe28a', flags: [C.pink, C.mintDeep, C.lemon, C.grape] },
-  hazard: 'goo',
+  patches: { slow: 'goo', slip: 'icing' },
+  ramp: { deck: C.frosting, stripe: C.icing, side: C.choc },
+  shortcut: { wall: C.chocDark, cap: C.icing },
+  hazards: { cutlery: { mover: cutlery } },
   signs: { board: '#fff6ea', arrow: '#e83e6c', post: '#c98a4a' },
   ambient: [
     { color: '#ffffff', endColor: '#ffc8ec', rate: 14, size: .18, life: 3.5, glow: true, shape: Shape.Star, height: [.5, 6], wander: .4, drift: [0, .15, 0], radius: 34, alpha: .9 },
@@ -248,7 +276,7 @@ export const gingerbread: CourseArt = {
   ],
   catalog: {
     'Candy cane': r => candyCane(r), Lollipop: r => lollipop(r), 'Gumdrop bush': gumdropBush, 'Frosting tree': frostingTree, Cupcake: cupcake, Donut: donut, Macarons: macarons,
-    'Ice cream': iceCream, Peppermint: peppermint, 'Chocolate fence': () => chocFence(), 'Gingerbread house': gingerHouse, 'Far candy': farCandy, 'Candy arch': () => candyArch(12), 'Cake tunnel': () => cakeTunnel(12),
+    'Ice cream': iceCream, Peppermint: peppermint, 'Chocolate fence': () => chocFence(), 'Gingerbread house': gingerHouse, 'Far candy': farCandy, 'Candy arch': () => candyArch(12), 'Giant fork': () => cutlery(layoutHazard('gingerbread', 'cutlery')), 'Cake tunnel': () => cakeTunnel(12),
   },
   build(kit: Kit) {
     const r = kit.r, w = kit.w, clear = (x: number, z: number, m: number) => kit.road(x, z).d > w + m;
