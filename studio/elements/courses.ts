@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { TRACKS, TRACK_IDS, courseLayout, pointAt, trackLength, courseObjects, type TrackId } from '../../shared/track/index.ts';
+import { MAIN_ROUTE, TRACKS, TRACK_IDS, courseLayout, pointAt, routePoint, trackLength, courseObjects, type TrackId } from '../../shared/track/index.ts';
 import { createCharacter } from '../../src/gfx/characters/index.ts';
 import { makePickup } from '../../src/gfx/effects/pickup.ts';
 import { makeBoostPad, padMaterial } from '../../src/gfx/stage/boost-pad.ts';
@@ -37,7 +37,7 @@ const variants = (id: TrackId): Variant[] => [
 
 /** The game's dynamic objects, so the studio shows the course exactly as a race does. */
 function raceObjects(id: TrackId, group: THREE.Group) {
-  const stones = courseObjects(id).stones.map((st, i) => { const p = pointAt(id, st.s, st.x), stone = makePickup(st.kind, i); stone.root.position.set(p.x, p.y + 1.5, p.z); group.add(stone.root); return stone; });
+  const stones = courseObjects(id).stones.map((st, i) => { const p = routePoint(id, st.route ?? MAIN_ROUTE, st.s, st.x), stone = makePickup(st.kind, i); stone.root.position.set(p.x, p.y + 1.5, p.z); group.add(stone.root); return stone; });
   for (const pad of courseObjects(id).pads) { const p = pointAt(id, pad.s, pad.x), m = makeBoostPad(); m.position.set(p.x, p.y + .07, p.z); m.rotation.y = p.yaw; group.add(m); }
   return { update(t: number) { padMaterial.uniforms.uTime.value = t; stones.forEach(s => s.update(t)); }, dispose() { stones.forEach(s => s.dispose()); } };
 }

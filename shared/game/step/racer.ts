@@ -63,8 +63,9 @@ export function stepRacer(r: Race, p: Racer, dt: number) {
       else { p.lap = p.gates / 12 + 1; event(r, p, 'lap', p.lap === r.laps ? 'FINAL LAP' : `LAP ${p.lap}`); }
     }
   }
-  if (r.mode !== 'time' && p.route === MAIN_ROUTE && p.pickupCooldown <= 0 && canAddStone(p)) for (const stone of objects.stones) {
-    if (r.pickups[stone.id] > 0) continue;
+  if (r.mode !== 'time' && p.pickupCooldown <= 0 && canAddStone(p)) for (const stone of objects.stones) {
+    // On a shortcut, `routeS` and `x` are measured along it, so only that shortcut's stones can be reached.
+    if (r.pickups[stone.id] > 0 || (stone.route ?? MAIN_ROUTE) !== p.route) continue;
     if (Math.abs(mod(stone.s - p.routeS + len / 2, len) - len / 2) > 2.8 || Math.abs(stone.x - p.x) > 2.1) continue;
     const kind = stone.kind === 'random' ? drawStone(random(r), inBackHalf(p.rank, r.racers.length)) : stone.kind;
     addStone(p, kind); r.pickups[stone.id] = STONE_RESPAWN; p.pickupCooldown = .25; event(r, p, 'pickup', `${ITEMS[kind].name} Stone`); break;

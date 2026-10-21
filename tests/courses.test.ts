@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { TRACK_IDS, TRACKS, courseLayout, hazardState, locate, pointAt, projectOnTrack, shortcutPaths, shortcutPoint, trackLength } from '../shared/track/index.ts';
+import { TRACK_IDS, TRACKS, courseLayout, courseObjects, hazardState, locate, pointAt, projectOnTrack, shortcutPaths, shortcutPoint, trackLength } from '../shared/track/index.ts';
 import { angleDelta } from '../shared/math.ts';
 import { createRace, makeRacer, neutralInput, placeRacer, stepRace, type Race } from '../shared/game/index.ts';
 import { decodeSnapshot, encodeSnapshot } from '../shared/wire.ts';
@@ -43,6 +43,14 @@ describe('course gimmicks in the simulation', () => {
     drive(r, 10, () => { used ||= p.route === 0; return p.route === 0 ? shortcutPoint(path, Math.min(1, (p.s + 20 - path.shortcut.from) / path.skipped)) : p.s < path.shortcut.from ? shortcutPoint(path, .06) : pointAt('gingerbread', p.s + 20); });
     expect(used).toBe(true); expect(p.s).toBeGreaterThan(path.shortcut.from + path.skipped);
     expect(p.gates).toBe(Math.floor(p.s / (len / 12)));
+  });
+  it('a stone on a shortcut is collected from the shortcut only', () => {
+    const r = createRace('gingerbread', [makeRacer('you', 'Test')], 1, 42, 'race'); r.time = .1; r.phase = 'racing';
+    const p = r.racers[0], stone = courseObjects('gingerbread').stones.find(s => s.route === 0)!, path = shortcutPaths('gingerbread')[0];
+    for (const q of r.racers.slice(1)) placeRacer('gingerbread', q, 300, 0);
+    placeRacer('gingerbread', p, stone.s, 0); stepRace(r); expect(p.stones).toHaveLength(0);
+    const at = shortcutPoint(path, (stone.s - path.shortcut.from) / path.skipped); p.px = at.x; p.pz = at.z; p.route = 0; p.routeS = stone.s; p.s = stone.s; p.vx = p.vz = 0; stepRace(r);
+    expect(p.stones).toHaveLength(1);
   });
   it('locating a point on a shortcut maps it to the road distance it stands for', () => {
     const path = shortcutPaths('mines')[0], q = shortcutPoint(path, .5), place = locate('mines', q.x, q.z, 0, path.shortcut.from + path.skipped / 2);

@@ -42,6 +42,8 @@ export const STONE_LAYOUTS: Record<TrackId, StoneField[]> = {
   gingerbread: [
     { at: .08, rows: 2, lanes: ['fire', 'shield', 'ice', 'thunder'] },
     { at: .39, rows: 1, lanes: ['mini', 'random', 'haste', 'fire'] },
+    // The original's lone "?" stone on the syrup shortcut, halfway along it.
+    { at: .5, rows: 1, lanes: ['random'], route: 0 },
     { at: .86, rows: 1, lanes: ['thunder', 'ice', 'shield', 'random'] },
   ],
   volcano: [

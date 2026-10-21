@@ -14,8 +14,10 @@ export type StoneType = 'fire' | 'ice' | 'thunder' | 'haste' | 'shield' | 'mini'
 /** A track stone has a fixed colour, or is a black "?" stone that rolls a random type on pickup. */
 export type TrackStone = StoneType | 'random';
 /** Rows of stones laid across the road. `at` is the share of the lap where the first row sits; each row repeats `lanes` from left to right. */
-export interface StoneField { at: number; rows: number; lanes: TrackStone[] }
-export interface CourseObjects { stones: { id: number; s: number; x: number; kind: TrackStone }[]; pads: Pad[] }
+/** `route` puts the field on that shortcut instead of the main road: `at` is then the share of the shortcut's length, and lanes spread across it. */
+export interface StoneField { at: number; rows: number; lanes: TrackStone[]; route?: number }
+/** A stone with a `route` lies on that shortcut, `x` from its centre line, at the road distance `s` the shortcut stands for. */
+export interface CourseObjects { stones: { id: number; s: number; x: number; kind: TrackStone; route?: number }[]; pads: Pad[] }
 
 /* Course layouts. Positions are track coordinates: `s` metres along the lap from the start line, `x` metres left (+) or right (-) of the centre line. */
 

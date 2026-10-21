@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import type { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
-import { courseObjects, pointAt, routeHeight, type TrackId } from '../shared/track/index.ts';
+import { courseObjects, MAIN_ROUTE, pointAt, routeHeight, routePoint, type TrackId } from '../shared/track/index.ts';
 import { clamp } from '../shared/math.ts';
 import { miniScale, type Item, type Race } from '../shared/game/index.ts';
 import { createCharacter, type Character } from './gfx/characters/index.ts';
@@ -95,7 +95,7 @@ export class World {
     this.course = buildCourse(id); this.course.setQuality(this.quality as StageQuality); this.scene.add(this.course.root);
     applyEnvironment(this.course.env, this.scene, this.hemi, this.sun);
     const objects = courseObjects(id);
-    objects.stones.forEach((st, i) => { const p = pointAt(id, st.s, st.x), stone = makePickup(st.kind, i); stone.root.position.set(p.x, p.y + 1.5, p.z); this.dynamic.add(stone.root); this.stones.push(stone); });
+    objects.stones.forEach((st, i) => { const p = routePoint(id, st.route ?? MAIN_ROUTE, st.s, st.x), stone = makePickup(st.kind, i); stone.root.position.set(p.x, p.y + 1.5, p.z); this.dynamic.add(stone.root); this.stones.push(stone); });
     for (const pad of objects.pads) { const p = pointAt(id, pad.s, pad.x), m = makeBoostPad(); m.position.set(p.x, p.y + .07, p.z); m.rotation.y = p.yaw; this.dynamic.add(m); }
   }
   private addRacer(id: string, character: number, name?: string) {

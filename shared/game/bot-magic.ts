@@ -1,6 +1,7 @@
 import { angleDelta, mod } from '../math.ts';
 import { courseObjects } from '../track/objects.ts';
 import { trackLength } from '../track/sampling.ts';
+import { MAIN_ROUTE } from '../track/route.ts';
 import type { TrackStone } from '../track/types.ts';
 import { BOT_MAGIC } from './bot-personalities.ts';
 import { aboveGround } from './combat.ts';
@@ -25,6 +26,7 @@ export function botStoneLane(r: Race, p: Racer): number | null {
   const want = (kind: TrackStone) => top && style.hold !== 'quick' && kind === top.kind && top.level < maxLevel(top.kind) ? 3 : kind === style.favourite ? 2 : kind === 'random' ? 1.3 : ATTACKS.includes(kind) || kind === 'doom' ? 1 : .7;
   let best: { x: number; score: number } | null = null;
   for (const stone of courseObjects(r.track).stones) {
+    if ((stone.route ?? MAIN_ROUTE) !== p.route) continue;
     const ahead = mod(stone.s - p.routeS, len);
     // Only stones that will be back by the time the racer arrives.
     if (ahead < 3 || ahead > 45 || r.pickups[stone.id] > ahead / Math.max(10, p.speed)) continue;
