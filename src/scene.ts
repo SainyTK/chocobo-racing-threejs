@@ -6,6 +6,7 @@ import { miniScale, type Item, type Race } from '../shared/game/index.ts';
 import { createCharacter, type Character } from './gfx/characters/index.ts';
 import { Effects } from './gfx/effects/index.ts';
 import { SpeedLines } from './gfx/effects/speed-lines.ts';
+import { flapLift } from './gfx/effects/abilities/index.ts';
 import { ChaseCamera } from './gfx/camera/chase.ts';
 import { Reactions } from './gfx/reactions.ts';
 import { FinishStage, type FinishView } from './gfx/finish-stage.ts';
@@ -116,7 +117,7 @@ export class World {
       this.hero.animate({ t, dt: live, speed: 0, steer: 0, drifting: false, flying: 0, stun: 0, boost: 0, menu: true });
       const a = p.yaw + .6, narrow = innerWidth <= 900, distance = narrow ? 14.5 : 9; target.set(p.x, p.y + 1.8, p.z);
       this.camera.position.set(p.x + Math.sin(a) * distance, p.y + (narrow ? 6.5 : 5.3), p.z + Math.cos(a) * distance); this.camera.lookAt(target); this.camera.setViewOffset(innerWidth, innerHeight, narrow ? -innerWidth * .13 : innerWidth * .23, narrow ? innerHeight * .5 - 205 : 0, innerWidth, innerHeight);
-      if (live && this.hero.smokes) for (const ex of this.hero.exhausts) if (Math.random() < .25) { ex.getWorldPosition(target); this.fx.smoke.emit({ x: target.x, y: target.y, z: target.z, vx: (Math.random() - .5) * .4, vy: .6 + Math.random() * .5, vz: (Math.random() - .5) * .4, life: .9, size: .18, endSize: .8, color: '#d8d2c8', alpha: .35, drag: 1.5, shape: Shape.Smoke }); }
+      if (live) for (const ex of this.hero.exhausts) if (Math.random() < .25) { ex.getWorldPosition(target); this.fx.smoke.emit({ x: target.x, y: target.y, z: target.z, vx: (Math.random() - .5) * .4, vy: .6 + Math.random() * .5, vz: (Math.random() - .5) * .4, life: .9, size: .18, endSize: .8, color: '#d8d2c8', alpha: .35, drag: 1.5, shape: Shape.Smoke }); }
       target.set(p.x, p.y + 1.8, p.z); this.speedLines.update(live, 0, this.camera.aspect);
       if (this.camera.fov !== MENU_FOV) { this.camera.fov = MENU_FOV; this.camera.updateProjectionMatrix(); }
       this.fx.update(live, null, new Map(), playerId, this.camera, paused);
@@ -126,7 +127,7 @@ export class World {
       this.reactions.update(race, t);
       for (const p of race.racers) {
         const r = this.racers.get(p.id); if (!r) continue; const c = r.c; chars.set(p.id, c); c.root.visible = true;
-        const floor = routeHeight(race.track, p.route, p.s) + p.alt; c.root.position.set(p.px, floor + (p.flying > 0 ? 2.4 + Math.sin(t * 4) * .15 : 0) - (p.falling > 0 ? (1.3 - p.falling) * 12 : 0), p.pz); c.root.rotation.y = p.yaw;
+        const floor = routeHeight(race.track, p.route, p.s) + p.alt; c.root.position.set(p.px, floor + flapLift(p.flying) - (p.falling > 0 ? (1.3 - p.falling) * 12 : 0), p.pz); c.root.rotation.y = p.yaw;
         r.scale += (miniScale(p) - r.scale) * (1 - Math.exp(-live * 10)); c.root.scale.setScalar(r.scale);
         c.animate({ t: t + p.character * 1.7, dt: live, speed: p.speed, steer: p.input.steer, drifting: p.drifting, flying: p.flying, stun: p.stun, boost: p.boost, menu: false, pose: this.reactions.pose(p.id, t) });
         const distance = this.camera.position.distanceTo(c.root.position); c.skin.fade.value = p.id === playerId ? 0 : clamp((NEAR_FADE - distance) / 2, 0, 1);

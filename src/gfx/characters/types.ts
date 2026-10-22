@@ -7,10 +7,8 @@ export interface AnimState { t: number; dt: number; speed: number; steer: number
 /** A rigged, animated racer. The world positions `root`; the model animates everything below it. */
 export interface Character {
   root: THREE.Group; model: THREE.Group; skin: SkinUniforms;
-  /** Boost flames and exhaust smoke spawn from these points. */
+  /** Exhaust smoke spawns from these points; racers without an engine have none. */
   exhausts: THREE.Object3D[];
-  /** False for racers without an engine, whose exhausts only show boost flames. */
-  smokes: boolean;
   /** Ground contact points at the back, used for drift sparks and dust. */
   contacts: THREE.Object3D[];
   head: THREE.Object3D; height: number;
@@ -20,4 +18,4 @@ export interface Character {
 export interface Wheel { j: THREE.Object3D; r: number }
 
 /** `sync` runs last each frame, after the reaction poses, for racers that apply code-driven turns to skinned bones. */
-export interface Build { r: Rig; head: THREE.Object3D; height: number; wheels: Wheel[]; steer: THREE.Object3D[]; exhausts: THREE.Object3D[]; smokes?: boolean; contacts: THREE.Object3D[]; outline: string; update?: (s: AnimState, k: number) => void; sync?: () => void }
+export interface Build { r: Rig; head: THREE.Object3D; height: number; wheels: Wheel[]; steer: THREE.Object3D[]; exhausts?: THREE.Object3D[]; contacts: THREE.Object3D[]; outline: string; update?: (s: AnimState, k: number) => void; sync?: () => void }

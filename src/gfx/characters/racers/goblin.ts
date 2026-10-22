@@ -24,11 +24,10 @@ export function goblin(): Build {
   // The front wheels steer about upright pivots at their hubs and spin on axles that turn with them; the rear pair shares one axle.
   const steer = ['L', 'R'].map(side => driven(m, `steer.${side}`, [0, 1, 0], 'y'));
   const wheels = [...['L', 'R'].map(side => driven(m, `wheel_front.${side}`, [1, 0, 0], 'x')), driven(m, 'wheel_rear', [1, 0, 0], 'x')];
-  // A push cart has no engine: boost flames leave the back corners of the box, and drift sparks and dust come from under the rear wheels.
-  const exhausts = [anchor(m, 'cart', [.6, .75, -1.26]), anchor(m, 'cart', [-.6, .75, -1.26])];
+  // A push cart has no engine: drift sparks and dust come from under the rear wheels.
   const contacts = [anchor(m, 'cart', [1.08, .02, -.78]), anchor(m, 'cart', [-1.08, .02, -.78])];
   let fresh = true;
-  return { r, head, height: 3.3, wheels: wheels.map(w => ({ j: w.j, r: WHEEL_RADIUS })), steer: steer.map(s => s.j), exhausts, smokes: false, contacts, outline: m.outline,
+  return { r, head, height: 3.3, wheels: wheels.map(w => ({ j: w.j, r: WHEEL_RADIUS })), steer: steer.map(s => s.j), contacts, outline: m.outline,
     sync() { turn.sync(); lantern.sync(); },
     update(s, k) {
       const pose = s.pose, ended = pose?.kind === 'win' || pose?.kind === 'lose' ? pose : null;

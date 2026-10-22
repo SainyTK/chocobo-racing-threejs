@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { HANDLING, ITEMS, MAX_STONES, RACERS, stackPositions, type Race, type Racer, type Item } from '../../../shared/game/index.ts';
+import { HANDLING, ITEMS, MAX_STONES, RACERS, stackPositions, type Race, type Racer } from '../../../shared/game/index.ts';
 import { TRACKS } from '../../../shared/track/index.ts';
 import { Particles, Shape, type Emit } from '../particles/particles.ts';
 import type { Character } from '../characters/index.ts';
@@ -14,10 +14,10 @@ import { HeldStones } from '../stones/held.ts';
 import { HELD_STONE } from '../stones/looks.ts';
 import { rand, floorY } from './util.ts';
 import { SpellFx } from './spells.ts';
-import { castInfo, crashInfo } from '../../race-events.ts';
-import { FLARE_COLOR, flareRain } from './megaflare.ts';
+import { castInfo, crashInfo, receiveInfo } from '../../race-events.ts';
+import { AbilityFx } from './abilities/index.ts';
 
-const v = new THREE.Vector3(), v2 = new THREE.Vector3();
+const v = new THREE.Vector3(), v2 = new THREE.Vector3(), tintColor = new THREE.Color(), white = new THREE.Color('#ffffff');
 /** Fireball scale per spell level. */
 const FIREBALL_SIZE = [1.15, 1.6, 2.1];
 
@@ -31,7 +31,7 @@ export class Effects {
   flash = 0; shake = 0; density = 1; time = 0; bursts: Bursts;
   private fire = new Map<string, { g: THREE.Group; last: THREE.Vector3; level: number; age: number }>();
   private ice = new Map<string, { g: THREE.Group; age: number; px: number; pz: number; y: number }>();
-  private bolts: Bolt[]; private statuses = new Map<string, Status>(); readonly spells = new SpellFx(this);
+  private bolts: Bolt[]; private statuses = new Map<string, Status>(); readonly spells = new SpellFx(this); readonly abilities = new AbilityFx(this);
   /** Every racer's held stones, room for twelve racers. */
   readonly held = new HeldStones(MAX_STONES * 12);
   private seen = new Set<number>(); private raceId = '';
@@ -43,7 +43,7 @@ export class Effects {
   private frozenMat = crystalMaterial('#9fe3ff', { opacity: .55, intensity: 1.15 });
   constructor(scene: THREE.Scene) {
     this.bolts = Array.from({ length: 24 }, () => new Bolt(this.boltMat)); this.bursts = new Bursts(this.group);
-    this.group.add(this.glow.mesh, this.smoke.mesh, this.held.mesh, ...this.bolts.map(b => b.mesh)); scene.add(this.group);
+    this.group.add(this.glow.mesh, this.smoke.mesh, this.held.mesh, this.abilities.batch.mesh, ...this.bolts.map(b => b.mesh)); scene.add(this.group);
   }
   /** Emits `n` particles from a template, randomised per particle. Scaled by `density` on lower quality settings. */
   spray(pool: Particles, n: number, f: (i: number) => Emit) { n = Math.max(1, Math.round(n * this.density)); for (let i = 0; i < n; i++) pool.emit(f(i)); }
@@ -60,7 +60,7 @@ export class Effects {
     for (const f of this.fire.values()) this.group.remove(f.g); this.fire.clear();
     for (const t of this.ice.values()) this.disposeIce(t.g); this.ice.clear();
     for (const s of this.statuses.values()) disposeStatus(this.group, s); this.statuses.clear();
-    this.bolts.forEach(b => { b.age = 99; b.mesh.visible = false; }); this.bursts.reset(); this.held.begin(this.time); this.held.end();
+    this.bolts.forEach(b => { b.age = 99; b.mesh.visible = false; }); this.bursts.reset(); this.abilities.reset(); this.held.begin(this.time); this.held.end();
   }
   private disposeIce(g: THREE.Group) { this.group.remove(g); }
 
@@ -115,31 +115,41 @@ export class Effects {
     const by = (id?: string) => race.racers.find(p => p.id === id), p = by(e.player), q = by(e.target);
     const pos = (r?: Racer, up = 1.5) => r ? new THREE.Vector3(r.px, floorY(race, r.px, r.pz) + up, r.pz) : null;
     const at = pos(p), tAt = pos(q); if (!at || !p) return;
-    const fwd = new THREE.Vector3(Math.sin(p.yaw), 0, Math.cos(p.yaw)), s = this.status(p.id), text = e.text.toLowerCase(), ground = v.set(at.x, at.y - 1.4, at.z).clone();
+    const fwd = new THREE.Vector3(Math.sin(p.yaw), 0, Math.cos(p.yaw)), text = e.text.toLowerCase(), ground = v.set(at.x, at.y - 1.4, at.z).clone();
     const cast = castInfo(e);
     if (cast) { this.spells.cast(cast.kind, cast.level, at, fwd, p.id, p.id === playerId); return; }
     switch (e.type) {
       case 'crash': this.spells.impact(crashInfo(e), at, p.id, p.id === playerId); return;
       case 'mini': if (q && tAt) this.spells.shrink(tAt, q.miniLevel || 1, q.id); return;
       case 'doom': if (tAt) { this.bursts.spawn('ring', v.set(tAt.x, tAt.y - 1.4, tAt.z), '#b45cff', 4, .6); this.swirl(v.set(tAt.x, tAt.y - 1.4, tAt.z).clone(), '#9b3dff', 3.5, 40, true); } return;
-      case 'reflect': case 'block': { const c = e.type === 'reflect' ? ITEMS.shield.color : text.includes('barrier') ? '#ffd86a' : '#ffffff'; this.bursts.spawn('dome', ground, c, 2.8, .5); this.sparkle(at, c, 28, 1.6); if (e.type === 'reflect' && tAt) this.stream(at, tAt, c, 26); return; }
+      case 'reflect': case 'block': {
+        // The original shows no block sprite for Barrier: the spell plays out, then one last pulse.
+        if (text === 'barrier!') { this.abilities.blocked(p.id); return; }
+        const c = e.type === 'reflect' ? ITEMS.shield.color : '#ffffff'; this.bursts.spawn('dome', ground, c, 2.8, .5); this.sparkle(at, c, 28, 1.6); if (e.type === 'reflect' && tAt) this.stream(at, tAt, c, 26); return; }
       case 'bump': if (tAt) { const mid = at.clone().lerp(tAt, .5); this.spray(this.glow, 16, () => ({ x: mid.x, y: mid.y - .4, z: mid.z, vx: rand() * 6, vy: rand(1.5, 5), vz: rand() * 6, life: rand(.2, .4), size: .09, color: '#ffffff', endColor: '#ffc45a', gravity: 16, stretch: .04, shape: Shape.Shard })); this.spray(this.glow, 3, () => ({ x: mid.x, y: mid.y, z: mid.z, life: .12, size: rand(1.2, 1.8), endSize: .4, color: '#fff6d0', endColor: '#ffb040' })); if (p.id === playerId || q?.id === playerId) this.shake = Math.max(this.shake, .18); } return;
-      case 'receive': this.swirl(ground, '#7dffd8', 3, 40, true); return;
-      case 'pad': case 'start': case 'spindash': s.boostColor.set(e.type === 'spindash' ? '#7fd8ff' : '#ffb347'); this.bursts.spawn('ring', ground, e.type === 'spindash' ? '#7fd8ff' : '#ffc45a', 3.5, .4); return;
+      case 'receive': { const caught = receiveInfo(e), top = p.stones.at(-1); if (caught && top) this.abilities.received(p.id, caught.kind, caught.level, top.level === caught.level ? p.stones.length - 1 : undefined); return; }
+      case 'pad': case 'start': case 'spindash': this.abilities.boosted(p.id, e.type); return;
       case 'ability': {
-        const id = text.includes('magic plus') ? 'magic' : p.abilityId, color = id === 'flap' ? '#ffffff' : id === 'grip' ? '#8cff7a' : id === 'charge' ? '#ff5a3a' : id === 'mug' ? '#ffd84a' : id === 'magic' ? '#c58bff' : id === 'megaflare' ? FLARE_COLOR : '#ffc45a';
-        if (id === 'dash' || id === 'charge') s.boostColor.set(color);
+        const id = text.includes('magic plus') ? 'magic' : p.abilityId, color = id === 'grip' ? '#8cff7a' : id === 'mug' ? '#ffd84a' : id === 'magic' ? '#c58bff' : '#ffc45a';
+        if (id === 'magic' && p.stones.length) this.abilities.raised(p.id, p.stones.length - 1);
+        // Mug sends its helper out whether it robbed a rival (a `steal` event this tick) or conjured a stone.
+        if (id === 'mug' && !race.events.some(x => x.type === 'steal' && x.player === p.id && x.time === e.time)) this.mugged(p);
+        if (this.abilities.used(id, p.id)) return;
         this.bursts.spawn('ring', ground, color, 4, .5);
-        if (id === 'flap') this.spray(this.smoke, 18, () => ({ x: at.x + rand(), y: at.y + rand(), z: at.z + rand(), vx: rand() * 3, vy: rand(1, 4), vz: rand() * 3, life: rand(.9, 1.5), size: .35, color: '#fff6d8', alpha: .9, drag: 2, gravity: 1.5, shape: Shape.Shard }));
-        else this.sparkle(at, color, 22);
+        this.sparkle(at, color, 22);
         return;
       }
-      case 'steal': if (tAt) this.stream(tAt, at, '#ffd84a', 26); return;
+      case 'steal': if (e.text.startsWith('Mugged')) this.mugged(p, q); else if (tAt) this.stream(tAt, at, '#ffd84a', 26); return;
       case 'doom-pass': if (tAt) this.stream(at, tAt, '#b45cff', 30); return;
       case 'wall': { const f = at.clone().addScaledVector(fwd, 1.5); this.spray(this.glow, 16, () => ({ x: f.x, y: f.y - .6, z: f.z, vx: rand() * 7, vy: rand(1, 6), vz: rand() * 7, life: rand(.2, .45), size: .1, color: '#fff2b8', endColor: '#ff8a3a', gravity: 18, stretch: .04, shape: Shape.Shard })); if (p.id === playerId) this.shake = Math.max(this.shake, .22); return; }
       case 'recover': this.bursts.spawn('pillar', v.set(at.x, at.y - 1.5, at.z), '#bfe9ff', 1.6, .8, { height: 10 }); this.sparkle(at, '#bfe9ff', 20); return;
       case 'finish': this.confetti(at); return;
     }
+  }
+
+  /** Goblin's Mug brought the racer's latest stone, from `victim` or out of nowhere. */
+  private mugged(p: Racer, victim?: Racer) {
+    const top = p.stones.at(-1); if (top) this.abilities.mugged(p.id, victim?.id, top.kind, top.level === 1 ? p.stones.length - 1 : undefined);
   }
 
   update(dt: number, race: Race | null, chars: Map<string, Character>, playerId: string, camera: THREE.Camera, paused: boolean) {
@@ -152,7 +162,7 @@ export class Effects {
     this.syncFireballs(dt, race.projectiles.map(o => ({ key: `f${o.id}`, x: o.px, y: floorY(race, o.px, o.pz) + 1.3, z: o.pz, level: o.level })));
     this.syncTraps(dt, race.traps.map(o => ({ key: `t${o.id}`, x: o.px, y: floorY(race, o.px, o.pz), z: o.pz, radius: o.radius })));
     this.updateRacers(dt, race, chars);
-    flareRain(this, race, dt);
+    this.abilities.update(dt, camera, race.racers, chars);
     this.animate(dt, camera, race);
   }
   /** Advances effects with no race running. The studio previews one-shot effects, fireballs and traps through this. */
@@ -219,19 +229,12 @@ export class Effects {
     for (const p of race.racers) {
       const c = chars.get(p.id); if (!c) continue; alive.add(p.id); const s = this.status(p.id), y = c.root.position.y, scale = c.root.scale.x;
       const fwd = new THREE.Vector3(Math.sin(p.yaw), 0, Math.cos(p.yaw)), side = new THREE.Vector3(fwd.z, 0, -fwd.x), live = dt > 0;
-      // Hit flash, post-crash blink and Charge tint.
+      // Hit flash and post-crash blink, or an ability's tint over the whole model.
       s.flash = Math.max(0, s.flash - dt * 4);
-      const blink = p.invincible > 0 && p.stun <= 0 ? (Math.sin(this.time * 40) > 0 ? .45 : 0) : 0;
-      c.skin.flash.value = Math.max(s.flash * .85, blink, p.charging > 0 ? .25 + Math.sin(this.time * 20) * .1 : 0);
-      c.skin.flashColor.value.set(p.charging > 0 ? '#ff4a2a' : s.flash > 0 ? '#ffffff' : '#ffffff');
-      // Boost: exhaust flames and ribbon trails.
-      const boosting = p.boost > 0 && p.stun <= 0;
-      c.exhausts.forEach(ex => {
-        ex.getWorldPosition(v); if (!live) return;
-        if (boosting) { for (let i = 0; i < 2; i++) this.glow.emit({ x: v.x, y: v.y, z: v.z, vx: -fwd.x * rand(6, 10) + rand() * .8, vy: rand(-.3, .8), vz: -fwd.z * rand(6, 10) + rand() * .8, life: rand(.12, .22), size: rand(.45, .7) * scale, endSize: .1, color: '#ffffff', endColor: '#' + s.boostColor.getHexString(), drag: 2, stretch: .03 }); }
-        else if (c.smokes && Math.abs(p.speed) > 4 && Math.random() < .12) this.smoke.emit({ x: v.x, y: v.y, z: v.z, vx: -fwd.x * 2, vy: rand(.4, 1), vz: -fwd.z * 2, life: rand(.4, .7), size: .18, endSize: .7, color: '#9a958e', alpha: .3, drag: 2, shape: Shape.Smoke });
-      });
-      s.trails.forEach((tr, i) => { const anchor = c.contacts[i] || c.contacts[0]; if (anchor) anchor.getWorldPosition(v); else v.copy(c.root.position); v.y = y + .5 * scale; tr.color.copy(s.boostColor); if (live) tr.update(dt, v, side, boosting && Math.abs(p.speed) > 6); });
+      const blink = p.invincible > 0 && p.stun <= 0 ? (Math.sin(this.time * 40) > 0 ? .45 : 0) : 0, hit = Math.max(s.flash * .85, blink), tint = this.abilities.tint(p, tintColor);
+      c.skin.flash.value = Math.max(hit, tint); c.skin.flashColor.value.copy(tint > hit ? tintColor : white);
+      // Exhaust smoke while cruising. Boosts draw their spike fans in the ability effects.
+      if (live && p.boost <= 0 && Math.abs(p.speed) > 4) c.exhausts.forEach(ex => { if (Math.random() < .12) { ex.getWorldPosition(v); this.smoke.emit({ x: v.x, y: v.y, z: v.z, vx: -fwd.x * 2, vy: rand(.4, 1), vz: -fwd.z * 2, life: rand(.4, .7), size: .18, endSize: .7, color: '#9a958e', alpha: .3, drag: 2, shape: Shape.Smoke }); } });
       // Drift sparks colour-coded by spin-out risk, plus tyre smoke.
       if (live && p.drifting && Math.abs(p.speed) > 5) {
         const risk = p.drift / HANDLING.overDrift, col = risk < .45 ? '#7fd0ff' : risk < .75 ? '#ffa040' : '#ff4f8a';
@@ -242,12 +245,9 @@ export class Effects {
       // Stun stars circling the head.
       if (live && p.stun > 0) { c.head.getWorldPosition(v); const a = this.time * 7; for (let i = 0; i < 3; i++) { const b = a + i * 2.09; this.glow.emit({ x: v.x + Math.cos(b) * .9 * scale, y: v.y + .8 * scale, z: v.z + Math.sin(b) * .9 * scale, life: .18, size: .45 * scale, color: '#fff3a0', endColor: '#ffb340', shape: Shape.Star }); } }
       // Status auras.
-      if (live && p.gripUp > 0 && Math.random() < .6) { const a = rand(0, 6.28); this.glow.emit({ x: p.px + Math.cos(a) * 1.3, y: y + .1, z: p.pz + Math.sin(a) * 1.3, vy: rand(1, 2.5), life: rand(.4, .7), size: rand(.25, .4), color: '#ccffb8', endColor: '#46d65a', stretch: .02 }); }
-      if (live && p.charging > 0) for (let i = 0; i < 2; i++) { const a = rand(0, 6.28); this.glow.emit({ x: p.px + Math.cos(a) * 1.2, y: y + rand(.3, 2.5), z: p.pz + Math.sin(a) * 1.2, vx: -fwd.x * 6, vy: rand(1, 3), vz: -fwd.z * 6, life: rand(.2, .4), size: rand(.5, .9), endSize: .1, color: '#ffd0a0', endColor: '#ff2a10', drag: 2 }); }
       if (live && p.mini > 0 && Math.random() < .2) this.glow.emit({ x: p.px + rand() * .8, y: y + rand(.2, 1.6) * scale, z: p.pz + rand() * .8, vy: .8, life: .6, size: .3, color: '#ffffff', endColor: '#b68bef', shape: Shape.Star });
-      if (live && p.flying > 0 && Math.random() < .15) this.smoke.emit({ x: p.px + rand() * .6, y: y + 1.6, z: p.pz + rand() * .6, vx: -fwd.x * 2 + rand(), vy: rand(-.5, .5), vz: -fwd.z * 2 + rand(), life: 1.2, size: .28, color: '#fff6d8', alpha: .9, drag: 1.5, gravity: 1.2, shape: Shape.Shard });
-      // Reflect bubble while the manual shield or Barrier is up.
-      s.shield.visible = p.shield > 0 || p.barrier > 0; if (s.shield.visible) { s.shield.position.set(p.px, y + c.height * .45 * scale, p.pz); s.shield.scale.setScalar(c.height * .6 * scale * (1 + Math.sin(this.time * 6) * .02)); s.shield.rotation.y = this.time * .5; }
+      // Reflect bubble while the manual shield is up. Barrier draws its own pulses.
+      s.shield.visible = p.shield > 0; if (s.shield.visible) { s.shield.position.set(p.px, y + c.height * .45 * scale, p.pz); s.shield.scale.setScalar(c.height * .6 * scale * (1 + Math.sin(this.time * 6) * .02)); s.shield.rotation.y = this.time * .5; }
       // Blizzaga freeze shell.
       const frozen = this.time < s.frozenUntil && p.stun > 0; s.frozen.visible = frozen; if (frozen) { s.frozen.position.set(p.px, y, p.pz); s.frozen.scale.setScalar(scale * c.height / 3.2); }
       // Doom countdown rune.
@@ -260,7 +260,8 @@ export class Effects {
         v2.set(at[i].x, y + HELD_STONE.lift * scale, at[i].z);
         // Ease toward the target so the line sways through corners, but snap on the first frame and after respawns.
         if (!h.placed || h.at.distanceTo(v2) > 8) h.at.copy(v2); else h.at.lerp(v2, 1 - Math.exp(-dt * 18));
-        h.placed = true; this.held.add(h.at, stack.kind, stack.level, scale, p.character * 1.7 + i * 2.1);
+        h.placed = true; const look = this.abilities.heldLook(p.id, i);
+        if (!look.hidden) this.held.add(h.at, stack.kind, stack.level, scale, p.character * 1.7 + i * 2.1, look.blink);
       });
     }
     for (const [id, s] of this.statuses) if (!alive.has(id)) { disposeStatus(this.group, s); this.statuses.delete(id); }

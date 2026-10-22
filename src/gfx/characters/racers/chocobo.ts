@@ -25,7 +25,7 @@ export function chocobo(): Build {
   const flap = m.mixer.clipAction(additive.get(beat)!); flap.play(); flap.weight = 0;
   const turn = overlay(m, 'head'), head = turn.j, weights: Record<ClipName, number> = { Idle: 0, Skate: 0, Cast: 0, Win: 0, Lose: 0 };
   const turning = [...['L', 'R'].map(s => ({ d: driven(m, `wheel_front.${s}`, [1, 0, 0], 'x'), r: FRONT_RADIUS })), ...['L', 'R'].map(s => ({ d: driven(m, `wheel_rear.${s}`, [1, 0, 0], 'x'), r: REAR_RADIUS }))];
-  // Boost flames and smoke leave the exhaust tips; drift sparks and dust come from under the rear wheels.
+  // Smoke leaves the exhaust tips; drift sparks and dust come from under the rear wheels.
   const exhausts = [anchor(m, 'foot.L', [1.1, .74, -.74]), anchor(m, 'foot.R', [-1.1, .74, -.74])];
   const contacts = [anchor(m, 'foot.L', [.72, .02, -.5]), anchor(m, 'foot.R', [-.72, .02, -.5])];
   let fresh = true, flapping = 0;

@@ -22,7 +22,7 @@ export function golem(): Build {
   // The front wheels hang on steering knuckles; each knuckle steers before its wheel spins.
   const knuckles = ['L', 'R'].map(side => driven(m, `steer.${side}`, [0, 1, 0], 'y'));
   const wheels = ['L', 'R'].flatMap(side => [driven(m, `wheel_front.${side}`, [1, 0, 0], 'x'), driven(m, `wheel_rear.${side}`, [1, 0, 0], 'x')]);
-  // Smoke and boost flames from the two exhaust stacks at the back; drift sparks from under the rear tyres.
+  // Smoke from the two exhaust stacks at the back; drift sparks from under the rear tyres.
   const exhausts = [anchor(m, 'jeep', [.66, 1.56, -1.36]), anchor(m, 'jeep', [-.66, 1.56, -1.36])];
   const contacts = [anchor(m, 'jeep', [1.08, .04, -.92]), anchor(m, 'jeep', [-1.08, .04, -.92])];
   let fresh = true;

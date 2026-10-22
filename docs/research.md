@@ -96,9 +96,8 @@ Deliberate deviations:
 
 | Original | Remake | Reason |
 | --- | --- | --- |
-| Flap spreads big glowing pink and white feathered wings around him | The shared Flap effect (feather shards and the lift) is unchanged, and his own bat wings beat fast | The ability's effect is shared and stays as it was; only his model changed |
 | No win or lose animation is seen in a race | On the podium he waves both paws and calls out with little hops; otherwise he lets go of the bars and droops | Every racer here acts out win and lose reactions |
-| The scooter's motor is unknown | No exhaust smoke; boost flames leave the foot of the batteries | A battery scooter has no engine smoke |
+| The scooter's motor is unknown | No exhaust smoke | A battery scooter has no engine smoke |
 
 ## Golem
 
@@ -170,7 +169,7 @@ The remake bursts the stone the same way over 0.22 s and drops the earlier star 
 In the original a taken stone leaves an empty slot, and the slot is full again by the next lap, sometimes with a different kind. The refill itself is never on screen; the remake keeps its fixed kinds and 3.5 s respawn and grows the stone back in over 0.25 s.
 Held stones in the original roll on the road in a short chain right behind the racer's rear wheels, about half a track stone across, symbol facing the camera.
 The manual says a stack "will flash" to show its level, and one FAQ says level two "will start to blink" and level three "will start to blink rapidly"; the footage shows held stones blinking to black.
-In 30 fps captures a held stone alternates with black every frame for bursts of two to three seconds; footage does not separate the levels. The remake blinks level two four times a second and level three eight times a second, steadily, so the level is always readable.
+In 30 fps captures a held stone alternates with black every frame for bursts of about 2.9 s; the ability effects research found these bursts are the Magic Plus trigger, and the footage shows no level blink at all. The remake blinks level two four times a second and level three eight times a second, steadily, so the level is always readable.
 The original HUD shows no held-stone icons; the remake keeps its MAGIC slots, now drawn from the same stone model.
 
 Deliberate deviations:
@@ -184,6 +183,90 @@ Deliberate deviations:
 | Slots refill within a lap, possibly with another kind; held stacks blink in bursts | Fixed kinds, 3.5 s respawn, steady 4 and 8 blinks a second | Keeps the existing simulation; a steady blink always shows the level |
 
 All track stones draw in three instanced draw calls (stones, shadows and pickup bursts, the last only while a burst plays) and every racer's held stones in one more.
+
+## Ability effects: Dash, boosts, Charge, Flap and Megaflare
+
+These effects follow PS1 footage read frame by frame: Chocobo, Cloud, Chubby Chocobo and Black Magician using Dash, three Haste casts, Behemoth's Grand Prix with five Charges and a ram, Mog's Grand Prix with thirteen Flaps, Bahamut's four Megaflares as the player and a CPU Bahamut's Megaflare hitting the player in Story Mode.
+Everything they draw is a flat additive sprite rebuilt every frame, as on the PS1, and all of it goes into one batch in `src/gfx/effects/abilities/`, so these effects together cost one draw call.
+Colours, sizes and phase times live in `abilities/looks.ts`.
+
+Every boost in the original shows the same layout: two mirrored fans of spikes on the road either side of the racer, flat along the road and rising to about 70 degrees, white at the root and coloured at the tips, re-rolled every frame and always facing the camera.
+The racer's whole model is tinted for the whole boost and the tint cuts off in one frame when it ends: Chocobo's yellow (#f3a608) reads tan (#b08857) mid-Dash, Chubby Chocobo's white reads mint under Haste, and Behemoth's purple reads red-magenta (#7c2640) under Charge.
+The colour says what the boost is: blue-white for Dash, green for Haste and yellow-orange for Charge.
+The earlier note that Haste makes the blue-white fan came from a Dash; the Haste stone's fan is green.
+
+| Effect | Original | Remake |
+| --- | --- | --- |
+| Dash start | Blue-violet tint in one frame, a cross of white lines on the road, a lavender glow spreading round the racer, then a white-hot core with long pink rays and dust puffs | Same, in that order, over the first 0.95 s |
+| Dash running | Blue-white fans, 6 to 8 spikes a side, about 2.8 racer widths wide | Same, 8 spikes a side |
+| Dash end | The tint cuts off, the fans hold three frames and fade over 0.13 s | Same |
+| Start dash | The Dash burst without the fans | Same; Spin Dash uses it too |
+| Haste | A thin blue-white ring for a few frames, a green tint and green fans | Same, at every level |
+| Charge | Yellow-orange fans on the first frame, a light column, a pink dome crossed by a flare line, a white-pink flash and long rays, over a red tint; the fans swell every 0.37 s; a hard cut at the end | Same, fitted into the 1 s Charge |
+| Charge ram | Sparks at the contact point, stars and blue twinkles round the victim | Same |
+| Flap start | A white cross flare, a glowing ball with pink rays, the wings appearing inside it already full size as a raised V | Same, over 0.9 s |
+| Flap running | Two glowing wings of pink and white feather plumes, 6 to 7 body widths across, beating 1.9 times a second with a slow sweep down and a snap back up; Mog floats about a body height up | Five plumes a wing with a white quill, bright barbs and a violet halo; same beat and height |
+| Flap end | The wings turn pale lilac and fade over 0.75 s while Mog drops back | Same, over 0.6 s |
+| Megaflare on Bahamut | A glow and cross flare, a ring of red-rimmed fire orbs on the road that spreads, then beams shooting straight up | Same, over the first 0.92 s |
+| Megaflare warning | Starburst shots fall from the sky ahead of each rival, about ten a second, and burst on the road beside them | Same |
+| Megaflare strike | A frame of yellow flame starburst, a fire cone with tall red streaks, smoke and falling stars; the victim falls back charred | Same; the victim is tinted fire orange for 1.4 s |
+
+Deliberate deviations:
+
+| Original | Remake | Reason |
+| --- | --- | --- |
+| Dash lasts about 3.7 s, Charge 1.7 s, Flap 10 s, and the Megaflare warning about 2.6 s | Each effect's phases are scaled into the remake's 2 s Dash, 1 s Charge, 5 s Flap and 1.5 s warning | Timings are gameplay and stay as balanced |
+| Fans are camera-facing sprites, so a racer seen side-on shows two full fans | The fan over the racer's nose shrinks when seen from the side, so it reads as a half sunburst behind | Matches how a charging Behemoth looks from the side in footage, and keeps a 3D racer's face clear |
+| Boost pads and Spin Dash were not found in footage | Pads show the Dash fans without the burst; Spin Dash shows the start dash burst | Every boost keeps the original's one boost layout |
+| Megaflare throws the victim straight up out of view | The existing heavy-crash tumble | The crash reactions are shared by every hit |
+| The old remake drew flame jets from the exhausts and ribbon trails under every boost | Removed | The original shows no exhaust flame, trail or blur on a boost |
+
+## Ability effects: Grip-Up, Mug, Magic Plus, Barrier and Receive
+
+These follow PS1 footage read frame by frame: Golem's two Grand Prix runs (17 Grip-Ups), Goblin's Grand Prix (14 Mugs) and a Chocobo run where a CPU Goblin mugs the player about every 20 s, Goblin and Black Magician with Magic Plus (7 triggers), a White Mage Grand Prix with Barrier (9 raises, 3 blocks) and Chubby Chocobo's Grand Prix (8 catches).
+They draw into the same flare batch as the effects above, so they add no draw call of their own; stones carried by Mug's helper or caught by Receive add one while they are on screen, and Mug's helper adds six (its body and two legs, each with an ink outline) while it is on screen, about 1.6 s per Mug.
+Colours, sizes and phase times live in `abilities/looks.ts`, next to the others.
+
+Grip-Up, Mug, Barrier and Magic Plus open with the same flash in the frame after the gauge empties: a thin white cross of light through the racer, a pale disc with a violet rim about twice the kart's width, the racer washing out to white, then the disc pulling in to a white ball while thin white and pink rays shoot out.
+The remake draws it with the same `activationBurst()` as Dash (`abilities/burst.ts`), facing the camera, with one `BurstLook` per ability: Mug's is softer and lavender, and Magic Plus's spreads to three or four racer widths. Dash keeps its cross and glow flat on the road, as its footage shows.
+
+| Effect | Original | Remake |
+| --- | --- | --- |
+| Grip-Up start | The flash, then a thin pink ellipse at each side at hub height, flung out a kart width as crescents with streaky trails, then snapped back in within 2 to 3 frames | Same, 1.3 to 2 s after use |
+| Grip-Up running | One magenta ring per side wrapping the wheels, a white outer rim, a jagged and streaky inner edge fading to clear, alpha blended; its height pulses every 0.5 s | Same, drawn as camera-facing crescents with the hollow side toward the kart |
+| Grip-Up end | A smooth fade over 8 frames | Same, over 0.27 s |
+| Mug, thief | The flash; a little goblin with purple spiky hair, one big eye, an orange vest and dark legs pops up beside the kart, hops off the right of the screen, and comes back from the left 0.6 s later carrying the stone, which joins the line 1.57 s after use | Same: the helper is a small toon model with an ink outline, and the stone stays hidden in the line until it arrives |
+| Mug, victim | The held stone vanishes in one frame inside a thin near-white ring that widens and turns pink; the helper runs past from right to left | Same |
+| Mug with nobody to rob | The helper comes back with a stone all the same | Same |
+| Magic Plus | The wide flash; then a green U-shaped curtain drops from high above, narrows to a thread and ends on the raised stone with a glint; the stone flips to flat black every frame for 2.9 s | Same; the stone flickers 12.5 times a second |
+| Barrier raise | The flash, with a darker blue-violet halo | Same |
+| Barrier up | Nothing stays on screen: every 0.71 s a frosty pale-cyan bowl rises from the carpet, closes into a nearly opaque white oval round her, lifts off as a cap with a small ring on top and leaves a clear cyan sphere that fades in 0.3 s; small sparkle crosses near the carpet between pulses | Same |
+| Barrier block | The spell's own effect plays, she rides on, at most one more pulse plays and the Barrier is gone; no block sprite | Same |
+| Receive waiting | Nothing on the racer | Same |
+| Receive catch | A white orb swells above his head on a faint light pillar, with a horizontal streak on the road, a lavender glow and pink rays round him; the orb clears with a cross flare to show the caught stone, which hovers and sinks to the end of his line about 1.7 s after the hit | Same, with the same timing |
+
+What a rival sees: no footage shows a CPU Golem, Goblin, Black Magician, White Mage or Chubby Chocobo using these abilities in view of the player.
+The remake draws every one of them in the world round the racer, so a rival behind or beside sees the same sprites at its own distance, and the Studio shows each from the chase camera, the side and 20 m behind.
+The original's held stones show no level blink in any checked span of the footage: the black flicker the Magic Stones notes describe is the Magic Plus trigger.
+The remake keeps its steady level blink on stacks and adds the Magic Plus flicker on top.
+
+Deliberate deviations:
+
+| Original | Remake | Reason |
+| --- | --- | --- |
+| Grip-Up shows its rings for about 10.2 s | The rings last the remake's 7 s Grip-Up | Timings are gameplay |
+| Barrier pulses for as long as it stays up | The 4 s Barrier pulses from 1.3 s after it rises, about four pulses | Timings are gameplay |
+| The Mug helper is a 2D sprite seen from one angle | A small 3D model; each leg of its trip is drawn in the frame of the racer it visits | It has to read from any camera, and a victim far ahead must see it pass |
+| The Magic Plus stone flips black every 30 fps frame | It flickers 12.5 times a second | A 15 a second blink can line up with a 30 fps or 60 fps frame clock and vanish |
+| Receive is usually caught after the hit reaction | The catch plays without a crash | Receive cancels the hit in the simulation |
+
+Gameplay differences found, left unchanged for a later decision:
+
+- Barrier: the original has no timer. It stays up until it blocks one spell or the race ends (up to at least 31.7 s in footage), and the gauge refills only after it ends, so the next Barrier comes 15 to 16 s after the last one went down. The remake raises it for 4 s and recharges in 16 s.
+- Receive: in 5 of the 7 catches checked, Chubby still spun out or was launched, then got the stone. Only two catches of one spell showed no slowdown. The remake cancels the hit.
+- Grip-Up: the original lasts about 10.2 s and its gauge refills only after it ends, a cycle of about 19 to 20 s. The remake lasts 7 s and recharges in 11 s.
+- Magic Plus: the original fired every 12.75 s while a stone was held. The remake recharges in 20 s, as measured in all-CPU races.
+- Mug: the stolen stone reaches the thief 1.57 s after use in the original. The remake moves it at once and only hides it until the helper arrives.
 
 ## Goblin
 
@@ -202,7 +285,7 @@ Deliberate deviations:
 | The pencil sketch draws a tapered hopper on flanged rail wheels | A straight box on plain disc wheels | The game model and the CG model sheet use the straight box |
 | The helmet is a tall, boxy dome with a pale stripe, over a mane about as wide as the helmet is tall | The same tall, boxy helmet with a pale stripe over the crown, a little taller than the CG sheet's rounder dome | The race view is the reference; the CG dome is lower |
 | No win or lose animation is seen in a race | He shakes the club and pumps his fist on the podium, and slumps over the bar when he loses | Every racer here acts out win and lose reactions |
-| The cart has no engine | No exhaust smoke; boost flames leave the back corners of the box | A push cart has no engine smoke |
+| The cart has no engine | No exhaust smoke | A push cart has no engine smoke |
 
 ## White Mage
 

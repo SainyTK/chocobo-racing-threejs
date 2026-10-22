@@ -34,7 +34,7 @@ export function behemoth(): Build {
   const turn = overlay(m, 'head'), head = turn.j, weights: Record<ClipName, number> = { Idle: 0, Drive: 0, Charge: 0, Win: 0, Lose: 0 };
   const wheels = ['L', 'R'].flatMap(side => Array.from({ length: ROAD_WHEELS }, (_, i) => driven(m, `wheel${i + 1}.${side}`, [1, 0, 0], 'x')));
   const belts = [pads(m, 'pads.L'), pads(m, 'pads.R')];
-  // Smoke and boost flames from the two exhausts at the back of the hull; drift sparks from the rear of the tracks.
+  // Smoke from the two exhausts at the back of the hull; drift sparks from the rear of the tracks.
   const exhausts = [anchor(m, 'tank', [.42, .76, -1.42]), anchor(m, 'tank', [-.42, .76, -1.42])];
   const contacts = [anchor(m, 'tank', [1.06, .04, -1.3]), anchor(m, 'tank', [-1.06, .04, -1.3])];
   let fresh = true;
