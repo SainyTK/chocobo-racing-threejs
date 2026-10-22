@@ -12,12 +12,13 @@ import { whiteMage } from './racers/white-mage.ts';
 import { chubby } from './racers/chubby.ts';
 import { behemoth } from './racers/behemoth.ts';
 import { bahamut } from './racers/bahamut.ts';
+import { cloud } from './racers/cloud.ts';
 
 export type { AnimState, Character } from './types.ts';
 export { POSE_SECONDS, type Pose } from './poses.ts';
 export { loadCharacterModels } from './models.ts';
 
-const BUILDERS: ((c: RacerProfile) => Build)[] = [chocobo, mog, golem, goblin, blackMage, whiteMage, chubby, behemoth, bahamut];
+const BUILDERS: ((c: RacerProfile) => Build)[] = [chocobo, mog, golem, goblin, blackMage, whiteMage, chubby, behemoth, bahamut, cloud];
 
 export function createCharacter(index: number): Character {
   const c = RACERS[index], b = BUILDERS[index](c); b.r.finish(b.outline);

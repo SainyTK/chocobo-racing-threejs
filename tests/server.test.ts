@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { io, type Socket } from 'socket.io-client';
 import { createGameServer } from '../server/index.ts';
-import { decodeSnapshot, type Snapshot } from '../shared/wire.ts';
+import { WIRE_VERSION, decodeSnapshot, type Snapshot } from '../shared/wire.ts';
 import { stepRace } from '../shared/game/index.ts';
 let server: Awaited<ReturnType<typeof createGameServer>>, url: string;
 const clients: Socket[] = [];
@@ -61,9 +61,10 @@ describe('real multiplayer server', () => {
     const overflow = await connect(); expect((await request(overflow.socket, 'join', { code })).error).toMatch(/full/);
     for (const s of clients) await request(s, 'leave'); expect(server.rooms.size).toBe(0);
   });
+  it('refuses a fixed-order client of an older wire version with a reload notice', async () => { const socket = io(url, { auth: { wire: WIRE_VERSION - 1 }, forceNew: true, reconnection: false, transports: ['websocket'] }); clients.push(socket); let outdated: any = null, welcomed = false; socket.on('outdated', d => { outdated = d; }); socket.on('welcome', () => { welcomed = true; }); await until(() => outdated && !socket.connected); expect(outdated.wire).toBe(WIRE_VERSION); expect(welcomed).toBe(false); });
   it('rate limits room actions', async () => { const a = await connect(); const answers = await Promise.all(Array.from({ length: 18 }, () => request(a.socket, 'join', { code: 'AAAAAA' }))); expect(answers.some(a => a.error?.includes('Too many'))).toBe(true); });
   it('v2 acknowledges applied input, rejects reorder and resends actions without duplicate effects', async () => {
-    const a = await connect(undefined, undefined, 2), b = await connect(undefined, undefined, 2);
+    const a = await connect(undefined, undefined, WIRE_VERSION), b = await connect(undefined, undefined, WIRE_VERSION);
     const { code } = await request(a.socket, 'create'); await request(b.socket, 'join', { code });
     let meta: any, state: any, packet: Snapshot | undefined;
     a.socket.on('race', r => { meta = r; state = r; });
@@ -87,12 +88,12 @@ describe('real multiplayer server', () => {
     expect(r.events.filter(e=>e.player===a.id && e.type==='haste')).toHaveLength(1);
     expect((await request(a.socket, 'action', { ...action, race: 'old-race', seq: 4 })).error).toBeTruthy();
     a.socket.disconnect(); await until(()=>!p.connected);
-    let initial: any; const socket = io(url, { autoConnect: false, auth: { token: a.token, wire: 2 }, transports: ['websocket'], reconnection: false }); clients.push(socket); socket.on('race', r => initial = r); socket.connect();
+    let initial: any; const socket = io(url, { autoConnect: false, auth: { token: a.token, wire: WIRE_VERSION }, transports: ['websocket'], reconnection: false }); clients.push(socket); socket.on('race', r => initial = r); socket.connect();
     await until(()=>initial); expect(initial.id).toBe(r.id); expect(initial.racers.find((p:any)=>p.id===a.id).lastRescue).toBe(rescued);
   });
   it('v2 supports six human racers and emits at most one latest snapshot after a stall', async () => {
-    const a = await connect(undefined, undefined, 2), { code } = await request(a.socket, 'create');
-    for(let i=0;i<5;i++) { const b=await connect(undefined, undefined, 2); await request(b.socket,'join',{code}); }
+    const a = await connect(undefined, undefined, WIRE_VERSION), { code } = await request(a.socket, 'create');
+    for(let i=0;i<5;i++) { const b=await connect(undefined, undefined, WIRE_VERSION); await request(b.socket,'join',{code}); }
     const states: Snapshot[]=[]; a.socket.on('snapshot',s=>states.push(s)); await request(a.socket,'start'); await until(()=>states.length>1);
     expect(server.rooms.get(code)!.race!.racers.filter(p=>!p.bot)).toHaveLength(6);
     states.length=0; server.metrics.snapshotsPerLoop.length=0;
