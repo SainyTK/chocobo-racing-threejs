@@ -193,7 +193,7 @@ def eye(s: int) -> tuple[Vector, Vector]:
     p = head_point(EYE_T, a)
     out = (p - Vector((0, HEAD_CENTRE.y, p.z))).normalized()
     look = (out + Vector((0, -1.6, 0))).normalized()
-    return p + out * 0.01, look
+    return p + out * 0.04, look
 
 
 def shell(name: str, skin: str, bottom: Callable[[float], float], lift: float, crown: float, around: int, along: int) -> Part:
@@ -248,7 +248,7 @@ def head_parts() -> list[Part]:
     mouth.outline = False
     parts = [rigid(skull, "head"), rigid(helmet, "head"), rigid(rim, "head"), rigid(nose, "head"), rigid(mouth, "mouth")]
     centre, look = eye(1)
-    ball = rigid(ellipsoid("eye", "eye", centre, (0.13, 0.2, 0.22), axis=look, around=16, along=8), "eye.L")
+    ball = rigid(ellipsoid("eye", "eye", centre, (0.15, 0.22, 0.24), axis=look, around=16, along=8), "eye.L")
     left = [ball, rigid(ear(), "ear.L")]
     return parts + left + [mirror(p, p.name + ".R") for p in left]
 

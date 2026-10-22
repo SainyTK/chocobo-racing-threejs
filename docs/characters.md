@@ -192,7 +192,7 @@ Pitfalls met on Chubby Chocobo:
 npm run character -- goblin
 ```
 
-Goblin in his mine cart is one skinned GLB (343 KB, 22 bones, six clips), built by `scripts/characters/goblin/`.
+Goblin in his mine cart is one skinned GLB (345 KB, 22 bones, six clips), built by `scripts/characters/goblin/`.
 One armature carries the goblin and the cart, and the rest pose is the riding pose, so his fists sit on the crank bar.
 
 - The cart hangs off `cart`. Each front wheel turns about an upright pivot at its hub (`steer.L`, `steer.R`) and spins on `wheel_front.L` and `wheel_front.R` below it; the rear pair shares `wheel_rear`. `racers/goblin.ts` turns all five through `driven()`, and the front pivots go in `Build.steer`, so the shared animator steers them.
