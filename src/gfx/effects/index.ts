@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { HANDLING, ITEMS, RACERS, stackPositions, type Race, type Racer, type Item } from '../../../shared/game/index.ts';
+import { HANDLING, ITEMS, MAX_STONES, RACERS, stackPositions, type Race, type Racer, type Item } from '../../../shared/game/index.ts';
 import { TRACKS } from '../../../shared/track/index.ts';
 import { Particles, Shape, type Emit } from '../particles/particles.ts';
 import type { Character } from '../characters/index.ts';
@@ -10,7 +10,8 @@ import { sphereGeo, ringGeo, shardGeo } from './geometries.ts';
 import { Bolt, boltMaterial } from './bolt.ts';
 import { Bursts } from './bursts.ts';
 import { createStatus, drawDoom, disposeStatus, type Status } from './status.ts';
-import { makeHeldStack } from '../orbs/stack.ts';
+import { HeldStones } from '../stones/held.ts';
+import { HELD_STONE } from '../stones/looks.ts';
 import { rand, floorY } from './util.ts';
 import { SpellFx } from './spells.ts';
 import { castInfo, crashInfo } from '../../race-events.ts';
@@ -31,6 +32,8 @@ export class Effects {
   private fire = new Map<string, { g: THREE.Group; last: THREE.Vector3; level: number; age: number }>();
   private ice = new Map<string, { g: THREE.Group; age: number; px: number; pz: number; y: number }>();
   private bolts: Bolt[]; private statuses = new Map<string, Status>(); readonly spells = new SpellFx(this);
+  /** Every racer's held stones, room for twelve racers. */
+  readonly held = new HeldStones(MAX_STONES * 12);
   private seen = new Set<number>(); private raceId = '';
   private boltMat = boltMaterial();
   private iceMat = crystalMaterial('#7fd6ff', { opacity: .72, intensity: 1.1 }); private frostMat = decalMaterial('frost', '#a6e8ff');
@@ -40,7 +43,7 @@ export class Effects {
   private frozenMat = crystalMaterial('#9fe3ff', { opacity: .55, intensity: 1.15 });
   constructor(scene: THREE.Scene) {
     this.bolts = Array.from({ length: 24 }, () => new Bolt(this.boltMat)); this.bursts = new Bursts(this.group);
-    this.group.add(this.glow.mesh, this.smoke.mesh, ...this.bolts.map(b => b.mesh)); scene.add(this.group);
+    this.group.add(this.glow.mesh, this.smoke.mesh, this.held.mesh, ...this.bolts.map(b => b.mesh)); scene.add(this.group);
   }
   /** Emits `n` particles from a template, randomised per particle. Scaled by `density` on lower quality settings. */
   spray(pool: Particles, n: number, f: (i: number) => Emit) { n = Math.max(1, Math.round(n * this.density)); for (let i = 0; i < n; i++) pool.emit(f(i)); }
@@ -57,7 +60,7 @@ export class Effects {
     for (const f of this.fire.values()) this.group.remove(f.g); this.fire.clear();
     for (const t of this.ice.values()) this.disposeIce(t.g); this.ice.clear();
     for (const s of this.statuses.values()) disposeStatus(this.group, s); this.statuses.clear();
-    this.bolts.forEach(b => { b.age = 99; b.mesh.visible = false; }); this.bursts.reset();
+    this.bolts.forEach(b => { b.age = 99; b.mesh.visible = false; }); this.bursts.reset(); this.held.begin(this.time); this.held.end();
   }
   private disposeIce(g: THREE.Group) { this.group.remove(g); }
 
@@ -122,7 +125,6 @@ export class Effects {
       case 'reflect': case 'block': { const c = e.type === 'reflect' ? ITEMS.shield.color : text.includes('barrier') ? '#ffd86a' : '#ffffff'; this.bursts.spawn('dome', ground, c, 2.8, .5); this.sparkle(at, c, 28, 1.6); if (e.type === 'reflect' && tAt) this.stream(at, tAt, c, 26); return; }
       case 'bump': if (tAt) { const mid = at.clone().lerp(tAt, .5); this.spray(this.glow, 16, () => ({ x: mid.x, y: mid.y - .4, z: mid.z, vx: rand() * 6, vy: rand(1.5, 5), vz: rand() * 6, life: rand(.2, .4), size: .09, color: '#ffffff', endColor: '#ffc45a', gravity: 16, stretch: .04, shape: Shape.Shard })); this.spray(this.glow, 3, () => ({ x: mid.x, y: mid.y, z: mid.z, life: .12, size: rand(1.2, 1.8), endSize: .4, color: '#fff6d0', endColor: '#ffb040' })); if (p.id === playerId || q?.id === playerId) this.shake = Math.max(this.shake, .18); } return;
       case 'receive': this.swirl(ground, '#7dffd8', 3, 40, true); return;
-      case 'pickup': { const kind = (Object.keys(ITEMS) as Item[]).find(k => e.text.startsWith(ITEMS[k].name)); this.sparkle(at, kind ? ITEMS[kind].color : '#ffffff', 20, 1.2); return; }
       case 'pad': case 'start': case 'spindash': s.boostColor.set(e.type === 'spindash' ? '#7fd8ff' : '#ffb347'); this.bursts.spawn('ring', ground, e.type === 'spindash' ? '#7fd8ff' : '#ffc45a', 3.5, .4); return;
       case 'ability': {
         const id = text.includes('magic plus') ? 'magic' : p.abilityId, color = id === 'flap' ? '#ffffff' : id === 'grip' ? '#8cff7a' : id === 'charge' ? '#ff5a3a' : id === 'mug' ? '#ffd84a' : id === 'magic' ? '#c58bff' : id === 'megaflare' ? FLARE_COLOR : '#ffc45a';
@@ -213,7 +215,7 @@ export class Effects {
   }
 
   private updateRacers(dt: number, race: Race, chars: Map<string, Character>) {
-    const width = TRACKS[race.track].width, alive = new Set<string>();
+    const width = TRACKS[race.track].width, alive = new Set<string>(); this.held.begin(this.time);
     for (const p of race.racers) {
       const c = chars.get(p.id); if (!c) continue; alive.add(p.id); const s = this.status(p.id), y = c.root.position.y, scale = c.root.scale.x;
       const fwd = new THREE.Vector3(Math.sin(p.yaw), 0, Math.cos(p.yaw)), side = new THREE.Vector3(fwd.z, 0, -fwd.x), live = dt > 0;
@@ -251,30 +253,18 @@ export class Effects {
       // Doom countdown rune.
       s.doom.visible = p.doom > 0;
       if (p.doom > 0) { const n = Math.ceil(p.doom); if (n !== s.doomValue) drawDoom(s, n); c.head.getWorldPosition(v); s.doom.position.set(v.x, v.y + 1.7 * scale, v.z); s.doom.scale.setScalar(1.8 + Math.max(0, Math.sin(this.time * (14 - n))) * .2); if (live && Math.random() < .5) this.glow.emit({ x: p.px + rand() * .8, y: y + rand(.5, 2.5), z: p.pz + rand() * .8, vy: rand(.8, 1.8), life: rand(.5, .9), size: rand(.35, .6), color: '#c46cff', endColor: '#3a0a5a', drag: .5 }); }
-      // Held stacks trail behind the racer where the simulation places them, so what you see is what a rival can grab.
+      // Held stacks trail behind the racer on the road where the simulation places them, so what you see is what a rival can grab.
       const at = stackPositions(p);
       s.stones.forEach((h, i) => {
-        const stack = p.stones[i]; h.anchor.visible = !!stack; if (!stack) { h.placed = false; return; }
-        if (h.kind !== stack.kind || h.level !== stack.level || !h.view) {
-          if (h.view) { h.anchor.remove(h.view.root); h.view.dispose(); }
-          h.view = makeHeldStack(stack.kind, stack.level); h.anchor.add(h.view.root);
-          if (h.kind !== null && live) this.sparkle(h.anchor.position, ITEMS[stack.kind].color, 10 + stack.level * 6);
-          h.kind = stack.kind; h.level = stack.level;
-        }
-        h.view.update(this.time + i * 1.3);
-        const bob = Math.sin(this.time * 3 + i * 1.7) * .12, size = (.36 + stack.level * .07) * scale * (stack.level === 3 ? 1 + Math.sin(this.time * 7) * .04 : 1);
-        v2.set(at[i].x, y + (1.15 + stack.level * .1) * scale + bob, at[i].z);
+        const stack = p.stones[i]; if (!stack) { h.placed = false; return; }
+        v2.set(at[i].x, y + HELD_STONE.lift * scale, at[i].z);
         // Ease toward the target so the line sways through corners, but snap on the first frame and after respawns.
-        if (!h.placed || h.anchor.position.distanceTo(v2) > 8) h.anchor.position.copy(v2); else h.anchor.position.lerp(v2, 1 - Math.exp(-dt * 18));
-        h.placed = true; h.anchor.scale.setScalar(size);
-        if (!live || stack.level < 2) return;
-        const color = ITEMS[stack.kind].color, o = h.anchor.position;
-        if (stack.level === 2) { if (Math.random() < .8 * this.density) { const a = rand(0, 6.28), r = rand(.5, .9); this.glow.emit({ x: o.x + Math.cos(a) * r, y: o.y + rand() * .4, z: o.z + Math.sin(a) * r, vx: -fwd.x * 2, vy: rand(.6, 1.4), vz: -fwd.z * 2, life: rand(.3, .5), size: rand(.22, .35), endSize: .05, color: '#ffffff', endColor: color, drag: 1.5, shape: Shape.Star }); } return; }
-        this.spray(this.glow, 2, () => { const a = rand(0, 6.28), r = rand(.6, 1.1); return { x: o.x + Math.cos(a) * r, y: o.y + rand() * .6, z: o.z + Math.sin(a) * r, vx: -Math.sin(a) * 2 - fwd.x * 3, vy: rand(1, 2.4), vz: Math.cos(a) * 2 - fwd.z * 3, life: rand(.35, .6), size: rand(.25, .45), endSize: .05, color: '#ffffff', endColor: color, drag: 1.5, shape: Shape.Star }; });
-        if (Math.random() < .5 * this.density) this.glow.emit({ x: o.x, y: o.y, z: o.z, vx: -fwd.x * 5 + rand() * .5, vy: rand(-.2, .4), vz: -fwd.z * 5 + rand() * .5, life: rand(.25, .4), size: rand(.7, 1.1), endSize: .2, color, endColor: color, drag: 2, stretch: .04 });
+        if (!h.placed || h.at.distanceTo(v2) > 8) h.at.copy(v2); else h.at.lerp(v2, 1 - Math.exp(-dt * 18));
+        h.placed = true; this.held.add(h.at, stack.kind, stack.level, scale, p.character * 1.7 + i * 2.1);
       });
     }
     for (const [id, s] of this.statuses) if (!alive.has(id)) { disposeStatus(this.group, s); this.statuses.delete(id); }
+    this.held.end();
   }
   stats() { return { particles: this.glow.count + this.smoke.count, fireballs: this.fire.size, ice: this.ice.size }; }
 }

@@ -44,6 +44,15 @@ def mirrored(pose: Pose) -> Pose:
     return out
 
 
+def aim(rest: Vector, target: Vector, parent: Quaternion | None = None) -> tuple[V3, Quaternion]:
+    """The armature-space rotation that turns a bone from its rest direction to point at `target`, for a bone whose
+    parent is already turned by `parent`. Also returns the bone's resulting turn, for its own children."""
+    local = (parent.inverted() @ target) if parent else target
+    turn = rest.rotation_difference(local)
+    e = turn.to_euler("XYZ")
+    return (e.x, e.y, e.z), (parent @ turn) if parent else turn
+
+
 def bake(rig: bpy.types.Object, clip: Clip, fps: int = 30) -> bpy.types.Action:
     """Keys the clip's bones at evenly spaced frames."""
     action = bpy.data.actions.new(clip.name)

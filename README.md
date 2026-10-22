@@ -100,18 +100,19 @@ A held key overrides touch steering.
 
 ### Magic Stones
 
-Stones lie on the road in rows of three or four coloured lanes, and each colour is one spell, so steer into the colour you want.
+Stones are glossy coloured balls floating over the road in rows of three or four lanes, each with its spell's symbol painted on the side facing you, so steer into the one you want.
+Fire is red with a flame, Ice milky lavender with a navy snowflake, Thunder green with a lightning bolt, Haste turquoise with a pink up arrow, Mini deep blue with a cyan arrowhead, Reflect pink with a violet shield, Doom dusty rose with a skull and Ultima white with a violet star.
 Each course uses the stone set the original introduced in its Story chapter.
 Cid's Test Track and Moogle Forest have only Haste and "?" stones, The Ancient Gate adds Fire, and each later course adds one more: Ice, Thunder, Mini, Reflect and Doom.
 Fantasia, the Bahamut stage, lays every type, and it is the only course with Ultima stones on the road.
-A black "?" stone, a dark orb with a white question mark as in the original, rolls a random spell.
+A black "?" stone with a yellow question mark, as in the original, rolls a random spell.
 Racers in the back half of the field get stronger random spells, and only they can roll Ultima from one.
-A taken stone comes back after 3.5 s.
+A taken stone bursts into a bright smear of its colour and grows back in after 3.5 s.
 
-You hold up to three stones, trailing in a line behind your racer.
+You hold up to three stones, as small balls rolling in a line on the road behind your racer.
 A stone that matches your latest stack merges into it for a stronger spell, up to level three, but every stone still takes a place until you cast.
 A level three stack fills all three HUD slots.
-Level two and three stacks glow, and level three blazes.
+As in the original, a level two stack blinks and a level three stack blinks fast.
 The latest stack casts first, at its full level.
 Reflect and Doom never merge.
 Drive into a rival's trailing stack to take it.
@@ -387,7 +388,7 @@ Reports are in `output/playwright-report/`; screenshots are in `output/testing/`
 - `server/index.ts`: authoritative room server, sessions and input validation.
 - `src/scene.ts`: course loading, pickups, shadows, bloom post-processing and 3D-rendered portraits.
 - `src/gfx/camera/`: the chase camera (`chase.ts`), its framing per screen shape (`framing.ts`) and the finish orbit and podium shots (`finish.ts`). `src/gfx/finish-stage.ts` and `src/gfx/podium.ts` stage those shots.
-- `src/gfx/characters/`: the racers. Three rigged racers and vehicles are built in code with cel shading and outlines, with running, flapping, blinking and spring animations. Chocobo, Mog, Goblin, Chubby Chocobo, Bahamut, Cloud and Behemoth are skinned GLBs made by the Blender pipeline in `scripts/characters/` (see `docs/characters.md`), drawn with the same toon and outline materials. Chocobo's skate wheels, Mog's scooter wheels and fork, Goblin's cart wheels and front-wheel steering, Chubby Chocobo's trike wheels and fork, Cloud's wheels and fork, and Behemoth's road wheels and track pads are bones the game turns in code; Mog's pom-pom antenna and Goblin's lantern swing on a spring in code.
+- `src/gfx/characters/`: the racers. Black Magician and White Mage are built in code with cel shading and outlines, with running, flapping, blinking and spring animations. Chocobo, Mog, Golem, Goblin, Chubby Chocobo, Bahamut, Cloud and Behemoth are skinned GLBs made by the Blender pipeline in `scripts/characters/` (see `docs/characters.md`), drawn with the same toon and outline materials. Chocobo's skate wheels, Mog's scooter wheels and fork, Chubby Chocobo's trike wheels and fork, Cloud's wheels and fork, Golem's wheels and steering knuckles, Goblin's cart wheels and front-wheel steering, and Behemoth's road wheels and track pads are bones the game turns in code; Mog's pom-pom antenna and Goblin's lantern swing on a spring in code.
   `index.ts` builds a racer by index, `models.ts` preloads the GLB racers, `skinned.ts` instances one with its mixer, `rig.ts` batches parts into few draw calls, `poses.ts` holds the hit, cast, overtake, win and lose reactions, `parts/` holds shared pieces (eyes, wheels, carpet texture) and `racers/` has one file per racer.
   `src/gfx/reactions.ts` picks a racer's reaction from race events.
 - `src/gfx/effects/`: spell and race effects: fireballs, ice traps, lightning, Ultima, Reflect bubbles, Doom runes, boost trails, drift sparks and status auras.

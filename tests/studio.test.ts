@@ -43,8 +43,8 @@ describe('studio registry', () => {
     expect(elementById.size).toBe(ELEMENTS.length);
     for (const e of ELEMENTS) expect(new Set(e.variants.map(v => v.id)).size, e.id).toBe(e.variants.length);
   });
-  it('marks the orb as the in-game Magic Stone look', () => {
-    for (const e of ELEMENTS.filter(e => e.id.startsWith('item.'))) expect(e.variants.filter(v => v.inGame).map(v => v.id), e.id).toEqual(['orb']);
+  it('marks the track stone as the in-game Magic Stone look', () => {
+    for (const e of ELEMENTS.filter(e => e.id.startsWith('item.'))) expect(e.variants.filter(v => v.inGame).map(v => v.id), e.id).toEqual(['stone']);
   });
   it('shows every stack level the game can hold, and only one for Reflect and Doom', () => {
     for (const e of ELEMENTS.filter(e => e.id.startsWith('stack.'))) expect(e.variants.map(v => v.id), e.id).toEqual(['stack.shield', 'stack.doom'].includes(e.id) ? ['1'] : ['1', '2', '3']);

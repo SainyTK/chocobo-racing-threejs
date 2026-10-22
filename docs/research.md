@@ -27,7 +27,7 @@ These describe this repository's behavior, not a claim of exact original code.
 | Driving | World position, heading, velocity, a lateral grip limit of about 4 g per racer, brake-tap sharp turns, short drifts with a 1.9 s over-drift spin, boost kicks that bleed off, wall hits that cost speed by impact, mass-based bumps, falls and recovery | Hand-tuned arcade solver, no bit-for-bit physics match |
 | Race validation | Twelve sequential gates per lap, reverse-crossing rejection, split times, finish ordering | Newly authored track layouts and gate locations |
 | Racers | Eight distinct handmade low-poly character/vehicle models a skinned, textured Bahamut who flies on his own wings and a skinned Cloud on the Hardy-Daytona, with driving stats balanced against the original's top speeds (84 to 88 MPH), and hit, cast, overtake, win and lose reactions | No ripped meshes, original animations or textures; simplified silhouettes |
-| Inventory | Three stones trailing behind the racer, LIFO use, matching stones merged into one stack up to level three with every stone still taking a place, theft by driving into a trailing stack | Numeric timing and some defensive interactions are interpretations |
+| Inventory | Three stones rolling on the road behind the racer, blinking to show a stack's level, LIFO use, matching stones merged into one stack up to level three with every stone still taking a place, theft by driving into a trailing stack | Numeric timing and some defensive interactions are interpretations |
 | Magic | All eight main spell families, per-course stone sets from the original's Story chapters in fixed-colour lanes, position-weighted "?" stones, targeting by race progress, the original's three hit tiers with a 2.5 s safe window, single-target Mini in 25% steps, Doom transfer, and CPU casting habits per character | Cid's Test Track has Moogle Forest's stones, where the original's first course had none. Durations are hand-tuned; no original effect assets |
 | Abilities | Dash, Flap, Grip-Up, Mug, Magic Plus, Barrier, Receive and Charge with the original's recharge times; each racer defaults to its own, and the player can choose another | Magic Plus recharges in 20 s and Charge in 14 s, both measured in all-CPU races. Dash lasts 2 s and Charge 1 s, shorter than the original, because boosts are worth more with this grip model. Barrier is a timed 4 s shield |
 | Race classes | Chocobo, Behemoth and Bahamut Class set CPU pace, cornering, brake taps, hazard misreads and shortcut use; Bahamut also makes every racer 10% faster. Mild catch-up keyed on the leading human | Every class is available from the start |
@@ -44,7 +44,7 @@ Not implemented: Story, Relay, secret characters other than Bahamut and Cloud, t
 
 Bahamut follows the PS1 in-game model, checked side by side against footage of the original (a Bahamut race on Cid's Test Track and the Fantasia cutscenes), not the CG art.
 He has no vehicle and flies on his own wings: membranes navy on top, as the race view from behind shows, and maroon underneath, as the cutscene front view shows, a blue head with a heavy brow, small eyes and short upswept horns, a green plated chest, blue thigh plates and upper arms, mint shins, feet and arm undersides, yellow claws and a tail that hangs between his legs.
-The blue orb often seen under him in the original's race view is his held Magic Stone, which changes colour with the stone and is absent when he holds none; this remake trails held stones behind every racer instead.
+The blue orb often seen under him in the original's race view is his held Magic Stone, which changes colour with the stone and is absent when he holds none; see Magic Stones below for how this remake shows held stones.
 
 Deliberate deviations, kept for balance or because the remake lacks the original's modes:
 
@@ -54,7 +54,7 @@ Deliberate deviations, kept for balance or because the remake lacks the original
 | Megaflare is a hard crash | Every rival is thrown into the air with the heavy-crash reaction but stalls for the 1.6 s crash time, not the 2.4 s heavy crash | Same balance runs: the heavy crash kept him above a third of wins even with a 100 s charge |
 | The first flare shots always miss | A fixed 1.5 s of falling warning shots before the strike | Gives the same warning without random misses in the deterministic simulation |
 | Unlocked by finishing Story Mode | Available from the start | This remake has no Story Mode |
-| Held stones float under him | Held stones trail behind him like every racer | The remake's shared stone-stealing rule depends on stones trailing |
+| Held stones float under him | Held stones roll on the road just behind him like every racer | See Magic Stones below |
 
 ## Cloud
 
@@ -99,6 +99,63 @@ Deliberate deviations:
 | Flap spreads big glowing pink and white feathered wings around him | The shared Flap effect (feather shards and the lift) is unchanged, and his own bat wings beat fast | The ability's effect is shared and stays as it was; only his model changed |
 | No win or lose animation is seen in a race | On the podium he waves both paws and calls out with little hops; otherwise he lets go of the bars and droops | Every racer here acts out win and lose reactions |
 | The scooter's motor is unknown | No exhaust smoke; boost flames leave the foot of the batteries | A battery scooter has no engine smoke |
+
+## Golem
+
+Golem follows the PS1 in-game model, checked side by side against a Grand Prix played as him (chase view, racer select turn, podium) and the Story Mode Chapter 3 cutscenes, not the CG art.
+The Rockin' Roller V8 is a small blue 4WD jeep, as the manual says ("4WD jeep"), even though its name suggests a road roller: a blue tub, a teal front face with round yellow headlights and five grille slots, a silver bumper, blue arches over the front wheels, four big black knobbly tyres, a light grey seat back, orange tail lights and two exhaust stacks at the back.
+The front wheels steer on their own knuckles.
+Golem is built from separate rounded boulders of rough grey-brown stone: a tall block head under a thick brim that overhangs a black face with two angry yellow eyes, huge round shoulder boulders whose tops sit level with his eyes, long rocky arms and big fists on the steering wheel, with red wristbands studded with white spikes.
+His Win clip, one fist punched up and the other arm thrown out, is the pose he strikes on the podium and in the racer select screen.
+His stone was matched region by region, by measuring lightness and hue in the PS1 frames and in the remake's under the game's lighting. In the chase view the original's shoulders measure about 53% lightness, the back 23% to 32% and the back of the head, a dark brown block, 16% to 19%; the remake measures 43% to 45%, 38% and 17%. In the racer select screen the original's shoulders measure 49% to 53% and its head top 43%, and on the podium its body measures 50%, its arms 36% and its head top 27%; the remake's menu view measures 46% for the shoulders and 30% for the head, so the head reads clearly darker than the shoulders from every side.
+The stone is painted rough: lighter and darker faces split by thin dark cracks, with blotches and speckles, and no extra geometry.
+His roster colour follows the model's stone.
+
+| Deviation | Original | Remake |
+| --- | --- | --- |
+| Rear of the jeep | The low-resolution chase view shows a dark tailgate framed in blue, a pale bar on top and two orange shapes with copper pipes at its corners | A dark tailgate with a pale plate, a light grey seat back, orange tail lights and two exhaust stacks with copper tips, which also carry the boost flames |
+| Wheel hubs | Grey in the game, orange in the CG ending | Grey |
+
+## Magic Stones
+
+The stones follow footage of the original on six courses (Moogle Forest, Floating Gardens, Gingerbread Land, Vulcan-O Valley, The Black Manor and Fantasia), read frame by frame where stones are passed and picked up.
+In the original every stone is an opaque, glossy low-poly ball in one body colour, with a large flat symbol painted on the side facing the camera.
+The symbol rocks gently from side to side; the ball neither spins nor bobs much, and it floats about half its diameter over the road above a soft dark blob shadow.
+The remake draws the same thing: a toon-shaded ball with a three-band light from the upper left, a crisp white highlight, a darker rim and the symbol as an anti-aliased distance field, so it stays sharp at any distance.
+
+| Stone | Original | Remake |
+| --- | --- | --- |
+| "?" | Black ball, thick yellow question mark | Same |
+| Fire | Red ball, orange flame with a yellow-white core | Same |
+| Ice | Milky lavender ball, faintly see-through, navy eight-pointed snowflake | Same, at 90% opacity |
+| Thunder | Green ball, yellow lightning bolt | Same |
+| Haste | Turquoise ball, pink upward arrow | Same |
+| Mini | Deep blue ball, two-tone cyan arrowhead pointing right | Same |
+| Reflect | Magenta-pink ball, glowing violet disc with a white arrow bouncing off it | Same |
+| Doom | Dusty rose ball, grey-white skull | Same |
+| Ultima | Not seen clearly in any footage; the manual calls it white | White ball, violet four-pointed star with a gold heart |
+
+Haste and Mini are told apart by what happens on use: in a Vulcan-O Valley race, casting the turquoise arrow stone gives a speed burst to about 120 MPH, and the manual names Haste turquoise and Mini purple. A Moogle Forest Grand Prix race shows the blue arrowhead stone, so Grand Prix stone sets may differ from the Story sets.
+
+On pickup the held stone appears at once, and the track stone turns into a bright additive smear of its own colours that swells and fades within about five frames.
+The remake bursts the stone the same way over 0.22 s and drops the earlier star sparkles.
+In the original a taken stone leaves an empty slot, and the slot is full again by the next lap, sometimes with a different kind. The refill itself is never on screen; the remake keeps its fixed kinds and 3.5 s respawn and grows the stone back in over 0.25 s.
+Held stones in the original roll on the road in a short chain right behind the racer's rear wheels, about half a track stone across, symbol facing the camera.
+The manual says a stack "will flash" to show its level, and one FAQ says level two "will start to blink" and level three "will start to blink rapidly"; the footage shows held stones blinking to black.
+In 30 fps captures a held stone alternates with black every frame for bursts of two to three seconds; footage does not separate the levels. The remake blinks level two four times a second and level three eight times a second, steadily, so the level is always readable.
+The original HUD shows no held-stone icons; the remake keeps its MAGIC slots, now drawn from the same stone model.
+
+Deliberate deviations:
+
+| Original | Remake | Reason |
+| --- | --- | --- |
+| Held stones sit right under and behind the rear wheels | Held stones roll on the road 2.1 m behind the racer's centre, then every 1.3 m, scaled by racer size | The simulation places stacks there and a rival steals one by driving into it; moving them would change gameplay. Drawn small and at road level, they read like the original's chain |
+| Rows hold five stones on the roads seen in footage | Rows keep three to five lanes per course | Lane counts are gameplay layout, outside this visual pass |
+| Ultima's look is unknown | White ball with a violet star | No clear frame of an Ultima stone was found |
+| Symbols are low-resolution textures | Symbols are drawn per pixel | Crisp at phone and desktop resolutions |
+| Slots refill within a lap, possibly with another kind; held stacks blink in bursts | Fixed kinds, 3.5 s respawn, steady 4 and 8 blinks a second | Keeps the existing simulation; a steady blink always shows the level |
+
+All track stones draw in three instanced draw calls (stones, shadows and pickup bursts, the last only while a burst plays) and every racer's held stones in one more.
 
 ## Goblin
 

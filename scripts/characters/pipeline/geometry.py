@@ -345,7 +345,5 @@ def box(
     along: int = 1,
     up_hint: Vec = (0, 0, 1),
 ) -> Part:
-    """A flat-ended rounded box from `start` to `end`, the width across and the height toward `up_hint`, which must not
-    run along the box (an upright post needs a horizontal hint)."""
-    profile = superellipse(lambda t: half_width, lambda t: half_height, power)
-    return flat(loft(name, skin, [start, end], profile, around, along, up_hint), around)
+    """A flat-ended rounded box from `start` to `end`, the width across and the height toward `up_hint`."""
+    return flat(loft(name, skin, [start, end], superellipse(lambda t: half_width, lambda t: half_height, power), around, along, up_hint), around)
