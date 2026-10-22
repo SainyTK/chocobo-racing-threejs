@@ -89,7 +89,7 @@ function clearSpot(kit: Kit, s: number, side: number, min: number, max: number, 
 }
 
 /** An Esper on its floating pedestal, turned to face the road, with a shaft of its colour falling on it. */
-function enshrine(kit: Kit, key: string, figure: (r: Rng) => Parts, s: number, side: number, o: { radius: number; min?: number; lift?: number; scale?: number; light?: string; crystal: string }) {
+function enshrine(kit: Kit, key: string, figure: (r: Rng) => Parts, s: number, side: number, o: { radius: number; lift?: number; scale?: number; light?: string; crystal: string }) {
   const off = clearSpot(kit, s, side, kit.w + o.radius + 6, kit.w + o.radius + 40, o.radius); if (off === null) return false;
   const p = kit.at(s, off), y = p.y + (o.lift ?? 0), yaw = p.yaw + (off > 0 ? -Math.PI / 2 : Math.PI / 2);
   kit.place(kit.prop(`${key} pedestal`, rr => pedestal(rr, o.radius, o.crystal)), p.x, y, p.z, { yaw: kit.r() * 6 });
@@ -192,17 +192,17 @@ export const fantasia: CourseArt = {
     }
     // Cavern walls: great rock masses rising from the void around the course, close enough to close in the view.
     kit.scatter(90, w + 30, 90, (x, z, d) => {
-      const y = kit.road(x, z).y, size = Math.min(d - w - 10, 30) * r.range(.6, 1);
+      const y = kit.road(x, z).y, size = Math.min(d - w - 18, 26) * r.range(.6, 1);
       kit.place(kit.prop('cave wall', rr => new Parts().add(rock([1, 1, 1], [0, 0, 0], rr() * 9), (_x, yy, _z, out) => out.set(C.rockDark).lerp(new THREE.Color('#2c4a66'), Math.max(0, yy) * .6), { flat: true, ao: false }), r.int(0, 5)), x, y - 8, z, { yaw: r() * 6, scale: [size, r.range(30, 60), size] });
     });
     kit.scatter(70, w + 50, 190, (x, z) => {
       const y = kit.road(x, z).y, h = r.range(50, 110);
       kit.place(kit.prop('spire', rr => new Parts().add(rock([1, 1, 1], [0, 0, 0], rr() * 9), grad(C.rockDeep, C.rockDark, -.8, .8), { flat: true, ao: false }), r.int(0, 4)), x, y - 30 + h * .3, z, { yaw: r() * 6, scale: [r.range(5, 11), h, r.range(5, 11)] });
     });
-    // Stalactites hanging from the cavern roof over the whole course, and crystal glints high in the dark.
-    kit.scatter(140, 0, 220, (x, z) => {
+    // Stalactites hanging from the cavern roof over the void beside the road, where their shadows never fall on it, and crystal glints high in the dark.
+    kit.scatter(140, w + 26, 220, (x, z) => {
       const y = kit.road(x, z).y + r.range(48, 80);
-      kit.place(kit.prop('stalactite', rr => new Parts().add(xf(new THREE.ConeGeometry(1, 1, 7), [0, -.5, 0], [Math.PI, 0, 0]), grad(C.rockLight, C.rockDark, -1, 0), { flat: true, ao: false }), r.int(0, 3)), x, y, z, { scale: [r.range(2.5, 6), r.range(14, 34), r.range(2.5, 6)], yaw: r() * 6 });
+      kit.place(kit.prop('stalactite', () => new Parts().add(xf(new THREE.ConeGeometry(1, 1, 7), [0, -.5, 0], [Math.PI, 0, 0]), grad(C.rockLight, C.rockDark, -1, 0), { flat: true, ao: false })), x, y, z, { scale: [r.range(2.5, 6), r.range(14, 34), r.range(2.5, 6)], yaw: r() * 6 });
     });
     kit.scatter(360, 0, 300, (x, z) => kit.place(kit.prop('glint', () => new Parts().add(xf(new THREE.OctahedronGeometry(.6)), C.teal, { layer: 'glow', ao: false })), x, kit.road(x, z).y + r.range(40, 90), z, { yaw: r() * 6 }));
     // Ramuh's fireworks: sparks circling above the semicircle, where the bolts strike.

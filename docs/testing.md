@@ -174,3 +174,22 @@ Bugs found and fixed during the pass:
 - `tests/tunnel.test.ts` gave up after 1 s while the server was still starting under load. It now waits for the readiness line as an event.
 
 Not covered: no real phone or iPad was used, character barks were measured for level but not judged by ear, and Firefox was not tested.
+
+## Fantasia, the Bahamut stage (2026-10-22)
+
+Fantasia was added as the ninth course, as described in [docs/fantasia.md](fantasia.md).
+
+- `npx tsc --noEmit` passes, and `npx vitest run` passes 207 tests in 12 files, including the bend-fold, gimmick, shortcut, stage-budget and road-clearance checks for Fantasia.
+- The Studio music browser tests (`tests/studio-music.browser.ts`) and `tests/audio.e2e.ts` pass with Fantasia's score.
+- Headless all-CPU races on Fantasia, 6 seeds x 3 laps per class, finished every race with no stuck racers.
+  There were 0, 1 and 1 falls on Chocobo, Behemoth and Bahamut Class, all on the railless walkway shortcut, and no falls on the main road.
+  Mean finish times were 206 s, 191 s and 173 s.
+- The course was checked in the Studio with headless Chrome: aerial, start, six trackside sections, every gimmick view, the prop sheet, and a race-camera lap captured every 100 m by stepping the page clock frame by frame.
+- Course selection and a race start were checked in the game.
+
+Bugs found and fixed:
+
+- The checkered start line rendered solid white on every course: world geometry is painted one colour per part, so the per-square colours were overwritten. Light and dark squares are now separate parts.
+- The course selector read "COURSE n / 8" and its arrows wrapped at eight courses. Both now follow the course list.
+
+Not covered: no full keyboard play-through of Fantasia, and no real phone.

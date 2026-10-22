@@ -23,6 +23,7 @@ The revision changes every score's non-bass musical events, not only its title o
 | gardens | Wind above the trellises | Mysidian Floating Gardens, OST 22 | 148 | 51.9 s | Lyrical synth lead, minor-key bridge, flute/pluck answers and light brisk drums. |
 | gingerbread | Cookie tin cabaret | Gingerbread Land, OST 23 | 156 | 49.2 s | Piano/brass exchanges, 2:1 swing, quarter-note walking bass and offbeat piano chords. |
 | volcano | Under the caldera | Vulcan-O Valley, OST 24 | 180 | 42.7 s | Minor-key guitar riffs, synth/brass answers, bass sixteenth bursts, phrase crescendos and snare fills. |
+| fantasia | The last trial of Fantasia | Fantasia, OST 25 | 168 | 45.7 s | Written after the revision for the new course: a D-minor brass line over organ and string stabs and a galloping bass. It has no previous composition. |
 
 ## Playback
 

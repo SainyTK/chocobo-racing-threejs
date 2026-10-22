@@ -43,7 +43,7 @@ Open http://localhost:3000.
 - Versus: one-on-one racing against a selected CPU rival.
 - Online: private six-player rooms. Empty positions use CPU racers. Share the six-character code or invite link.
 
-Choose among eight racers and eight courses. Each racer starts with its own ability, and you can pick any other ability for yourself. CPU racers always use their own. Lap count is configurable from one to three. Grand Prix starts on your selected course and continues through the next three in course order.
+Choose among eight racers and nine courses. Each racer starts with its own ability, and you can pick any other ability for yourself. CPU racers always use their own. Lap count is configurable from one to three. Grand Prix starts on your selected course and continues through the next three in course order.
 
 The CLASS setting sets the challenge for Quick Race, Grand Prix, Versus and online rooms.
 Chocobo Class has relaxed rivals who misread hazards and rarely take shortcuts.
@@ -100,8 +100,9 @@ A held key overrides touch steering.
 Stones lie on the road in rows of three or four coloured lanes, and each colour is one spell, so steer into the colour you want.
 Each course uses the stone set the original introduced in its Story chapter.
 Cid's Test Track and Moogle Forest have only Haste and "?" stones, The Ancient Gate adds Fire, and each later course adds one more: Ice, Thunder, Mini, Reflect and Doom.
+Fantasia, the Bahamut stage, lays every type, and it is the only course with Ultima stones on the road.
 A black "?" stone, a dark orb with a white question mark as in the original, rolls a random spell.
-Racers in the back half of the field get stronger random spells, and only they can roll Ultima.
+Racers in the back half of the field get stronger random spells, and only they can roll Ultima from one.
 A taken stone comes back after 3.5 s.
 
 You hold up to three stones, trailing in a line behind your racer.
@@ -160,7 +161,7 @@ Mud and goo slow you down, and ice, oil and icing make you slide.
 Timed hazards show a pulsing striped mark on the road before they strike, and a hit crashes you like a spell.
 Ramps throw racers into the air, and a racer more than 2.6 m up clears any hazard.
 Shortcuts leave the road at a shallow angle, turn evenly and rejoin at the same angle, and the road wall opens 12 m before each mouth.
-A clean line through one gains roughly 0.6 to 1.7 s.
+A clean line through one gains roughly 0.6 to 1.7 s; Fantasia's walkway gains 4 to 5 s, with no railings and a sharp turn in.
 
 | Course | Gimmicks |
 | --- | --- |
@@ -172,8 +173,10 @@ A clean line through one gains roughly 0.6 to 1.7 s.
 | Floating Gardens | A ramp over a 13 m gap between islands, a railless sky-bridge shortcut, an ice slick on the hairpin |
 | Gingerbread Land | A slippery syrup shortcut after the first right turn with a lone "?" stone halfway along, a candy ramp, giant cutlery stuck in the road, an icing slick after the tunnel |
 | Vulcan-O Valley | Four falling boulders on the racing line with shadow warnings, three lava geysers at the edges of bends |
+| Fantasia | Pits on both sides with a railing on one side at most, switching sides through Leviathan's coils; a railless blue-lit walkway that skips the far-left spike; a walled tunnel; two of Ramuh's lightning bolts striking the edges of the semicircle; rolling hills before the last turns |
 
 Leaving a cliff edge, a sky bridge or landing in a gap is a fall.
+On Fantasia, where the course hangs over the void, a railing stops you like a wall, and every edge without one is a drop.
 The Floating Gardens ramp always carries a racer over the gap; only a spell hit in mid-air drops a racer in.
 A rescue just before a gap restarts the racer with a run-up.
 The tightest hairpins are eased slightly at the apex, so the road's inside edge never folds over itself, and standings, lap crossings and finish times stay correct for a racer on the inside line.
@@ -198,7 +201,7 @@ Local menus pause the race. Online rooms continue running. Disconnected online r
 
 ### Music
 
-Each of the eight courses has its own newly composed, multi-part synthesized music loop inspired by the 1999 soundtrack's course themes. Menus use a separate tune. Local race pauses stop the music; online race menus do not pause it. The sound toggle controls music, effects and engines.
+Each of the nine courses has its own newly composed, multi-part synthesized music loop inspired by the 1999 soundtrack's course themes. Menus use a separate tune. Local race pauses stop the music; online race menus do not pause it. The sound toggle controls music, effects and engines.
 
 Sound effects are synthesized too.
 Each vehicle has its own engine hum, and you also hear the nearest rival's engine.
@@ -256,7 +259,7 @@ npm run studio
 It opens http://localhost:5180 with its own Vite server, separate from the game server.
 The production build does not include it.
 
-To listen without opening the game, search for `music` or scroll to the Music category. Select one of the eight courses or Menu music, then press **Play music**. Each has a **Revised composition** used in the game and a **Previous composition** for before/after review. Choose the variant or press **All variants** to compare them in separate panes. Both versions use the updated instruments, so this compares the composition, not the old synthesizer sound.
+To listen without opening the game, search for `music` or scroll to the Music category. Select one of the courses or Menu music, then press **Play music**. The menu and the original eight courses each have a **Revised composition** used in the game and a **Previous composition** for before/after review; Fantasia, written after the revision, has only its composition. Choose the variant or press **All variants** to compare them in separate panes. Both versions use the updated instruments, so this compares the composition, not the old synthesizer sound.
 
 Each preview shows the 1999 Chocobo Racing reference track, arranging notes, composition title, tempo, loop length and playback progress, with pause, restart and volume controls. The scores remain newly authored, not copies of the reference recordings. Only the active comparison pane plays audio. Switching to a non-music element stops playback. The toolbar's Pause and Restart also control music; animation speed does not change its tempo. Shared links and page reloads never autoplay. See the [revision brief and sources](docs/music-revision-brief.md).
 
@@ -286,7 +289,7 @@ Each course's look lives in one file under `src/gfx/stage/courses/`: its sky, fo
 `src/gfx/stage/kit.ts` collects props in world space and merges them per 128 m chunk and material layer, so the camera culls whole sections and a course draws in a few hundred calls.
 Props are authored as `Parts`: geometry painted per vertex with baked ambient occlusion, on a solid, wind-swayed foliage or glowing layer.
 Small dressing marked `detail` disappears on Low quality.
-The gimmicks themselves (pads, patches, ramps, gaps, shortcuts and hazards) are simulation data in `shared/track/layouts/`, so the server, client prediction and renderer all read the same layout. Each course file dresses them with matching models.
+The gimmicks themselves (pads, patches, ramps, gaps, railings, shortcuts and hazards) are simulation data in `shared/track/layouts/`, so the server, client prediction and renderer all read the same layout. Each course file dresses them with matching models.
 
 `npx tsx tests/stage-report.ts [ids] [--props]` prints build time and triangle counts per course, and with `--props` the cost of every catalog prop.
 `tests/stage.test.ts` builds every course headless and checks budgets, disposal, Low-quality detail hiding, and that nothing stands on the road or a shortcut between the surface and 9 m overhead, where the chase camera rides. Moving hazard parts are skipped, since they enter the racing line on purpose.
@@ -358,17 +361,17 @@ npx playwright install webkit
 node tests/compatibility-smoke.mjs
 ```
 
-Browser tests drive complete races by reading cloned telemetry and sending keyboard or touch events. They do not set racer positions, call simulation functions or accelerate the game clock. The full suite includes all eight courses, four Grand Prix rounds, saved ghosts, mobile controls and two-client multiplayer.
+Browser tests drive complete races by reading cloned telemetry and sending keyboard or touch events. They do not set racer positions, call simulation functions or accelerate the game clock. The full suite includes every course, four Grand Prix rounds, saved ghosts, mobile controls and two-client multiplayer.
 
 Reports are in `output/playwright-report/`; screenshots are in `output/testing/` with a `v2-` prefix. Vite ignores generated reports so tests do not reload other live races. `docs/testing.md` records completed validation and limitations.
 
 ## Code
 
 - `shared/math.ts`: clamp, modulo and angle helpers shared by the simulation and the client.
-- `shared/track/`: eight closed circuits (`tracks.ts`), road sampling and world-to-road projection (`sampling.ts`), and placed stones and boost pads (`objects.ts`).
-  `layouts/` holds one gimmick layout per course: pads, surface patches, ramps, gaps, shortcuts and timed hazards.
+- `shared/track/`: nine closed circuits (`tracks.ts`), road sampling and world-to-road projection (`sampling.ts`), and placed stones and boost pads (`objects.ts`).
+  `layouts/` holds one gimmick layout per course: pads, surface patches, ramps, gaps, railings, shortcuts and timed hazards.
   `stone-layouts.ts` lists each course's stone fields and `stone-placement.ts` places them.
-  `shortcuts.ts` builds shortcut centre lines, `route.ts` decides whether a racer is on the road or a shortcut, `hazards.ts` gives each timed hazard's state from race time, and `surface.ts` answers patch, ramp and gap queries.
+  `shortcuts.ts` builds shortcut centre lines, `route.ts` decides whether a racer is on the road or a shortcut, `hazards.ts` gives each timed hazard's state from race time, and `surface.ts` answers patch, ramp, gap and railing queries.
 - `shared/game/`: 60 Hz free driving, bots, spells, abilities, collisions and validated laps.
   Settings and data live in `constants.ts`, `handling.ts` (driving tuning and the grip limit), `difficulty.ts` (race classes), `abilities.ts`, `spells.ts` (hit tiers and spell timings), `items.ts` and `racers.ts`.
   Race setup is in `setup.ts`, the inventory in `inventory.ts`, spell targets in `targeting.ts`, spell hits in `combat.ts`, item and ability use in `actions.ts`, jumps in `air.ts` and ground grip in `traction.ts`.
@@ -386,7 +389,7 @@ Reports are in `output/playwright-report/`; screenshots are in `output/testing/`
 - `src/gfx/orbs/`: Magic Stone orbs. Each stone is a glass sphere with its element ray-marched inside it: a flame, a turning cluster of ice crystals, plasma-globe lightning, a speed dash with trailing spikes, a mirror ball, shrinking rings, a Doom skull in smoke, a star core and a white question mark in black smoke.
   `interiors.ts` holds one shader per stone, `glass.ts` the shell and `index.ts` builds an orb. Track pickups, held stones and HUD slots all use them. `stack.ts` wraps a held orb in its level two or three aura.
 - `src/gfx/stage/`: course scenery.
-  `course.ts` assembles a course; `kit.ts` places and merges props; `patches.ts`, `ramps.ts`, `shortcuts.ts` and `hazards.ts` draw the course gimmicks; `terrain.ts` builds the ground heightfield and textured road; `sky.ts` the sky dome and distant mountains; `liquid.ts` water, lava and cloud seas; `ambient.ts` drifting particles; `textures.ts` procedural road and ground textures; `props/` shared props; `courses/` one file per course.
+  `course.ts` assembles a course; `kit.ts` places and merges props; `patches.ts`, `ramps.ts`, `rails.ts`, `shortcuts.ts` and `hazards.ts` draw the course gimmicks; `terrain.ts` builds the ground heightfield and textured road; `sky.ts` the sky dome and distant mountains; `liquid.ts` water, lava and cloud seas; `ambient.ts` drifting particles; `textures.ts` procedural road and ground textures; `props/` shared props; `courses/` one file per course.
 - `src/gfx/pipeline.ts`: renderer settings, bloom composer and lights shared by the game and the studio.
 - `src/gfx/materials/`: toon, glow, outline, ghost, fresnel shell, crystal and ground decal materials, one per file.
 - `src/gfx/geometry/`: the geometry helpers used to sculpt the models (baked transforms, primitives, rocks and swept tubes).
@@ -398,7 +401,7 @@ Reports are in `output/playwright-report/`; screenshots are in `output/testing/`
 - `src/network.ts`: reconnects, world-space interpolation and bounded extrapolation.
 - `src/audio.ts`: Web Audio instruments, stage music scheduling, sound playback and engine loops.
 - `src/sfx/`: synthesized sound recipes, character voices and engine profiles. `src/race-audio.ts` maps race events to them.
-- `src/music/`: separate original scores for all eight courses, menu music and shared score types.
+- `src/music/`: separate original scores for all nine courses, menu music and shared score types.
 - `docs/research.md`: original-game research, sources, technology choices and fidelity limits.
 
 ## Contributing
@@ -411,6 +414,6 @@ This project's code and newly authored assets are released under the [MIT licens
 
 ## Limits
 
-This is a fan remake, not an emulator or an exact reproduction. Story, Relay, secret racers, bonus tracks, original cutscenes, custom stat editing, split-screen and the original soundtrack are not included. Course layouts and handling differ from the PlayStation game. Time Attack records live only in local storage and are grouped by course, laps and ability. Ghost saves require a race under five minutes and available browser storage.
+This is a fan remake, not an emulator or an exact reproduction. Story, Relay, secret racers, the F.F.VIII Circuit bonus track, original cutscenes, custom stat editing, split-screen and the original soundtrack are not included. Course layouts and handling differ from the PlayStation game; Fantasia follows the original map most closely, but its opening loops do not cross over themselves. See [the Fantasia notes](docs/fantasia.md). Time Attack records live only in local storage and are grouped by course, laps and ability. Ghost saves require a race under five minutes and available browser storage.
 
 Online driving uses bounded local prediction and server reconciliation. Collisions, pickups, abilities and race results remain authoritative, so network delays can still cause visual corrections. Public matchmaking, accounts and durable online leaderboards are not implemented. Keyboard and emulated touch tests do not establish physical gamepad or real-phone compatibility; test your devices with the tunnel workflow above.
