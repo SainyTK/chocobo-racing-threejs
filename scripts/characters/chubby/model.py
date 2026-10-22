@@ -76,9 +76,9 @@ BIRD = Bird(
         (1, 0.05),
     ),
     neck=0.62,
-    eye=(0.82, 0.98),
+    eye=(0.8, 1.06),
     eye_radii=(0.06, 0.17, 0.05),
-    beak=0.735,
+    beak=0.745,
     beak_size=(0.5, 0.3, 0.12),
     shoulder=0.5,
     hip=(0.55, 0.12),
@@ -211,9 +211,9 @@ def bill_parts() -> list[Part]:
     upper = loft(
         "beak",
         "beak",
-        [root + Vector(p) for p in ((0, 0.18, 0.1), (0, -0.1, 0.0), (0, -0.28, -0.1), (0, -0.38, -0.21))],
+        [root + Vector(p) for p in ((0, 0.18, 0.08), (0, -0.12, 0.0), (0, -0.3, -0.06), (0, -0.4, -0.14))],
         ellipse(
-            lambda t: 0.27 + 0.1 * math.sin(math.pi * min(1.0, t * 1.15)) ** 0.7 * (1 - max(0.0, t - 0.8) * 2.5),
+            lambda t: 0.33 + 0.1 * math.sin(math.pi * min(1.0, t * 1.15)) ** 0.7 * (1 - max(0.0, t - 0.8) * 2.5),
             lambda t: 0.16 - 0.1 * t,
             lambda t: 0.08 - 0.04 * t,
         ),
@@ -224,8 +224,8 @@ def bill_parts() -> list[Part]:
     lower = loft(
         "jaw",
         "jaw",
-        [root + Vector(p) for p in (JAW[0], (0, -0.16, -0.14), (0, -0.27, -0.22))],
-        ellipse(lambda t: 0.25 - 0.07 * t, lambda t: 0.06, lambda t: 0.08 - 0.03 * t),
+        [root + Vector(p) for p in (JAW[0], (0, -0.17, -0.1), (0, -0.3, -0.16))],
+        ellipse(lambda t: 0.29 - 0.07 * t, lambda t: 0.06, lambda t: 0.08 - 0.03 * t),
         16,
         8,
         (0, 0, 1),
@@ -238,20 +238,21 @@ def nub() -> Part:
 
 
 def flower() -> list[Part]:
-    """The pink thistle on his chest, with a white tuft above it and two green leaves."""
-    t, a = 0.5, H - 0.12
+    """The thistle on his chest: a white tuft with two green leaves, and the pink flower head hanging under it like a
+    brush, its florets pointing down."""
+    t, a = 0.53, H - 0.08
     n = normal(BIRD, t, a)
-    centre = point(BIRD, t, a) + n * 0.1
-    weights = body_weights(BIRD, t)
-    head = ellipsoid("thistle", "thistle", centre + Vector((0, 0, -0.02)), (0.16, 0.15, 0.17), axis=tuple(n), around=14, along=8)
-    parts = [head]
+    top = point(BIRD, t, a) + n * 0.08
+    head_centre = top + n * 0.06 + Vector((0, 0, -0.24))
+    weights = body_weights(BIRD, t - 0.05)
+    parts = [ellipsoid("thistle", "thistle", tuple(head_centre), (0.15, 0.17, 0.2), axis=tuple(n), around=12, along=8)]
     for k in range(7):
         f = (k - 3) / 3
-        base = centre + Vector((f * 0.1, 0, 0.08))
-        parts.append(claw(f"floret{k}", "thistle", tuple(base), (f * 0.5, -0.25, 1), 0.18 - 0.05 * abs(f), 0.05, curl=(f * 0.3, -0.4, 0), around=5))
-    parts.append(ellipsoid("tuft", "tuft", tuple(centre + Vector((-0.06, 0.02, 0.27))), (0.07, 0.1, 0.1), axis=tuple(n), around=10, along=6))
+        base = head_centre + Vector((f * 0.12, 0, -0.08))
+        parts.append(claw(f"floret{k}", "thistle", tuple(base), (f * 0.45, -0.2, -1), 0.24 - 0.06 * abs(f), 0.055, curl=(f * 0.2, -0.3, 0), around=5))
+    parts.append(ellipsoid("tuft", "tuft", tuple(top + Vector((0, 0, 0.02))), (0.08, 0.11, 0.09), axis=tuple(n), around=10, along=6))
     for s in (-1, 1):
-        parts.append(claw(f"leaf{s}", "leaf", tuple(centre + Vector((s * 0.1, 0.03, -0.1))), (s, -0.3, -0.6), 0.28, 0.06, curl=(0, -1, 0.5), around=5))
+        parts.append(claw(f"leaf{s}", "leaf", tuple(top + Vector((s * 0.08, 0.02, -0.04))), (s, -0.3, -0.4), 0.26, 0.055, curl=(0, -1, 0.3), around=5))
     for p in parts:
         p.weights = [dict(weights) for _ in p.verts]
     return parts
