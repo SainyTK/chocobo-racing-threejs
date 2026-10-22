@@ -50,7 +50,7 @@ Measured in the Studio with `createCharacter` (triangles of the body and of the 
 
 | Racer | Triangles | Outline triangles | Meshes | Texture |
 | --- | --- | --- | --- | --- |
-| Chocobo | 12,244 | 4,804 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Chocobo (the procedural model had 12,708, 7,456 and 35) |
+| Chocobo | 11,988 | 4,702 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Chocobo (the procedural model had 12,708, 7,456 and 35) |
 | Behemoth | 12,192 | 9,308 | 23 | none |
 | Chubby Chocobo | 14,768 | 10,024 | 35 | none |
 | Bahamut | 11,928 | 4,899 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Bahamut |
@@ -81,7 +81,7 @@ A new racer should stay near 12,000 body triangles and one atlas.
 npm run character -- chocobo
 ```
 
-Chocobo on the Jet-Blades CR is one skinned GLB (337 KB, 22 bones, seven clips) for the bird and both rocket skates.
+Chocobo on the Jet-Blades CR is one skinned GLB (332 KB, 22 bones, seven clips) for the bird and both rocket skates.
 It is built from two packages:
 
 - `scripts/characters/bird/` is a reusable super-deformed bird. `model.py` takes a `Bird` (proportions as spline keys along one vertical loft for the head and body, plus the eye, beak, crest, tufts, wings, tail, scarf and legs) and returns its skeleton and parts. `paint.py` makes painters from a palette, and `clips.py` has pose helpers (`wings`, `tail`, `flap`, `blink`).
