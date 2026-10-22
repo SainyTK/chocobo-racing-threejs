@@ -3,7 +3,10 @@ import { courseObjects } from '../track/objects.ts';
 import { trackLength } from '../track/sampling.ts';
 import { MAIN_ROUTE } from '../track/route.ts';
 import type { TrackStone } from '../track/types.ts';
+import { ABILITY_SECONDS } from './abilities.ts';
 import { BOT_MAGIC } from './bot-personalities.ts';
+import { boostHolds } from './bot-driving.ts';
+import { HASTE_SECONDS } from './spells.ts';
 import { aboveGround } from './combat.ts';
 import { TICK } from './constants.ts';
 import { MAX_STONES, canAddStone, heldStones, maxLevel } from './inventory.ts';
@@ -15,8 +18,6 @@ import type { Race, Racer, StoneStack } from './types.ts';
 const ATTACKS: readonly TrackStone[] = ['fire', 'ice', 'thunder', 'mini', 'ultima'];
 /** A CPU racer considers casting once per this many seconds, so it never empties its inventory in one burst. */
 const CAST_PERIOD = 1.2;
-/** Road curvature below which Haste, Dash and Charge are worth using. */
-const STRAIGHT = .013;
 
 /** Lateral position of the stone a CPU racer wants in the field ahead, or null when it wants none. */
 export function botStoneLane(r: Race, p: Racer): number | null {
@@ -38,9 +39,10 @@ export function botStoneLane(r: Race, p: Racer): number | null {
 
 const hittable = (q: Racer | undefined): q is Racer => !!q && q.invincible <= 0 && q.falling <= 0;
 /** True when casting `stack` now would reach a rival or help the caster. */
-function worthCasting(r: Race, p: Racer, stack: StoneStack, curve: number) {
+function worthCasting(r: Race, p: Racer, stack: StoneStack) {
   const { kind, level } = stack;
-  if (kind === 'haste') return curve < STRAIGHT && p.boost <= 0;
+  // Haste only where the whole boost can be held at full speed, so it is not wasted braking or sent off a bend.
+  if (kind === 'haste') return p.boost <= 0 && boostHolds(r, p, HASTE_SECONDS[level - 1]);
   if (kind === 'shield') return true;
   if (kind === 'ultima' || level === 3) { const rivals = activeRivals(r, p); return rivals.filter(hittable).length >= Math.ceil(rivals.length / 2); }
   if (kind === 'ice') { const q = racerBehind(r, p), gap = q ? raceProgress(r, p) - raceProgress(r, q) : Infinity; return hittable(q) && !aboveGround(q) && gap > 4 && gap < 50; }
@@ -63,13 +65,13 @@ function holding(r: Race, p: Racer, kind: Item, level: number) {
   if (style.hold === 'quick') return attack && trailing && level < maxLevel(kind) && !full;
   return kind === style.favourite && level < maxLevel(kind) && !full;
 }
-/** Item and ability buttons for a CPU racer. `curve` is the sharpest road curvature just ahead. */
-export function botMagic(r: Race, p: Racer, curve: number) {
+/** Item and ability buttons for a CPU racer. */
+export function botMagic(r: Race, p: Racer) {
   const top = p.stones.at(-1), i = r.racers.indexOf(p), phase = i * .37;
   const decide = Math.floor(r.time / CAST_PERIOD + phase) !== Math.floor((r.time - TICK) / CAST_PERIOD + phase);
   // A full leader with no use for its latest stack spends it to make room.
-  const item = !!top && !p.lastItem && decide && !holding(r, p, top.kind, top.level) && (worthCasting(r, p, top, curve) || heldStones(p) >= MAX_STONES && !racerAhead(r, p));
+  const item = !!top && !p.lastItem && decide && !holding(r, p, top.kind, top.level) && (worthCasting(r, p, top) || heldStones(p) >= MAX_STONES && !racerAhead(r, p));
   const id = p.abilityId, ready = p.ability >= 100 && !p.lastAbility;
-  const ability = ready && (id === 'dash' || id === 'charge' ? curve < STRAIGHT : id === 'mug' ? canAddStone(p) : id === 'flap' || id === 'grip');
+  const ability = ready && (id === 'dash' || id === 'charge' ? p.boost <= 0 && boostHolds(r, p, ABILITY_SECONDS[id]) : id === 'mug' ? canAddStone(p) : id === 'flap' || id === 'grip');
   return { item, ability };
 }

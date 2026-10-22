@@ -24,6 +24,9 @@ export function rampAt(id: TrackId, s: number, x: number): { ramp: Ramp; height:
 /** True over a chasm in the course. */
 export function inGap(id: TrackId, s: number) { return courseLayout(id).gaps.some(g => { const a = along(id, g.s, s); return a >= 0 && a <= g.length; }); }
 
+/** The gap a ramp leads over: one starting within 10 m of its lip, if any. */
+export function gapBeyond(id: TrackId, ramp: Ramp) { return courseLayout(id).gaps.find(g => Math.abs(along(id, ramp.s, g.s)) < 10); }
+
 /** Run-up a racer needs from a standstill to clear a gap. */
 const RUN_UP = 75;
 /** Moves a restart point back before any gap it would leave too short a run-up for, so a rescued racer can always make the jump. */

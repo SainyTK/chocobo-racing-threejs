@@ -62,9 +62,14 @@ describe('course gimmicks in the simulation', () => {
     drive(r, 4, () => { top = Math.max(top, p.alt); return pointAt('test', p.s + 20, ramp.x); });
     expect(top).toBeGreaterThan(ramp.height + .5); expect(p.alt).toBe(0); expect(p.vy).toBe(0); expect(p.falling).toBe(0);
   });
-  it('a racer too slow to clear a gap falls in, and is rescued with a run-up', () => {
+  it('the ramp before a gap throws even a crawling racer clear of it', () => {
     const r = solo('gardens'), p = r.racers[0], gap = courseLayout('gardens').gaps[0];
-    placeRacer('gardens', p, gap.s - 6, 0); p.input = { ...neutralInput(), throttle: true }; tick(r, 1);
+    placeRacer('gardens', p, gap.s - 6, 0); p.input = { ...neutralInput(), throttle: true }; tick(r, 1.5);
+    expect(r.events.some(e => e.type === 'fall')).toBe(false); expect(p.s).toBeGreaterThan(gap.s + gap.length);
+  });
+  it('a racer that comes down inside a gap falls in, and is rescued with a run-up', () => {
+    const r = solo('gardens'), p = r.racers[0], gap = courseLayout('gardens').gaps[0];
+    placeRacer('gardens', p, gap.s + 4, 0); p.alt = 1; p.vy = -1; p.input = { ...neutralInput(), throttle: true }; tick(r, 1);
     expect(r.events.some(e => e.type === 'fall')).toBe(true);
     tick(r, 1.5); expect(p.s).toBeLessThan(gap.s - 60);
   });

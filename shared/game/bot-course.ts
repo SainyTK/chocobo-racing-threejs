@@ -5,7 +5,7 @@ import { courseLayout } from '../track/layouts/index.ts';
 import { hazardState } from '../track/hazards.ts';
 import { shortcutPaths, shortcutPoint, type ShortcutPath } from '../track/shortcuts.ts';
 import { MAIN_ROUTE, routePoint } from '../track/route.ts';
-import { along } from '../track/surface.ts';
+import { along, gapBeyond } from '../track/surface.ts';
 import type { Hazard, TrackPoint } from '../track/types.ts';
 import { DIFFICULTIES } from './difficulty.ts';
 import type { Race, Racer } from './types.ts';
@@ -15,6 +15,9 @@ export interface CourseLine { target: Pick<TrackPoint, 'x' | 'z'>; limit: number
 
 /** A cheap deterministic coin, so CPU choices differ per racer and lap but replay identically. */
 const coin = (a: number, b: number, c: number) => mod(Math.sin(a * 12.9898 + b * 78.233 + c * 37.719) * 43758.5453, 1);
+
+/** Metres a CPU racer keeps between its lane and a hazard's edge: room for its own width and for running a little wide. */
+const BERTH = 2.2;
 
 /** Whether a hazard is live in lane `x` around `time`. A crossing hazard closes the whole road while it runs, like a level crossing. */
 function dangerous(h: Hazard, time: number, x: number, margin: number) {
@@ -34,7 +37,7 @@ function clearLane(r: Race, p: Racer, i: number, lane: number) {
   const muddy = (x: number) => layout.patches.some(patch => ahead(patch.s + patch.length / 2, -patch.length / 2, 40 + patch.length / 2) && Math.abs(x - patch.x) < patch.width / 2 + 1.2);
   // Each CPU racer misreads some hazards each lap, more on easier classes, so they still get caught now and then.
   const watched = layout.hazards.filter((h, k) => ahead(h.s, -2, 60) && coin(i, k, p.lap) >= DIFFICULTIES[r.difficulty].cpuMisread);
-  const struck = (x: number, within: number, list: Hazard[]) => list.some(h => ahead(h.s, -2, within) && dangerous(h, r.time + Math.max(0, along(r.track, p.routeS, h.s)) / speed, x, 1.6));
+  const struck = (x: number, within: number, list: Hazard[]) => list.some(h => ahead(h.s, -2, within) && dangerous(h, r.time + Math.max(0, along(r.track, p.routeS, h.s)) / speed, x, BERTH));
   const dodged = watched.filter(h => h.motion !== 'cross'), held = dodged.filter(h => h.motion !== 'sweep'), crossing = watched.filter(h => h.motion === 'cross');
   const free = lanes.find(x => !struck(x, 60, dodged) && !muddy(x)) ?? lanes.find(x => !struck(x, 60, dodged));
   // Waiting starts about a second out, early enough to brake from racing speed.
@@ -77,7 +80,7 @@ export function courseLine(r: Race, p: Racer, lane: number, look: number): Cours
     if (to > 8) return { target: routePoint(r.track, MAIN_ROUTE, p.routeS + look, path.shortcut.side * (TRACKS[r.track].width - 1.2)), limit: to < Math.max(18, (p.speed * p.speed - 900) / 50 + 10) ? 30 : Infinity, shortcut: false };
     return { target: shortcutPoint(path, clamp((look - to) / path.skipped, .2, 1), 0), limit: 30, shortcut: false };
   }
-  const gapRamp = layout.ramps.find(ramp => layout.gaps.some(g => Math.abs(along(r.track, ramp.s, g.s)) < 10) && along(r.track, p.routeS, ramp.s) > -2 && along(r.track, p.routeS, ramp.s) < 70);
+  const gapRamp = layout.ramps.find(ramp => gapBeyond(r.track, ramp) && along(r.track, p.routeS, ramp.s) > -2 && along(r.track, p.routeS, ramp.s) < 70);
   const line = gapRamp ? { lane: gapRamp.x, limit: Infinity } : clearLane(r, p, i, lane);
   return { target: routePoint(r.track, MAIN_ROUTE, p.routeS + look, clamp(line.lane, -TRACKS[r.track].width + 1, TRACKS[r.track].width - 1)), limit: line.limit, shortcut: false };
 }

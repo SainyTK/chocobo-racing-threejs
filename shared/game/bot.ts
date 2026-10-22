@@ -1,5 +1,5 @@
 import { TRACKS } from '../track/tracks.ts';
-import { pointAt, trackLength } from '../track/sampling.ts';
+import { trackLength } from '../track/sampling.ts';
 import { botDriving, botLook } from './bot-driving.ts';
 import { botMagic, botStoneLane } from './bot-magic.ts';
 import { courseLine } from './bot-course.ts';
@@ -15,6 +15,5 @@ export function botInput(r: Race, p: Racer): Input {
   // A timed hazard ahead can hold the CPU back below its cornering speed until it stops striking.
   // Cornering plans read the main road's bends; a shortcut is a near-straight line, so on one only the course line's limit applies.
   const hold = p.speed > line.limit, brake = line.shortcut ? hold : drive.brake || hold;
-  const curve = line.shortcut ? 0 : Math.max(...[12, 25, 40].map(d => Math.abs(pointAt(r.track, p.s + d).curve)));
-  return { ...drive, brake, throttle: line.shortcut ? !hold : drive.throttle && !hold, reverse: false, ...botMagic(r, p, curve), rescue: p.speed < 2 && r.time > 8 && Math.abs(p.x) > def.width - 2 || p.s > (p.gates + 2) * len / 12 };
+  return { ...drive, brake, throttle: line.shortcut ? !hold : drive.throttle && !hold, reverse: false, ...botMagic(r, p), rescue: p.speed < 2 && r.time > 8 && Math.abs(p.x) > def.width - 2 || p.s > (p.gates + 2) * len / 12 };
 }
