@@ -30,10 +30,10 @@ export function drawFans(batch: FlareBatch, f: RacerFrame, look: FanLook, size: 
       const length = look.length * h * reach * (1 - .4 * a / look.high) * hashIn(k + 1, .62, 1);
       const angle = s > 0 ? a : Math.PI - a;
       mid.copy(p.mid).lerp(p.tip, hash(k + 2) * .5); tip.copy(p.tip);
-      batch.screenRay(root, angle, length, h * hashIn(k + 3, .12, .19), mid, tip, alpha, .05, 1);
+      batch.screenRay(root, angle, length, h * hashIn(k + 3, .07, .11), mid, tip, alpha, .05, 1);
     }
-    // The spikes merge into a solid white core beside the racer's feet.
-    core.copy(root).addScaledVector(batch.right, s * .3 * h).addScaledVector(batch.up, .08 * h);
-    batch.glow(core, .72 * h * reach, p.root, p.mid, alpha, .75, .4, .34);
+    // The spikes merge into a small white root beside the racer's feet, which leaves the racer clear between the fans.
+    core.copy(root).addScaledVector(batch.right, s * .35 * h).addScaledVector(batch.up, .05 * h);
+    batch.glow(core, .34 * h * reach, p.root, p.mid, alpha * .55, .6, .5, .4);
   }
 }

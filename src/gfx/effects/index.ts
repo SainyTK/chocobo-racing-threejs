@@ -223,7 +223,7 @@ export class Effects {
       const blink = p.invincible > 0 && p.stun <= 0 ? (Math.sin(this.time * 40) > 0 ? .45 : 0) : 0, hit = Math.max(s.flash * .85, blink), tint = this.abilities.tint(p, tintColor);
       c.skin.flash.value = Math.max(hit, tint); c.skin.flashColor.value.copy(tint > hit ? tintColor : white);
       // Exhaust smoke while cruising. Boosts draw their spike fans in the ability effects.
-      if (live && c.smokes && p.boost <= 0 && Math.abs(p.speed) > 4) c.exhausts.forEach(ex => { if (Math.random() < .12) { ex.getWorldPosition(v); this.smoke.emit({ x: v.x, y: v.y, z: v.z, vx: -fwd.x * 2, vy: rand(.4, 1), vz: -fwd.z * 2, life: rand(.4, .7), size: .18, endSize: .7, color: '#9a958e', alpha: .3, drag: 2, shape: Shape.Smoke }); } });
+      if (live && p.boost <= 0 && Math.abs(p.speed) > 4) c.exhausts.forEach(ex => { if (Math.random() < .12) { ex.getWorldPosition(v); this.smoke.emit({ x: v.x, y: v.y, z: v.z, vx: -fwd.x * 2, vy: rand(.4, 1), vz: -fwd.z * 2, life: rand(.4, .7), size: .18, endSize: .7, color: '#9a958e', alpha: .3, drag: 2, shape: Shape.Smoke }); } });
       // Drift sparks colour-coded by spin-out risk, plus tyre smoke.
       if (live && p.drifting && Math.abs(p.speed) > 5) {
         const risk = p.drift / HANDLING.overDrift, col = risk < .45 ? '#7fd0ff' : risk < .75 ? '#ffa040' : '#ff4f8a';

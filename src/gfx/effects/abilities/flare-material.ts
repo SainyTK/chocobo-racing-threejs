@@ -23,7 +23,7 @@ void main() {
   int glyph = int(vShape.x + .5); float a; vec3 c;
   if (glyph == 0) {
     float y = vUv.y * .5 + .5, w = mix(1., vShape.z, y), x = abs(vUv.x) / max(w, .001);
-    a = (1. - smoothstep(.45, 1., x)) * smoothstep(0., .05, y) * (1. - smoothstep(.82, 1., y));
+    a = (1. - smoothstep(.72, 1., x)) * smoothstep(0., .05, y) * (1. - smoothstep(.82, 1., y));
     c = mix(vC0, vC1, smoothstep(.2, .85, y));
     c = mix(c, vec3(1.), (1. - smoothstep(0., .6, x)) * vShape.w * (1. - smoothstep(.1, .55, y)));
   } else if (glyph == 1) {
