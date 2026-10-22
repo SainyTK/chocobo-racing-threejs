@@ -213,7 +213,7 @@ def bill_parts() -> list[Part]:
         "beak",
         [root + Vector(p) for p in ((0, 0.16, 0.06), (0, -0.1, 0.0), (0, -0.25, -0.06), (0, -0.33, -0.13))],
         ellipse(
-            lambda t: 0.25 * math.sin(math.pi * (0.25 + 0.75 * t)) ** 0.5 + 0.02,
+            lambda t: 0.29 * math.sin(math.pi * (0.25 + 0.75 * t)) ** 0.5 + 0.02,
             lambda t: 0.15 - 0.08 * t,
             lambda t: 0.08 - 0.03 * t,
         ),
@@ -259,8 +259,8 @@ def flower() -> list[Part]:
 
 
 def wing_parts() -> list[Part]:
-    """A short, plump wing: a flat paddle from the shoulder that tapers to a rounded tip resting by the grip, with three
-    small scalloped feather tips. From behind it shows as a paddle sticking out at mid height."""
+    """A short, plump wing: a flat paddle from the shoulder that tapers to one rounded tip resting by the grip, with no
+    separate feathers that could read as fingers. From behind it shows as a paddle sticking out at mid height."""
 
     def half_width(t: float) -> float:
         return 0.3 - 0.15 * t**1.5
@@ -275,23 +275,7 @@ def wing_parts() -> list[Part]:
         (0, 0, 1),
     )
     along(arm, [("wing.L", 0), ("wing_tip.L", 0.62)], 0.12)
-    parts = [arm]
-    d = (HAND - WRIST).normalized()
-    side = d.cross(Vector((0, 0, 1))).normalized()
-    for k in range(3):
-        x = (k - 1) * 0.085
-        base = HAND - d * 0.08 + side * x
-        tip = loft(
-            f"wing_tip{k}",
-            "feather",
-            [base, base + d * 0.1 + side * x * 0.4 + Vector((0, 0, -0.03)), base + d * 0.16 + side * x * 0.6 + Vector((0, 0, -0.08))],
-            ellipse(lambda t: 0.06 * (1 - 0.4 * t), lambda t: 0.05 * (1 - 0.4 * t)),
-            7,
-            4,
-            (0, 0, 1),
-        )
-        parts.append(rigid(tip, "wing_tip.L"))
-    return parts + [mirror(p, p.name + ".R") for p in parts]
+    return [arm, mirror(arm, "wing.R")]
 
 
 def leg_parts() -> list[Part]:
