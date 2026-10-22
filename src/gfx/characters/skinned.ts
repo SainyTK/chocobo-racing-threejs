@@ -35,3 +35,16 @@ export function skinnedModel(r: Rig, id: ModelId, width = .032): SkinnedModel {
 export function anchor(m: SkinnedModel, bone: string, at: [number, number, number]) {
   const o = new THREE.Object3D(); m.root.add(o); o.position.set(...at); m.root.updateMatrixWorld(true); m.bone(bone).attach(o); return o;
 }
+
+/**
+ * A stand-in joint for a bone the game turns in code, such as a wheel or a fork. The shared animator turns the stand-in
+ * like a code-built racer's joint (`rotation.x` spins a wheel, `rotation.y` steers); `sync` then turns the bone by that
+ * angle about `axis`, given in model space, on top of its rest pose. Call `sync` after the mixer update.
+ */
+export function driven(m: SkinnedModel, bone: string, axis: [number, number, number], angle: 'x' | 'y') {
+  const b = m.bone(bone), rest = b.quaternion.clone(), j = new THREE.Object3D(), turn = new THREE.Quaternion();
+  m.root.updateMatrixWorld(true);
+  const toBone = m.root.getWorldQuaternion(new THREE.Quaternion()).invert().multiply(b.getWorldQuaternion(new THREE.Quaternion())).invert();
+  const local = new THREE.Vector3(...axis).normalize().applyQuaternion(toBone);
+  return { j, sync() { b.quaternion.copy(rest).multiply(turn.setFromAxisAngle(local, j.rotation[angle])); } };
+}

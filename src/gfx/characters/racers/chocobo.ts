@@ -1,39 +1,47 @@
 import * as THREE from 'three';
-import type { RacerProfile } from '../../../../shared/game/index.ts';
-import { ellipsoid, rbox, cyl, torus } from '../../geometry/primitives.ts';
-import { horn, tube } from '../../geometry/sweep.ts';
 import { damp } from '../math.ts';
+import { POSE_SECONDS } from '../poses.ts';
 import { Rig } from '../rig.ts';
-import type { Build, Wheel } from '../types.ts';
-import { bird } from '../parts/bird.ts';
-import { wheel } from '../parts/wheel.ts';
+import { anchor, driven, skinnedModel } from '../skinned.ts';
+import type { Build } from '../types.ts';
 
-export function chocobo(c: RacerProfile): Build {
-  const r = new Rig(), b = bird(r, r.joint(r.model, [0, 1.9, -.05]), c.color, c.light, false), legs: { hip: THREE.Object3D; knee: THREE.Object3D; ankle: THREE.Object3D }[] = [], wheels: Wheel[] = [], exhausts: THREE.Object3D[] = [], contacts: THREE.Object3D[] = [];
-  const leg = r.t('#f0a540'), claw = r.t('#fff3d9'), boot = r.t('#3f6fd0'), trim = r.t('#ffcf4a'), metal = r.t('#c9d1dc');
-  for (const s of [-1, 1]) {
-    const hip = r.joint(b.body, [s * .36, -.48, -.08]); r.add(hip, r.t(c.color), ellipsoid([.28, .36, .31], [0, -.1, 0]));
-    const knee = r.joint(hip, [0, -.42, .02]); r.add(knee, leg, tube([[0, 0, 0], [0, -.3, -.06], [0, -.62, 0]], .085));
-    const ankle = r.joint(knee, [0, -.64, 0]);
-    r.add(ankle, boot, rbox(.34, .26, .56, .11, [0, -.02, .08])); r.add(ankle, trim, rbox(.36, .07, .58, .03, [0, .1, .08]));
-    for (const x of [-.09, 0, .09]) r.add(ankle, claw, horn([[x, 0, .33], [x, -.03, .4], [x, -.09, .43]], .035));
-    r.add(ankle, metal, rbox(.1, .08, .74, .03, [0, -.17, .06]));
-    for (const z of [-.22, .05, .32]) wheels.push(wheel(r, ankle, [0, -.24, z], .1, .07, '#ffcf4a'));
-    r.add(ankle, metal, cyl(.075, .1, .24, [0, .02, -.26], [Math.PI / 2, 0, 0], 14)); r.add(ankle, r.g('#ffb24a', 2), torus(.07, .022, [0, .02, -.39]));
-    const ex = r.joint(ankle, [0, .02, -.42]); exhausts.push(ex); const ct = r.joint(ankle, [0, -.33, -.25]); contacts.push(ct);
-    legs.push({ hip, knee, ankle });
-  }
-  let phase = 0, flap = 0;
-  return { r, head: b.head, height: 3.5, wheels, steer: [], exhausts, contacts, outline: '#3b2a12', update(s, k) {
-    phase += s.dt * (s.menu ? 2.4 : 3 + Math.abs(s.speed) * .2); const kl = s.menu ? .2 : k;
-    legs.forEach((l, i) => { const p = phase + i * Math.PI, push = Math.max(0, Math.sin(p)); l.hip.rotation.x = -Math.cos(p) * .42 * kl; l.hip.rotation.z = (i ? 1 : -1) * push * .2 * kl; l.knee.rotation.x = (.25 + push * .45) * kl; l.ankle.rotation.x = -l.hip.rotation.x - l.knee.rotation.x * .8; });
-    b.body.position.y = Math.abs(Math.sin(phase)) * .07 * k + (s.menu ? Math.sin(s.t * 2.2) * .03 : 0);
-    b.body.rotation.z = Math.sin(phase) * .05 * k; b.body.rotation.x = .1 * k;
-    flap = damp(flap, s.flying > 0 ? 1 : 0, 6, s.dt);
-    b.wings.forEach((w, i) => { const sd = i ? 1 : -1; w.rotation.z = -sd * (.15 + flap * (.9 + Math.sin(s.t * 26) * .8) + (1 - flap) * (.12 + Math.sin(s.t * 3 + phase) * .1 + k * .35)); w.rotation.x = (1 - flap) * k * .25; });
-    b.tail.rotation.x = -k * .25 + Math.sin(s.t * 4) * .04; b.tail.rotation.y = -s.steer * .25;
-    b.crest.rotation.x = -k * .25 + Math.sin(s.t * 9) * .03 * k;
-    b.head.rotation.y = s.menu ? Math.sin(s.t * .7) * .35 : s.steer * .3; b.head.rotation.x = -Math.sin(phase * 2) * .04 * k;
-    b.blink.scale.y = (s.t * .7) % 3.5 < .09 ? .12 : 1;
+/** Loops blend by speed; Cast, Win and Lose follow the reaction's own clock so every viewer sees the same frame. */
+const LOOPS = ['Idle', 'Skate'] as const, POSED = ['Cast', 'Win', 'Lose'] as const;
+type ClipName = typeof LOOPS[number] | typeof POSED[number];
+/** Seconds between blinks, and how long one lasts. */
+const BLINK = { every: 3.5, seconds: .18 };
+const FRONT_RADIUS = .13, REAR_RADIUS = .17;
+/** Flap is a wingbeat layered on top of whatever the body is doing, so it plays as an additive copy, made once per clip. */
+const additive = new WeakMap<THREE.AnimationClip, THREE.AnimationClip>();
+
+/** Chocobo on the Jet-Blades CR: one skinned model for the bird and both rocket skates, with the wheels turned in code. */
+export function chocobo(): Build {
+  const r = new Rig(), m = skinnedModel(r, 'chocobo');
+  const action = (name: string) => { const a = m.actions.get(name); if (!a) throw new Error(`Chocobo has no ${name} clip`); a.play(); a.weight = 0; return a; };
+  const clips = Object.fromEntries([...LOOPS, ...POSED].map(n => [n, action(n)])) as Record<ClipName, ReturnType<typeof action>>, blink = action('Blink');
+  for (const a of [...POSED.map(n => clips[n]), blink]) a.timeScale = 0;
+  const beat = action('Flap').getClip();
+  if (!additive.has(beat)) additive.set(beat, THREE.AnimationUtils.makeClipAdditive(beat.clone()));
+  const flap = m.mixer.clipAction(additive.get(beat)!); flap.play(); flap.weight = 0;
+  const head = m.bone('head'), weights: Record<ClipName, number> = { Idle: 0, Skate: 0, Cast: 0, Win: 0, Lose: 0 };
+  const turning = [...['L', 'R'].map(s => ({ d: driven(m, `wheel_front.${s}`, [1, 0, 0], 'x'), r: FRONT_RADIUS })), ...['L', 'R'].map(s => ({ d: driven(m, `wheel_rear.${s}`, [1, 0, 0], 'x'), r: REAR_RADIUS }))];
+  // Boost flames and smoke leave the exhaust tips; drift sparks and dust come from under the rear wheels.
+  const exhausts = [anchor(m, 'foot.L', [.86, .86, -.5]), anchor(m, 'foot.R', [-.86, .86, -.5])];
+  const contacts = [anchor(m, 'foot.L', [.5, .02, -.5]), anchor(m, 'foot.R', [-.5, .02, -.5])];
+  let fresh = true, flapping = 0;
+  return { r, head, height: 3.5, wheels: turning.map(w => ({ j: w.d.j, r: w.r })), steer: [], exhausts, contacts, outline: m.outline, update(s, k) {
+    const pose = s.pose, ended = pose?.kind === 'win' || pose?.kind === 'lose' ? pose : null;
+    const casting = pose?.kind === 'cast' ? 1 : 0, cruise = ended ? 0 : 1 - casting, skating = s.menu ? 0 : Math.min(1, k * 3);
+    const target: Record<ClipName, number> = { Idle: cruise * (1 - skating), Skate: cruise * skating, Cast: casting, Win: ended?.kind === 'win' ? 1 : 0, Lose: ended?.kind === 'lose' ? 1 : 0 };
+    for (const n of [...LOOPS, ...POSED]) { weights[n] = fresh ? target[n] : damp(weights[n], target[n], 12, s.dt); clips[n].weight = weights[n]; }
+    fresh = false;
+    flapping = damp(flapping, s.flying > 0 ? 1 : 0, 10, s.dt); flap.weight = flapping;
+    if (pose?.kind === 'cast') clips.Cast.time = Math.min(1, pose.t / POSE_SECONDS.cast) * clips.Cast.getClip().duration;
+    if (ended) { const c = clips[ended.kind === 'win' ? 'Win' : 'Lose']; c.time = ended.t % c.getClip().duration; }
+    clips.Skate.timeScale = .6 + k * .9;
+    const b = (s.t + .6) % BLINK.every; blink.weight = b < BLINK.seconds ? 1 : 0; blink.time = Math.min(b, BLINK.seconds);
+    m.mixer.update(s.dt);
+    for (const w of turning) w.d.sync();
+    head.rotation.y += s.menu ? Math.sin(s.t * .7) * .35 : s.steer * .3;
   } };
 }

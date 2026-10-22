@@ -23,7 +23,7 @@ export function chubby(c: RacerProfile): Build {
   r.add(trike, r.t('#e8e2d5'), cyl(.36, .36, 1.1, [0, 1.05, -1.25], [0, 0, Math.PI / 2], 20), ball(.36, [-.55, 1.05, -1.25]), ball(.36, [.55, 1.05, -1.25]));
   r.add(trike, frame, torus(.37, .04, [-.3, 1.05, -1.25], [0, Math.PI / 2, 0]), torus(.37, .04, [.3, 1.05, -1.25], [0, Math.PI / 2, 0]));
   for (const s of [-1, 1]) { r.add(trike, chrome, cyl(.13, .2, .45, [s * .4, 1.05, -1.6], [Math.PI / 2, 0, 0], 16)); r.add(trike, r.g('#ff9d3a', 2.2), torus(.16, .035, [s * .4, 1.05, -1.83])); exhausts.push(r.joint(trike, [s * .4, 1.05, -1.88])); }
-  const b = bird(r, r.joint(r.model, [0, 1.8, -.2]), c.color, c.light, true), legs: THREE.Object3D[] = [];
+  const b = bird(r, r.joint(r.model, [0, 1.8, -.2]), c.color, c.light), legs: THREE.Object3D[] = [];
   for (const s of [-1, 1]) { const hip = r.joint(b.body, [s * .5, -.6, .45]); r.add(hip, r.t(c.color), ellipsoid([.3, .32, .34], [0, 0, .05])); const shin = r.joint(hip, [0, -.15, .32]); r.add(shin, r.t('#f0a540'), tube([[0, 0, 0], [0, -.25, .2], [0, -.42, .3]], .08)); for (const x of [-.08, 0, .08]) r.add(shin, r.t('#fff3d9'), horn([[x, -.42, .3], [x, -.45, .44], [x, -.52, .5]], .05)); legs.push(hip); }
   let phase = 0;
   return { r, head: b.head, height: 3.6, wheels, steer: [fork], exhausts, contacts, outline: '#3b2a12', update(s, k) {

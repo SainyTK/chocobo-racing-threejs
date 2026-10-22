@@ -385,7 +385,7 @@ Reports are in `output/playwright-report/`; screenshots are in `output/testing/`
 - `server/index.ts`: authoritative room server, sessions and input validation.
 - `src/scene.ts`: course loading, pickups, shadows, bloom post-processing and 3D-rendered portraits.
 - `src/gfx/camera/`: the chase camera (`chase.ts`), its framing per screen shape (`framing.ts`) and the finish orbit and podium shots (`finish.ts`). `src/gfx/finish-stage.ts` and `src/gfx/podium.ts` stage those shots.
-- `src/gfx/characters/`: the racers. Eight rigged racers and vehicles are built in code with cel shading and outlines, with running, flapping, blinking and spring animations. Bahamut is a skinned GLB made by the Blender pipeline in `scripts/characters/` (see `docs/characters.md`), drawn with the same toon and outline materials.
+- `src/gfx/characters/`: the racers. Seven rigged racers and vehicles are built in code with cel shading and outlines, with running, flapping, blinking and spring animations. Chocobo and Bahamut are skinned GLBs made by the Blender pipeline in `scripts/characters/` (see `docs/characters.md`), drawn with the same toon and outline materials.
   `index.ts` builds a racer by index, `models.ts` preloads the GLB racers, `skinned.ts` instances one with its mixer, `rig.ts` batches parts into few draw calls, `poses.ts` holds the hit, cast, overtake, win and lose reactions, `parts/` holds shared pieces (bird body, eyes, wheels, carpet texture) and `racers/` has one file per racer.
   `src/gfx/reactions.ts` picks a racer's reaction from race events.
 - `src/gfx/effects/`: spell and race effects: fireballs, ice traps, lightning, Ultima, Reflect bubbles, Doom runes, boost trails, drift sparks and status auras.

@@ -101,6 +101,17 @@ def ellipse(rx: Callable[[float], float], ry: Callable[[float], float], down: Ca
     return profile
 
 
+def superellipse(rx: Callable[[float], float], ry: Callable[[float], float], power: float = 4.0, shift: Callable[[float], float] | None = None) -> Profile:
+    """Rounded-box rings for hard-surface parts. Higher `power` gives squarer corners; `shift` moves rings sideways."""
+
+    def profile(t: float, a: float) -> tuple[float, float]:
+        c, s = math.cos(a), math.sin(a)
+        x = math.copysign(abs(c) ** (2 / power), c) * rx(t)
+        return x + (shift(t) if shift else 0.0), math.copysign(abs(s) ** (2 / power), s) * ry(t)
+
+    return profile
+
+
 def loft(
     name: str,
     skin: str,
@@ -285,3 +296,23 @@ def mirror_name(bone: str) -> str:
     if bone.endswith(".R"):
         return bone[:-2] + ".L"
     return bone
+
+
+def spline(keys: Sequence[tuple[float, float]], t: float) -> float:
+    """Smooth cubic interpolation through (t, value) keys, with Catmull-Rom tangents. Unlike `curve`, it does not
+    flatten at every key, so profiles with many keys stay round instead of rippling."""
+    if t <= keys[0][0]:
+        return keys[0][1]
+    if t >= keys[-1][0]:
+        return keys[-1][1]
+    i = next(k for k in range(len(keys) - 1) if t <= keys[k + 1][0])
+    (t0, v0), (t1, v1) = keys[i], keys[i + 1]
+    span = t1 - t0
+
+    def slope(k: int) -> float:
+        a, b = keys[max(0, k - 1)], keys[min(len(keys) - 1, k + 1)]
+        return (b[1] - a[1]) / (b[0] - a[0])
+
+    s = (t - t0) / span
+    h00, h10, h01, h11 = 2 * s**3 - 3 * s**2 + 1, s**3 - 2 * s**2 + s, -2 * s**3 + 3 * s**2, s**3 - s**2
+    return h00 * v0 + h10 * span * slope(i) + h01 * v1 + h11 * span * slope(i + 1)

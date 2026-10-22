@@ -50,7 +50,7 @@ Measured in the Studio with `createCharacter` (triangles of the body and of the 
 
 | Racer | Triangles | Outline triangles | Meshes | Texture |
 | --- | --- | --- | --- | --- |
-| Chocobo | 12,708 | 7,456 | 35 | none |
+| Chocobo | 12,244 | 4,804 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Chocobo (the procedural model had 12,708, 7,456 and 35) |
 | Behemoth | 12,192 | 9,308 | 23 | none |
 | Chubby Chocobo | 14,768 | 10,024 | 35 | none |
 | Bahamut | 11,928 | 4,899 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Bahamut |
@@ -74,3 +74,33 @@ A new racer should stay near 12,000 body triangles and one atlas.
 3. Add the GLB to `URLS` in `src/gfx/characters/models.ts`, write `racers/<name>.ts` on top of `skinnedModel`, and register the builder in `BUILDERS`.
 4. Add the racer to `RACERS`, `BOT_MAGIC`, `ENGINE_VOICES` and `VOICES`, all indexed alike.
 5. Check it in the Studio (`npm run studio`) from the front, side, back and at race distance, next to the other racers.
+
+## Chocobo and the shared bird rig
+
+```sh
+npm run character -- chocobo
+```
+
+Chocobo on the Jet-Blades CR is one skinned GLB (337 KB, 22 bones, seven clips) for the bird and both rocket skates.
+It is built from two packages:
+
+- `scripts/characters/bird/` is a reusable super-deformed bird. `model.py` takes a `Bird` (proportions as spline keys along one vertical loft for the head and body, plus the eye, beak, crest, tufts, wings, tail, scarf and legs) and returns its skeleton and parts. `paint.py` makes painters from a palette, and `clips.py` has pose helpers (`wings`, `tail`, `flap`, `blink`).
+- `scripts/characters/chocobo/` holds Chocobo's `BIRD` proportions, the Jet-Blades (boots, chassis, engine, exhausts and wheels on `foot` and `wheel_*` bones), his palette and his clips.
+
+The bird's bones are `root`, `hips`, `chest`, `head` (pivoting in the middle of the head), `jaw`, `crest`, `eye.L/R`, `scarf`, `tail`, `wing.L/R`, `wing_tip.L/R` and `thigh.L/R`, which end at the ankle.
+At rest the wings stick straight out sideways with their flat faces to the front and back: a positive Y angle lowers the left wing and a positive Z angle sweeps it back, so a wingbeat is a clean roll about the forward axis.
+
+`src/gfx/characters/racers/chocobo.ts` blends Idle and Skate by speed and plays Cast, Win and Lose on the reaction's clock.
+Flap is a wingbeat that starts and ends at rest; the racer plays an additive copy of it (`AnimationUtils.makeClipAdditive`, made once per clip) whenever `flying` is set, so the wings beat on top of whatever the body is doing: the menu hop, jumps, the Flap ability and the win.
+The four wheels are bones turned by `driven()`, and the exhaust and contact anchors in the racer must follow the skate positions in `chocobo/model.py`.
+
+Chubby Chocobo is still built in code by `src/gfx/characters/parts/bird.ts`, which now only serves him.
+To rebuild him on the pipeline, give him his own `Bird` (a rounder, wider body, no `scarf` if he has none, `tufts` for his crest) and keep the bird skeleton, painters and pose helpers. His trike replaces the Jet-Blades: model it on its own bones the way the skates hang off `foot`, and turn its wheels with `driven()`.
+
+Pitfalls met on Chocobo:
+
+- Profile keys interpolated with `curve` flatten at every key and ripple a smooth body. `geometry.spline` is a cubic through the keys and keeps the body round.
+- A big head pivoting at the neck puts the portrait camera, which frames `Build.head`, on the chest. Pivot the head bone inside the head.
+- Wings raised much above level vanish into a big head. Keep raised poses diagonal, and remember the shared poses already pitch the model and the head for cast and lose, so a clip adds only a little.
+- Clips that already raise the wings stack with the additive Flap on a win. Keep the Win wings level and let the overlay beat them.
+
