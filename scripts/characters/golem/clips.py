@@ -101,14 +101,14 @@ def win(t: float) -> Pose:
 
 
 def lose(t: float) -> Pose:
-    """Defeat: slumped over the wheel, shoulders dropped and the head hung, shaking slowly. The game's shared lose
-    pose tips the head further down."""
+    """Defeat: sunk in the seat with the shoulders dropped, shaking the head slowly. The game's shared lose pose
+    already pitches him and his head forward, so the clip holds the tall head back a little."""
     p = t / 3.0
     sigh = math.sin(TAU * p)
     pose: Pose = {
         "hips": ((0, 0, 0), (0, 0, -0.08 + 0.02 * sigh)),
-        "chest": ((0.14 + 0.03 * sigh, 0, 0), (0, 0, 0)),
-        "head": ((0.04, 0, 0.14 * math.sin(TAU * p * 2)), (0, 0, 0)),
+        "chest": ((0.03 + 0.03 * sigh, 0, 0), (0, 0, 0)),
+        "head": ((-0.15, 0, 0.14 * math.sin(TAU * p * 2)), (0, 0, 0)),
     }
     pose |= mirrored({"arm.L": ((0, 0, 0), (0, 0.06, -0.08))})
     return pose
