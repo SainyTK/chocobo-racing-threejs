@@ -1,7 +1,7 @@
 # Racer models
 
 Most racers are built in code from primitives in `src/gfx/characters/racers/*.ts`: rigid parts on a joint hierarchy, baked into vertex-coloured toon meshes by `Rig`.
-Chocobo, Bahamut, Cloud, Behemoth and Golem are authored as skinned, textured GLBs, by Blender scripts in this repository.
+Chocobo, Mog, Golem, Chubby Chocobo, Bahamut, Cloud and Behemoth are authored as skinned, textured GLBs, by Blender scripts in this repository.
 This page describes that pipeline so the next racer can reuse it.
 
 ## Pipeline
@@ -11,6 +11,8 @@ npm run character -- bahamut
 npm run character -- cloud
 npm run character -- chocobo
 npm run character -- golem
+npm run character -- chubby
+npm run character -- mog
 ```
 
 `scripts/characters/build.mjs` runs Blender headless (`/Applications/Blender.app/Contents/MacOS/Blender`, or the `BLENDER` environment variable) on `scripts/characters/build.py`, which writes `src/assets/characters/<name>.glb`.
@@ -47,6 +49,8 @@ The Python is formatted and linted with Ruff: `uvx ruff format scripts/character
 - `src/gfx/characters/skinned.ts` clones a model with `SkeletonUtils.clone`, gives the body the shared toon material (atlas as `map`, ambient occlusion as vertex colours, the rig's flash, rim and fade uniforms) and turns the `Outline` mesh into the inverted hull. Geometry, texture and clips stay shared between instances; `dispose` skips geometry marked `userData.shared`.
 - `src/gfx/characters/racers/cloud.ts` is a rider on a vehicle: one armature holds Cloud and the Hardy-Daytona. The wheels and the fork have their own bones that no clip keys; `driven()` in `skinned.ts` gives each one a stand-in joint, which the shared animator spins (`Build.wheels`) and steers (`Build.steer`) like a code-built racer's joint, and turns the bone about an axis given in model space after the mixer update. Idle and Ride blend by speed; Cast, Win and Lose follow the reaction's clock.
 - The head of a skinned racer is turned through `overlay()` in `skinned.ts`. The shared animator and the reaction poses rotate a stand-in joint (`Build.head`) in model axes, and `Build.sync`, which `index.ts` calls after the poses, turns the head bone by it on top of its clips. Never add to a bone's rotation after `mixer.update`: the mixer only writes a bone when its blended clip value changes, so on any frame it skips, such as a paused Studio or a held pose, the addition piles up and the head spins. Advance the model with `SkinnedModel.update`, which puts the clip value back before each mixer update. `tests/studio-heads.browser.ts` checks every racer's head in the Studio.
+- Skinned bodies receive the sun's shadow with a reach (`SELF_SHADOW_REACH` in `skinned.ts`, `shadowReach` in `materials/toon.ts`): the shadow lookup moves 3 m toward the sun, so occluders nearer than that, which is the racer itself, are ignored, while roofs, tunnels and arches further away still darken the racer.
+  Without it, a back turned away from the sun was blotched: the toon ramp keeps half of the direct light in its darkest band, and the soft edge of the racer's own shadow wandered across that band in patches. Baked ambient occlusion was not the cause, and turning off shadow receiving would lose the darkening in tunnels and under roofs and arches. Checked on all five skinned racers in Mythril Mines.
 - `src/gfx/characters/racers/bahamut.ts` builds the `Build` the rest of the game expects: head overlay, exhaust and contact anchors fixed to bones, and an `update` that drives an `AnimationMixer`. Hover and Fly blend by speed. Roar, Win and Lose follow the reaction's own clock so every viewer sees the same frame, and Blink plays on its own timer. The shared lean, stun spin and reaction poses from `index.ts` and `poses.ts` still apply on top.
 
 ## Budgets
@@ -56,13 +60,14 @@ Measured in the Studio with `createCharacter` (triangles of the body and of the 
 | Racer | Triangles | Outline triangles | Meshes | Texture |
 | --- | --- | --- | --- | --- |
 | Chocobo | 11,956 | 4,705 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Chocobo (the procedural model had 12,708, 7,456 and 35) |
-| Chubby Chocobo | 14,768 | 10,024 | 35 | none |
+| Mog | 12,632 | 4,902 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Mog (the code-built Mog in his old car had 10,720, 5,844 and 24) |
+| Chubby Chocobo | 10,994 | 4,552 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Chubby Chocobo (the procedural model had 14,768, 10,024 and 35) |
 | Bahamut | 11,928 | 4,899 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Bahamut |
 | Cloud | 11,032 | 4,570 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Cloud |
 | Behemoth | 12,220 | 4,224 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Behemoth |
 | Golem | 11,680 | 4,754 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Golem (the procedural model had 5,588, 5,220 and 18) |
 
-The Bahamut GLB is 469 KB with 36 bones and six clips; the Cloud GLB is 329 KB with 24 bones and six clips.
+The Bahamut GLB is 469 KB with 36 bones and six clips; the Cloud GLB is 329 KB with 24 bones and six clips; the Chubby Chocobo GLB is 301 KB with 20 bones and seven clips.
 The Behemoth GLB is 407 KB with 37 bones and six clips; the code-built Behemoth it replaced had 12,192 and 9,308 triangles in 23 meshes.
 The Golem GLB is 361 KB with 23 bones and six clips.
 A new racer should stay near 12,000 body triangles and one atlas.
@@ -119,9 +124,6 @@ At rest the wings stick straight out sideways with their flat faces to the front
 Flap is a wingbeat that starts and ends at rest; the racer plays an additive copy of it (`AnimationUtils.makeClipAdditive`, made once per clip) whenever `flying` is set, so the wings beat on top of whatever the body is doing: the menu hop, jumps, the Flap ability and the win.
 The four wheels are bones turned by `driven()`, and the exhaust and contact anchors in the racer must follow the skate positions in `chocobo/model.py`.
 
-Chubby Chocobo is still built in code by `src/gfx/characters/parts/bird.ts`, which now only serves him.
-To rebuild him on the pipeline, give him his own `Bird` (a rounder, wider body, no `scarf` if he has none, `tufts` for his crest) and keep the bird skeleton, painters and pose helpers. His trike replaces the Jet-Blades: model it on its own bones the way the skates hang off `foot`, and turn its wheels with `driven()`.
-
 Pitfalls met on Chocobo:
 
 - Profile keys interpolated with `curve` flatten at every key and ripple a smooth body. `geometry.spline` is a cubic through the keys and keeps the body round.
@@ -131,10 +133,60 @@ Pitfalls met on Chocobo:
 - From the chase camera a smooth egg reads wrong: the original's back has a few large rounded feather puffs. `Clump`s displace the body loft itself, so the outline is bumpy. Use a handful of big ones, each about a fifth of the body width, placed where the outline is seen from behind (crown, upper corners, sides of the head); many small ones read as toad skin.
 - A character package can set `AO_STRENGTH` in `paint.py` to soften the baked ambient occlusion. Chocobo uses 0.18 so his bright, flat yellow does not mottle between the puffs.
 - Puffs in the middle of the back break the toon shading into blotches right where the chase camera looks. Put them only where the outline is seen from behind.
-- The sun's self-shadowing also blotches a bumpy back. `skinnedModel(r, id, { selfShadow: false })` stops a model receiving shadows while it still casts one; Chocobo uses it.
 - Match colours by measuring the original's race view and ours under the game's lighting: the PS1 Chocobo samples at about hue 39 degrees there (`#de9516`), which the paint base `#ffb026` reproduces.
 - A feather fan pointing straight back is seen end-on from the chase camera as a row of dark triangles. Keep the tail small and low.
 - The race view is decided by the skates: big black rear wheels about as wide as they are tall, poking out past the body's sides, the red engines between them and the blue boots visible above. A red cowl over the wheel hides the boots.
+
+## Mog and the Mog-Mobile R2
+
+```sh
+npm run character -- mog
+```
+
+Mog on his kick scooter is one skinned GLB (325 KB, 19 bones, six clips), built by `scripts/characters/mog/`.
+Like Behemoth and Cloud, one armature carries the rider and the vehicle, and the rest pose is the riding pose, so his paws sit on the grips without help.
+
+- The scooter hangs off `scooter`. `fork` points down the stem's line and carries the front mudguard and `wheel_front`; `wheel_rear` hangs off `scooter`. `racers/mog.ts` steers the fork and spins both wheels through `driven()`. Only the fork turns: the stem and handlebar stay put so the paws keep their grip.
+- The pom-pom rides on `antenna`, which `racers/mog.ts` swings on a damped spring through a second `overlay()`, so it sways with steering and leans back with speed. `Build.sync` syncs both overlays.
+- The clips never key the wheels, the fork or the antenna (`DRIVEN` in `clips.py`). His eyes are closed arcs, so he has no Blink; `mouth` opens by scale for Cast and Win.
+- Flap is an additive wingbeat on his bat wings, played like Chocobo's whenever `flying` is set.
+
+Pitfalls met on Mog:
+
+- An `ellipsoid` whose axis runs along its `up_hint` (a ball lofted along +Z with the default hint) gets no frame and does not show. Pass an `up_hint` across the axis.
+- An arm raised overhead disappears behind a big head from the front and the back. A wave reads when the upper arm swings out to the side (+Z for the left arm, after a small -X lift) and the forearm rises (-Y for the left).
+- A part that covers only one side, such as half of a neckerchief, must go in the mirrored list, or it reads as a diagonal strap.
+- An open-ended loft, such as a horn's bell, shows the outline hull through its mouth as a grey disc. Cap it and paint the cap dark.
+- From the chase camera, batteries as tall as the model sheet draws them read too tall; the original's race view shows them only up to his shoulders, with the wings just above them.
+
+## Chubby Chocobo on the Phat-Burner Plus
+
+```sh
+npm run character -- chubby
+```
+
+Chubby Chocobo is one skinned GLB for the bird and his trike, built from `scripts/characters/chubby/` on top of the shared bird package.
+His `Bird` is a wide, squat pear with a slight notch at the neck and no crest; the pointed nub on the crown is a plump feather.
+The package adds what the bird package does not have: closed, happy eyes (a dark arc on each `eye` bone, so Blink squints them), a small round bill on `head` and `jaw`, the thistle on his chest, short plump wings that hug his sides and rest their tips on the handlebars, thick legs with clawed feet on `foot` bones, and the trike.
+It replaces the bird's wing bones with ones that run from the shoulder, out past his side and in to the wing tip on the grip, and moves the `tail` bone up to the tail, which sits high on his back above the engine.
+
+The trike hangs off a `trike` bone under `root`.
+`fork` turns about the raked steering axis and carries the handlebars, horn, front wheel and pedal axle; `wheel_front` and `wheel_rear` (one bone for both rear wheels) spin.
+No clip keys these three bones; `racers/chubby.ts` turns them with `driven()`.
+The handlebars turn only a little with the steering (`STEER` in the racer), because his hands rest on the grips and do not follow them.
+
+`racers/chubby.ts` blends Idle and Ride by speed and plays Cast, Win and Lose on the reaction's clock, with the additive Flap from Chocobo whenever `flying` is set.
+Idle waves his left wing halfway through each loop, as the original does on the Select Racer screen.
+The exhaust and contact anchors in the racer must follow the engine and rear wheel positions in `chubby/model.py`.
+
+Pitfalls met on Chubby Chocobo:
+
+- Measure the race view, not the CG model sheet. The sheet's belly is much fatter than the in-game model, which from behind is only about 1.3 times as wide as its head.
+- The chase camera sits lower and closer than the original's, so a body that matches the original's height reads too tall. He is modelled a little squatter than the sheet.
+- His paint is a near-neutral cream (#fafbf5). The PS1 race view measures near white (#f5f5f2 lit, #dfdfc2 in shade), and the game's warm sun already adds the cream tint the podium shows.
+- A tyre lofted with end caps has a domed face that bulges out past the rim; a hub disc must stand proud of it or it disappears inside the tyre.
+- A belly that bulges forward swallows the fork and the middle of the handlebars. Move the steering head forward with the belly.
+- Wings that reach the grips as long arms with spread feather fingers read as human hands from the front. Keep each wing one short, plump paddle against his side with a single rounded tip and no separate feathers, and push the elbow out so it still shows as a paddle from behind.
 
 ## Golem and the Rockin' Roller V8
 
@@ -152,4 +204,3 @@ Pitfalls met on Golem:
 - A tyre lofted along its axle closes each side in a cone; `flat` turns the cones into flat sidewalls, so a hub disc can sit on the outside.
 - From the raised chase camera, wheel arches over the rear tyres hide them behind blue blocks. The original shows the rear tyres whole with only a thin ledge on top.
 - The chase camera looks down on the back, so a big back rock hides a head that sits low between the shoulders. Keep the back rock low and the head standing well above the shoulders.
-- Self-shadowing from the sun darkens his back in the chase view much more than the original's lighting; measured without it, his lit stone matches the original's.

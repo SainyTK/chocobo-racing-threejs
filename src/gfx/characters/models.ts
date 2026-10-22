@@ -4,11 +4,13 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import bahamutUrl from '../../assets/characters/bahamut.glb?url';
 import behemothUrl from '../../assets/characters/behemoth.glb?url';
 import chocoboUrl from '../../assets/characters/chocobo.glb?url';
+import chubbyUrl from '../../assets/characters/chubby.glb?url';
 import cloudUrl from '../../assets/characters/cloud.glb?url';
 import golemUrl from '../../assets/characters/golem.glb?url';
+import mogUrl from '../../assets/characters/mog.glb?url';
 
 /** Racers authored as skinned GLB files by `npm run character`, rather than built from code. */
-const URLS = { bahamut: bahamutUrl, behemoth: behemothUrl, chocobo: chocoboUrl, cloud: cloudUrl, golem: golemUrl } as const;
+const URLS = { bahamut: bahamutUrl, behemoth: behemothUrl, chocobo: chocoboUrl, chubby: chubbyUrl, cloud: cloudUrl, golem: golemUrl, mog: mogUrl } as const;
 export type ModelId = keyof typeof URLS;
 
 const models = new Map<ModelId, GLTF>();
