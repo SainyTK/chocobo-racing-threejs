@@ -170,7 +170,7 @@ def ribbed(base: str, light: str, dark: str, ribs: float):
         up = np.sin(angle(u))
         img = mix(fill(base, u), fill(light, u), np.clip(up, 0, 1) * 0.35)
         img = mix(img, fill(dark, u), np.clip(-up, 0, 1) * 0.45)
-        return mix(img, fill(dark, u), band(np.mod(v * ribs, 1), 0.5, 0.18, 0.05) * 0.8)
+        return mix(img, fill(dark, u), band(np.mod(v * ribs, 1), 0.5, 0.12, 0.04) * 0.6)
 
     return painter
 

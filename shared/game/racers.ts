@@ -11,7 +11,7 @@ export const RACERS = [
   { name: 'Chubby Chocobo', color: '#fff6d9', light: '#ffffff', vehicle: 'Phat-Burner Plus', ability: 'receive' as AbilityId, speed: 38.5, acceleration: 23, grip: 14, steering: 1.93, size: 1.3, hovers: false },
   { name: 'Behemoth', color: '#9370b0', light: '#ceb1db', vehicle: 'Behemo-Buggy 99', ability: 'charge' as AbilityId, speed: 38.9, acceleration: 25, grip: 11, steering: 1.7, size: 1.2, hovers: false },
   { name: 'Bahamut', color: '#3a50cc', light: '#36c98a', vehicle: 'Dragon Wings', ability: 'megaflare' as AbilityId, speed: 39.9, acceleration: 24, grip: 9, steering: 1.7, size: 1.15, hovers: true },
-  { name: 'Cloud', color: '#5d6f3a', light: '#f0cf3a', vehicle: 'Hardy-Daytona', ability: 'braver' as AbilityId, speed: 39.9, acceleration: 23, grip: 8.5, steering: 1.62, size: 1.05, hovers: false },
+  { name: 'Cloud', color: '#5d6f3a', light: '#f0cf3a', vehicle: 'Hardy-Daytona', ability: 'braver' as AbilityId, speed: 39.9, acceleration: 24, grip: 8.5, steering: 1.62, size: 1.05, hovers: false },
 ];
 
 export type RacerProfile = typeof RACERS[number];

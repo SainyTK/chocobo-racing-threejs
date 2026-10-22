@@ -321,7 +321,7 @@ def bike() -> list[Part]:
         "cowl",
         "cowl",
         [(0, -1.32, 1.06), (0, -1.2, 1.5), (0, -1.06, 1.94)],
-        superellipse(lambda t: curve([(0, 0.2), (1, 0.26)], t), lambda t: curve([(0, 0.2), (0.5, 0.26), (1, 0.24)], t), 3.5),
+        superellipse(lambda t: curve([(0, 0.22), (1, 0.3)], t), lambda t: curve([(0, 0.18), (0.5, 0.2), (1, 0.16)], t), 3.5),
         12,
         10,
         (0, -1, 0),
@@ -351,6 +351,8 @@ def bike() -> list[Part]:
     parts += [
         tube("bars", "metal", [(0.6, -0.54, 1.62), (0.3, -0.64, 1.67), (0, -0.7, 1.66), (-0.3, -0.64, 1.67), (-0.6, -0.54, 1.62)], 0.035, "bike", 6, 12),
         tube("riser", "metal", [(0, -0.98, 1.5), (0, -0.82, 1.62), (0, -0.7, 1.66)], 0.05, "bike", 6, 4),
+        # The frame's thick down tube ties the steering head to the engine, so the side view reads as one machine.
+        tube("downtube", "metal", [(0, -1.02, 1.5), (0, -0.98, 1.1), (0, -0.82, 0.78)], 0.11, "bike", 10, 6, (0, -1, 0)),
     ]
     left = [
         tube("fork_leg", "chrome", [(0.16, -1.0, 1.42), (0.18, -1.42, 0.46)], 0.05, "fork", 8, 4, (0, -1, 0)),
