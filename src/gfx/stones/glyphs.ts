@@ -40,14 +40,15 @@ vec4 glyphFire(vec2 p, float aa, vec3 g, vec3 a) {
   vec4 c = over(vec4(0.), g * 1.15, cover(outer, aa));
   return over(c, a * 1.3, cover(core, aa));
 }
-// Ice: an eight-pointed navy snowflake with a pale outline.
+// Ice: a cut ice crystal seen point on, a tall diamond in four lit facets: pale upper left, cyan upper right, teal lower
+// left and navy lower right.
 vec4 glyphIce(vec2 p, float aa, vec3 g, vec3 a) {
-  float d = 1e9;
-  for (int i = 0; i < 4; i++) { float an = float(i) * .7854; vec2 dir = vec2(cos(an), sin(an)) * .58; d = min(d, sdSegment(p, -dir, dir)); }
-  float rays = d - .05, hub = length(p) - .13;
-  float flake = min(rays, hub);
-  vec4 c = over(vec4(0.), a, cover(flake - .045, aa));
-  return over(c, g * 1.2, cover(flake, aa));
+  p /= 1.12; aa /= 1.12;
+  vec2 T = vec2(.04, .5), B = vec2(.1, -.52), L = vec2(-.38, -.02), R = vec2(.52, -.04), C = vec2(.14, -.06);
+  vec4 c = over(vec4(0.), mix(g, vec3(1.), .55), cover(sdTriangle(p, T, L, C), aa));
+  c = over(c, g, cover(sdTriangle(p, T, C, R), aa));
+  c = over(c, g * vec3(.45, .7, .72), cover(sdTriangle(p, L, B, C), aa));
+  return over(c, a, cover(sdTriangle(p, C, B, R), aa));
 }
 // Thunder: a lightning bolt.
 vec4 glyphThunder(vec2 p, float aa, vec3 g, vec3 a) {
@@ -63,17 +64,22 @@ vec4 glyphReflect(vec2 p, float aa, vec3 g, vec3 a) {
   float tail = min(sdSegment(p, o, o + vec2(-.2, .22)), sdSegment(p, o, o + vec2(-.28, -.05))) - .038;
   return over(c, a * 1.1, cover(min(arrow, tail), aa));
 }
-// Mini: a right-pointing triangle, lit on its upper face and shaded on its lower one.
+// Mini: a little navy man with his arms and legs spread, pale inside his outline, and two shrink strokes over his
+// left shoulder.
 vec4 glyphMini(vec2 p, float aa, vec3 g, vec3 a) {
-  vec2 A = vec2(-.36, .48), B = vec2(-.36, -.48), T = vec2(.52, 0.), M = vec2(-.12, -.06);
-  vec4 c = over(vec4(0.), g, cover(sdTriangle(p, A, M, T), aa));
-  c = over(c, g * .92, cover(sdTriangle(p, A, B, M), aa));
-  return over(c, a, cover(sdTriangle(p, B, T, M), aa));
+  vec2 hip = vec2(.02, -.22), neck = vec2(.02, .2);
+  float limbs = min(min(sdSegment(p, neck, hip), sdSegment(p, vec2(-.44, .0), vec2(.46, .0))),
+    min(sdSegment(p, hip, vec2(-.3, -.58)), sdSegment(p, hip, vec2(.34, -.58))));
+  float head = length((p - vec2(.04, .36)) * vec2(.8, 1.15)) - .15;
+  vec2 q = p - vec2(-.32, .4);
+  float strokes = min(sdSegment(q, vec2(-.18, -.08), vec2(.1, .12)), sdSegment(q, vec2(-.06, -.2), vec2(.22, 0.))) - .055;
+  vec4 c = over(vec4(0.), g, cover(min(min(limbs - .13, head), strokes), aa));
+  return over(c, a, cover(limbs - .065, aa));
 }
-// Haste: a fat upward arrow, lighter along its middle.
+// Haste: a fat upward arrow, magenta at the head and darkening to purple down the stem.
 vec4 glyphHaste(vec2 p, float aa, vec3 g, vec3 a) {
   float d = min(sdTriangle(p, vec2(-.54, .08), vec2(.54, .08), vec2(0., .64)), sdBox(p - vec2(0., -.2), vec2(.24, .3), .02));
-  return over(vec4(0.), mix(g, a, smoothstep(.0, -.2, d) * .35), cover(d, aa));
+  return over(vec4(0.), mix(g, a, smoothstep(.05, -.5, p.y)), cover(d, aa));
 }
 // Doom: a pale skull.
 vec4 glyphDoom(vec2 p, float aa, vec3 g, vec3 a) {
@@ -85,11 +91,17 @@ vec4 glyphDoom(vec2 p, float aa, vec3 g, vec3 a) {
   vec4 c = over(vec4(0.), bone, cover(head, aa));
   return over(c, a, max(cover(min(eyes, nose), aa), teeth) * c.a);
 }
-// Ultima: a four-pointed star with a golden heart.
+// Ultima: a pale burst of light filling a slate-blue face inside the gold rim: long straight and diagonal rays, short rays
+// between them and a white-hot heart.
 vec4 glyphUltima(vec2 p, float aa, vec3 g, vec3 a) {
-  vec2 q = abs(p); float star = (pow(q.x, .55) + pow(q.y, .55)) - pow(.62, .55), core = length(p) - .14;
-  vec4 c = over(vec4(0.), g, cover(star / 2.2, aa));
-  return over(c, a * 1.2, cover(core, aa));
+  float r = length(p), an = atan(p.y, p.x);
+  vec4 c = over(vec4(0.), a, cover(r - .66, aa));
+  // Distance to the nearest of 16 rays: the 8 main ones reach the rim, the 8 between them stop short.
+  float sector = .3927, k = floor(an / sector + .5), off = an - k * sector;
+  float reach = mod(k, 2.) < .5 ? (mod(k, 4.) < .5 ? .74 : .66) : .46;
+  float ray = abs(sin(off)) * r + max(r - reach, 0.) - mix(.075, .015, clamp(r / reach, 0., 1.));
+  c = over(c, g, cover(ray, aa));
+  return over(c, vec3(1.), smoothstep(.3, .05, r));
 }
 vec4 glyph(int kind, vec2 p, float aa, vec3 g, vec3 a) {
   if (kind == ${K.fire}) return glyphFire(p, aa, g, a);

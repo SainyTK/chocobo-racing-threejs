@@ -22,7 +22,7 @@ void main() {
 }`;
 
 const fragment = /* glsl */ `
-uniform float uTime; uniform vec3 uBody[${N}]; uniform vec3 uGlyph[${N}]; uniform vec3 uAccent[${N}]; uniform float uOpacity[${N}];
+uniform float uTime; uniform vec3 uBody[${N}]; uniform vec3 uGlyph[${N}]; uniform vec3 uAccent[${N}];
 varying vec3 vN; varying vec3 vView; varying vec3 vF; varying vec3 vR; varying vec3 vU; varying vec4 vState; flat varying int vKind;
 ${GLYPHS}
 /** The symbol spans this much of the ball's face. */
@@ -39,7 +39,6 @@ void main() {
   float hl = dot(n, normalize(L + v)), rim = 1. - max(dot(n, v), 0.);
   col *= 1. - .3 * smoothstep(.5, 1., rim);
   col += vec3(1.) * (smoothstep(.95, .985, hl) * .62 + smoothstep(.86, .97, hl) * .14);
-  float alpha = mix(uOpacity[vKind], 1., max(sym.a, smoothstep(.45, 1., rim) * .6));
   // A held stack of two or three blinks to black, faster at level three.
   if (vState.y > 0. && fract(uTime * vState.y + vState.x * .16) > .5) col *= .07;
 #ifdef PUFF
@@ -47,7 +46,7 @@ void main() {
   float edge = smoothstep(0., .6, max(dot(n, v), 0.));
   gl_FragColor = vec4(col * (1. - vState.w) * edge * 1.5, 1.);
 #else
-  gl_FragColor = vec4(col, alpha * vState.z);
+  gl_FragColor = vec4(col, vState.z);
 #endif
   #include <tonemapping_fragment>
   #include <colorspace_fragment>
@@ -60,7 +59,7 @@ export function stoneMaterial(puff = false) {
     transparent: true, depthWrite: !puff, blending: puff ? THREE.AdditiveBlending : THREE.NormalBlending,
     uniforms: {
       uTime: { value: 0 }, uBody: { value: table(k => STONE_LOOKS[k].body) }, uGlyph: { value: table(k => STONE_LOOKS[k].glyph) },
-      uAccent: { value: table(k => STONE_LOOKS[k].accent) }, uOpacity: { value: STONE_KINDS.map(k => STONE_LOOKS[k].opacity) },
+      uAccent: { value: table(k => STONE_LOOKS[k].accent) },
     },
   });
 }

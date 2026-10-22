@@ -147,15 +147,23 @@ The remake draws the same thing: a toon-shaded ball with a three-band light from
 | --- | --- | --- |
 | "?" | Black ball, thick yellow question mark | Same |
 | Fire | Red ball, orange flame with a yellow-white core | Same |
-| Ice | Milky lavender ball, faintly see-through, navy eight-pointed snowflake | Same, at 90% opacity |
+| Ice | Royal blue ball, a cut ice crystal seen point on: a tall diamond in four facets, pale upper left, cyan upper right, teal lower left, navy lower right | Same |
 | Thunder | Green ball, yellow lightning bolt | Same |
-| Haste | Turquoise ball, pink upward arrow | Same |
-| Mini | Deep blue ball, two-tone cyan arrowhead pointing right | Same |
+| Haste | Turquoise ball, magenta upward arrow that darkens to purple down the stem | Same |
+| Mini | Greyish lavender ball, a little navy-outlined man with pale limbs, arms out and legs apart, and navy strokes over his left shoulder | Same |
 | Reflect | Magenta-pink ball, glowing violet disc with a white arrow bouncing off it | Same |
 | Doom | Dusty rose ball, grey-white skull | Same |
-| Ultima | Not seen clearly in any footage; the manual calls it white | White ball, violet four-pointed star with a gold heart |
+| Ultima | Olive-gold ball whose face is a slate-blue disc filled by a pale blue-white burst of about 16 rays around a white-hot heart | Same |
 
-Haste and Mini are told apart by what happens on use: in a Vulcan-O Valley race, casting the turquoise arrow stone gives a speed burst to about 120 MPH, and the manual names Haste turquoise and Mini purple. A Moogle Forest Grand Prix race shows the blue arrowhead stone, so Grand Prix stone sets may differ from the Story sets.
+Ice, Mini and Ultima were first read from blurry frames and are now set from decisive references.
+The clearest is a 1080p Grand Prix played as White Mage (https://www.youtube.com/watch?v=VTdC1giA0Tc), where her held stone rolls large right under the camera:
+
+- Ultima: in The Black Manor, lap 3 (video 7:38 to 7:44, race time 2'46" to 2'52"), she picks the gold starburst stone, casts it, and blue pillars of light strike the field. The Final Fantasy Wiki shows the same pillars from another Black Manor race and labels a held gold starburst stone "Ultima". The same stone sits on the road in Moogle Forest and The Black Manor, so Grand Prix sets include Ultima.
+- Mini: in Floating Gardens (8:20, race time 0'10"), a "?" stone turns into the lavender stone with the navy man; she casts it a second later and cherubs fly in beside the rivals, which is how Mini is delivered (the Final Fantasy Wiki's Magic Stone page: "a small angel appears and reduces the size of all racers"). The stone the earlier pass read as Ice (Vulcan-O Valley, a lavender ball with a navy snowflake-like figure) is this Mini stone.
+- Ice: the royal blue crystal stone passes at full size in The Black Manor (6:02), and she holds it for 15 s. Its cast is behind her and off screen, so Ice is identified from the manual art: of all stones only Ice is drawn as a blue ball with a cyan ice crystal. The earlier pass read this stone as Mini.
+- Haste: the turquoise arrow stone is unchanged; it passes at full size in Floating Gardens (8:20), and casting it gives a speed burst.
+
+The English manual (pages 18 and 19, archive.org item chocobo_racing_english) pictures every stone as a pre-rendered glass ball: Ice deep blue with a cyan ice crystal, Mini purple-grey with a standing figure, Haste turquoise with a magenta arrow and Ultima gold with a white starburst. Its colour labels read Ice "blue", Mini "purple" and Ultima "white". The in-game textures are simplified versions of these pictures, so the remake follows the in-game textures and uses the manual only to name each stone.
 
 On pickup the held stone appears at once, and the track stone turns into a bright additive smear of its own colours that swells and fades within about five frames.
 The remake bursts the stone the same way over 0.22 s and drops the earlier star sparkles.
@@ -171,7 +179,7 @@ Deliberate deviations:
 | --- | --- | --- |
 | Held stones sit right under and behind the rear wheels | Held stones roll on the road 2.1 m behind the racer's centre, then every 1.3 m, scaled by racer size | The simulation places stacks there and a rival steals one by driving into it; moving them would change gameplay. Drawn small and at road level, they read like the original's chain |
 | Rows hold five stones on the roads seen in footage | Rows keep three to five lanes per course | Lane counts are gameplay layout, outside this visual pass |
-| Ultima's look is unknown | White ball with a violet star | No clear frame of an Ultima stone was found |
+| Ultima stones also lie on the road in Grand Prix races on Moogle Forest and The Black Manor | Only Fantasia lays Ultima stones | Stone sets are gameplay layout, outside this visual pass |
 | Symbols are low-resolution textures | Symbols are drawn per pixel | Crisp at phone and desktop resolutions |
 | Slots refill within a lap, possibly with another kind; held stacks blink in bursts | Fixed kinds, 3.5 s respawn, steady 4 and 8 blinks a second | Keeps the existing simulation; a steady blink always shows the level |
 
