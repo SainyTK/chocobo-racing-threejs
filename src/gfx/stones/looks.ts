@@ -7,17 +7,17 @@ export const STONE_KINDS: StoneKind[] = [...Object.keys(ITEMS) as Item[], 'rando
 
 /**
  * How each stone is painted, read from footage of the original: a glossy ball in one body colour with a large symbol
- * on the side facing the camera. `glyph` is the symbol's main colour and `accent` its second tone. Ice is the only
- * see-through stone.
+ * on the side facing the camera. `glyph` is the symbol's main colour and `accent` its second tone. Ice is milky and
+ * slightly see-through at its middle.
  */
 export interface StoneLook { body: string; glyph: string; accent: string; opacity: number }
 export const STONE_LOOKS: Record<StoneKind, StoneLook> = {
   fire: { body: '#e3200f', glyph: '#ffb01e', accent: '#fff4a8', opacity: 1 },
-  ice: { body: '#c9d4f4', glyph: '#ffffff', accent: '#2f5ee0', opacity: .78 },
+  ice: { body: '#d9d6f2', glyph: '#28348f', accent: '#f4f6ff', opacity: .9 },
   thunder: { body: '#45c824', glyph: '#ffe62e', accent: '#fff9c2', opacity: 1 },
-  haste: { body: '#2c3fd6', glyph: '#7ff2ff', accent: '#0d2f96', opacity: 1 },
+  haste: { body: '#11a98f', glyph: '#ff2cd6', accent: '#ff9cf0', opacity: 1 },
   shield: { body: '#da3a80', glyph: '#7b3cff', accent: '#ffffff', opacity: 1 },
-  mini: { body: '#11a98f', glyph: '#ff2cd6', accent: '#ff9cf0', opacity: 1 },
+  mini: { body: '#2c3fd6', glyph: '#7ff2ff', accent: '#0d2f96', opacity: 1 },
   doom: { body: '#c49496', glyph: '#e9e6e2', accent: '#3a2a2e', opacity: 1 },
   ultima: { body: '#f4f1ff', glyph: '#b28cff', accent: '#ffe27a', opacity: 1 },
   random: { body: '#141218', glyph: '#ffe23a', accent: '#fff6b0', opacity: 1 },
