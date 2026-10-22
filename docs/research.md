@@ -83,6 +83,23 @@ He hunches over it, much wider at the shoulders than the tank: purple fur with m
 The original shows no victory animation in a race; his Win clip, fists pumping over his head, comes from his Grand Prix ending movie.
 His roster colour follows the model's purple.
 
+## Mog
+
+Mog follows the PS1 in-game model, checked side by side against two Grand Prix played as him (the chase view from behind, the GOAL orbit and the Select Racer screen), with the official model sheet for shapes only.
+The Mog-Mobile R2 is a kick scooter: a long blue deck with a red and white panel on top and underneath, a black rear wheel, a small front wheel under a blue mudguard, a thin stem leaning back to a T handlebar with black grips just wider than his head, and a copper horn with an orange bulb.
+Two orange batteries with black bands stand upright behind him; the model sheet draws one big battery, but the race view clearly shows two side by side.
+Mog stands on the deck: a white ball of a head with small pointed ears and cheek tufts, closed eyes, a big pinkish red nose and a red-orange pom-pom on a short dark antenna, a blue neckerchief, small dark red bat wings, short arms with round paws on the grips and stubby legs.
+In the race the pom-pom is red and the nose red; the CG art's yellow pom-pom and magenta nose are not used. The nose sits between the race view's red and the select screen's magenta.
+His wings tremble while he rides and beat fast while he flies or celebrates. In the Select Racer screen he waves one paw, which his menu idle does too.
+
+Deliberate deviations:
+
+| Original | Remake | Reason |
+| --- | --- | --- |
+| Flap spreads big glowing pink and white feathered wings around him | The shared Flap effect (feather shards and the lift) is unchanged, and his own bat wings beat fast | The ability's effect is shared and stays as it was; only his model changed |
+| No win or lose animation is seen in a race | On the podium he waves both paws and calls out with little hops; otherwise he lets go of the bars and droops | Every racer here acts out win and lose reactions |
+| The scooter's motor is unknown | No exhaust smoke; boost flames leave the foot of the batteries | A battery scooter has no engine smoke |
+
 ## Technology choice
 
 | Option | Decision |

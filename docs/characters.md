@@ -1,7 +1,7 @@
 # Racer models
 
 Most racers are built in code from primitives in `src/gfx/characters/racers/*.ts`: rigid parts on a joint hierarchy, baked into vertex-coloured toon meshes by `Rig`.
-Chocobo, Bahamut, Cloud and Behemoth are authored as skinned, textured GLBs, by Blender scripts in this repository.
+Chocobo, Mog, Bahamut, Cloud and Behemoth are authored as skinned, textured GLBs, by Blender scripts in this repository.
 This page describes that pipeline so the next racer can reuse it.
 
 ## Pipeline
@@ -10,6 +10,7 @@ This page describes that pipeline so the next racer can reuse it.
 npm run character -- bahamut
 npm run character -- cloud
 npm run character -- chocobo
+npm run character -- mog
 ```
 
 `scripts/characters/build.mjs` runs Blender headless (`/Applications/Blender.app/Contents/MacOS/Blender`, or the `BLENDER` environment variable) on `scripts/characters/build.py`, which writes `src/assets/characters/<name>.glb`.
@@ -55,6 +56,7 @@ Measured in the Studio with `createCharacter` (triangles of the body and of the 
 | Racer | Triangles | Outline triangles | Meshes | Texture |
 | --- | --- | --- | --- | --- |
 | Chocobo | 11,956 | 4,705 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Chocobo (the procedural model had 12,708, 7,456 and 35) |
+| Mog | 12,632 | 4,902 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Mog (the code-built Mog in his old car had 10,720, 5,844 and 24) |
 | Chubby Chocobo | 14,768 | 10,024 | 35 | none |
 | Bahamut | 11,928 | 4,899 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Bahamut |
 | Cloud | 11,032 | 4,570 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Cloud |
@@ -132,3 +134,25 @@ Pitfalls met on Chocobo:
 - A feather fan pointing straight back is seen end-on from the chase camera as a row of dark triangles. Keep the tail small and low.
 - The race view is decided by the skates: big black rear wheels about as wide as they are tall, poking out past the body's sides, the red engines between them and the blue boots visible above. A red cowl over the wheel hides the boots.
 
+## Mog and the Mog-Mobile R2
+
+```sh
+npm run character -- mog
+```
+
+Mog on his kick scooter is one skinned GLB (325 KB, 19 bones, six clips), built by `scripts/characters/mog/`.
+Like Behemoth and Cloud, one armature carries the rider and the vehicle, and the rest pose is the riding pose, so his paws sit on the grips without help.
+
+- The scooter hangs off `scooter`. `fork` points down the stem's line and carries the front mudguard and `wheel_front`; `wheel_rear` hangs off `scooter`. `racers/mog.ts` steers the fork and spins both wheels through `driven()`. Only the fork turns: the stem and handlebar stay put so the paws keep their grip.
+- The pom-pom rides on `antenna`, which `racers/mog.ts` swings on a damped spring through a second `overlay()`, so it sways with steering and leans back with speed. `Build.sync` syncs both overlays.
+- The clips never key the wheels, the fork or the antenna (`DRIVEN` in `clips.py`). His eyes are closed arcs, so he has no Blink; `mouth` opens by scale for Cast and Win.
+- Flap is an additive wingbeat on his bat wings, played like Chocobo's whenever `flying` is set.
+- He does not receive shadows on himself (`selfShadow: false`), because the sun's shadow blotched his white head.
+
+Pitfalls met on Mog:
+
+- An `ellipsoid` whose axis runs along its `up_hint` (a ball lofted along +Z with the default hint) gets no frame and does not show. Pass an `up_hint` across the axis.
+- An arm raised overhead disappears behind a big head from the front and the back. A wave reads when the upper arm swings out to the side (+Z for the left arm, after a small -X lift) and the forearm rises (-Y for the left).
+- A part that covers only one side, such as half of a neckerchief, must go in the mirrored list, or it reads as a diagonal strap.
+- An open-ended loft, such as a horn's bell, shows the outline hull through its mouth as a grey disc. Cap it and paint the cap dark.
+- From the chase camera, batteries as tall as the model sheet draws them read too tall; the original's race view shows them only up to his shoulders, with the wings just above them.
