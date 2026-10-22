@@ -1,7 +1,6 @@
 # Racer models
 
-Most racers are built in code from primitives in `src/gfx/characters/racers/*.ts`: rigid parts on a joint hierarchy, baked into vertex-coloured toon meshes by `Rig`.
-Chocobo, Mog, Golem, Goblin, White Mage, Chubby Chocobo, Bahamut, Cloud and Behemoth are authored as skinned, textured GLBs, by Blender scripts in this repository.
+Every racer is authored as a skinned, textured GLB by Blender scripts in this repository: Chocobo, Mog, Golem, Goblin, Black Magician, White Mage, Chubby Chocobo, Bahamut, Cloud and Behemoth.
 This page describes that pipeline so the next racer can reuse it.
 
 ## Pipeline
@@ -14,6 +13,7 @@ npm run character -- golem
 npm run character -- chubby
 npm run character -- mog
 npm run character -- goblin
+npm run character -- black_mage
 npm run character -- white_mage
 ```
 
@@ -25,16 +25,16 @@ The shared pipeline lives in `scripts/characters/pipeline/`:
 
 | Module | Job |
 | --- | --- |
-| `geometry.py` | Smooth paths, lofted tubes (`loft`, `ellipsoid`, `claw`), round (`ellipse`) and rounded-box (`superellipse`) rings, flat-ended boxes (`box`, `flat`), Coons patches for membranes, thickening and mirroring. Every part carries its own (u, v) parameters. |
+| `geometry.py` | Smooth paths, lofted tubes (`loft`, `ellipsoid`, `claw`), surfaces of revolution about any axis (`lathe`, from (offset, radius) points, optionally smoothed by a spline), round (`ellipse`) and rounded-box (`superellipse`) rings, flat-ended boxes (`box`, `flat`), Coons patches for membranes, thickening and mirroring. Every part carries its own (u, v) parameters. |
 | `weights.py` | Skin weights without painting: `rigid`, `along` (blend down a loft between consecutive bones) and `nearest` (inverse distance to bone segments). At most four influences per vertex. |
-| `atlas.py` | Packs one rectangle per skin into a 1024 x 1024 atlas, maps part UVs into it with padding, and paints each skin with numpy. |
+| `atlas.py` | Packs one rectangle per skin into a 1024 x 1024 atlas, maps part UVs into it with padding, and paints each skin with numpy. `value_noise` gives painters smooth noise that wraps around a loft; `glow` makes the small emission mask. |
 | `scene.py` | Armature, joined body mesh, the outline hull (welded and decimated), the ambient-occlusion bake into vertex colours, materials and the GLB export with meshopt compression and WebP textures. |
-| `anim.py` | Clips written as functions of time in armature-space angles, keyed into Blender actions. `mirrored` adds the right side from the left, and `aim` gives the rotation that points a bone in a direction. |
+| `anim.py` | Clips written as functions of time in armature-space angles, keyed into Blender actions. `mirrored` adds the right side from the left, `aim` gives the rotation that points a bone in a direction, and `reach` aims an arm's two bones, and optionally something held in the fist, by direction. |
 
 A character is a package `scripts/characters/<name>/` with three modules:
 
 - `model.py`: `skeleton()` returns bones as (head, tail, parent) in armature space, and `parts(skeleton)` returns the parts with their skins and weights.
-- `paint.py`: `PAINTERS` (one painter per skin), `SIZES` (atlas rectangle per skin), `BACKGROUND` and `OUTLINE` (the ink colour).
+- `paint.py`: `PAINTERS` (one painter per skin), `SIZES` (atlas rectangle per skin), `BACKGROUND` and `OUTLINE` (the ink colour). Optionally `AO_STRENGTH`, and `GLOW`, a strength per skin that lights itself: those skins also go into a 256 x 256 emission mask, which the GLB carries as the material's emissive texture.
 - `clips.py`: `CLIPS`, the list of `Clip`s to export.
 
 Armature space is Blender's: +X is the character's left, -Y is forward and +Z is up, in game metres.
@@ -51,6 +51,7 @@ The Python is formatted and linted with Ruff: `uvx ruff format scripts/character
 - `src/gfx/characters/skinned.ts` clones a model with `SkeletonUtils.clone`, gives the body the shared toon material (atlas as `map`, ambient occlusion as vertex colours, the rig's flash, rim and fade uniforms) and turns the `Outline` mesh into the inverted hull. Geometry, texture and clips stay shared between instances; `dispose` skips geometry marked `userData.shared`.
 - `src/gfx/characters/racers/cloud.ts` is a rider on a vehicle: one armature holds Cloud and the Hardy-Daytona. The wheels and the fork have their own bones that no clip keys; `driven()` in `skinned.ts` gives each one a stand-in joint, which the shared animator spins (`Build.wheels`) and steers (`Build.steer`) like a code-built racer's joint, and turns the bone about an axis given in model space after the mixer update. Idle and Ride blend by speed; Cast, Win and Lose follow the reaction's clock.
 - The head of a skinned racer is turned through `overlay()` in `skinned.ts`. The shared animator and the reaction poses rotate a stand-in joint (`Build.head`) in model axes, and `Build.sync`, which `index.ts` calls after the poses, turns the head bone by it on top of its clips. Never add to a bone's rotation after `mixer.update`: the mixer only writes a bone when its blended clip value changes, so on any frame it skips, such as a paused Studio or a held pose, the addition piles up and the head spins. Advance the model with `SkinnedModel.update`, which puts the clip value back before each mixer update. `tests/studio-heads.browser.ts` checks every racer's head in the Studio.
+- A model with a `GLOW` mask keeps it: `skinnedModel` copies the GLB's emissive map onto the toon material, so glowing eyes stay bright in the shade.
 - Skinned bodies receive the sun's shadow with a reach (`SELF_SHADOW_REACH` in `skinned.ts`, `shadowReach` in `materials/toon.ts`): the shadow lookup moves 3 m toward the sun, so occluders nearer than that, which is the racer itself, are ignored, while roofs, tunnels and arches further away still darken the racer.
   Without it, a back turned away from the sun was blotched: the toon ramp keeps half of the direct light in its darkest band, and the soft edge of the racer's own shadow wandered across that band in patches. Baked ambient occlusion was not the cause, and turning off shadow receiving would lose the darkening in tunnels and under roofs and arches. Checked on all five skinned racers in Mythril Mines.
 - `src/gfx/characters/racers/bahamut.ts` builds the `Build` the rest of the game expects: head overlay, exhaust and contact anchors fixed to bones, and an `update` that drives an `AnimationMixer`. Hover and Fly blend by speed. Roar, Win and Lose follow the reaction's own clock so every viewer sees the same frame, and Blink plays on its own timer. The shared lean, stun spin and reaction poses from `index.ts` and `poses.ts` still apply on top.
@@ -70,10 +71,12 @@ Measured in the Studio with `createCharacter` (triangles of the body and of the 
 | Cloud | 11,032 | 4,570 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Cloud |
 | Behemoth | 12,220 | 4,224 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Behemoth |
 | Golem | 11,680 | 4,754 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Golem (the procedural model had 5,588, 5,220 and 18) |
+| Black Magician | 12,104 | 3,816 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, and a 256 x 256 emission mask, 0.35 MB, both shared by every Black Magician (the procedural model had 7,286, 6,252 and 38) |
 
 The Bahamut GLB is 469 KB with 36 bones and six clips; the Cloud GLB is 329 KB with 24 bones and six clips; the Chubby Chocobo GLB is 301 KB with 20 bones and seven clips.
 The Behemoth GLB is 407 KB with 37 bones and six clips; the code-built Behemoth it replaced had 12,192 and 9,308 triangles in 23 meshes.
 The Golem GLB is 399 KB with 23 bones and six clips.
+The Black Magician GLB is 338 KB with 20 bones and six clips.
 A new racer should stay near 12,000 body triangles and one atlas.
 
 ## Pitfalls
@@ -145,6 +148,7 @@ Pitfalls met on Chocobo:
 
 ```sh
 npm run character -- mog
+npm run character -- black_mage
 ```
 
 Mog on his kick scooter is one skinned GLB (325 KB, 19 bones, six clips), built by `scripts/characters/mog/`.
@@ -236,6 +240,27 @@ Pitfalls met on Goblin:
 - From the PS1's chase camera the helmet is a tall, boxy dome, about as tall as the mane is wide. A helmet that follows the skull reads as a low cap from behind, and a mane much wider than the helmet looks like a wig.
 - Eyes sunk into the face show only as slits under the rim. Bring them forward off the face so the whites read as round balls.
 
+## Black Magician and the MagiCloud MK-1
+
+```sh
+npm run character -- black_mage
+```
+
+Black Magician and his cloud share one armature (`scripts/characters/black_mage/`), with the riding pose as the rest pose: he stands on the cloud with his feet apart and the staff upright in his right fist.
+The hips hang from `cloud`, so the cloud's bob carries him; the puffs swell on their own leaf bones (`puff`, `puff.L`, `puff.R`), because scaling a bone scales its children too.
+The hat is a `lathe` about the vertical axis, smoothed through a few points (`along`), of one outline from the brim's underside, round the drooping rim and up the broad cone; its upper cone is weighted to `hat_tip`, which `racers/black-mage.ts` turns through a second `overlay()`, so no clip keys it: the tip lags behind, leaning back with speed and swinging out of turns.
+The cape is a thickened patch that hangs from `chest` and swings on `cape.L` and `cape.R`, one per half.
+`reach` in `clips.py` aims an arm with the shared `anim.reach`, and for the right arm also aims the staff, because a staff that only follows the forearm points down as soon as the arm is raised.
+His eyes and, faintly, the cloud are in `GLOW`, so the eyes glow under the brim and the cloud's shaded side stays pale.
+
+Pitfalls met on Black Magician:
+
+- From the menu camera and the chase camera a wide brim hides the face. The hat sits tipped back a little, the face sits forward under it, and the idle clip holds the head up.
+- The shared win and lose poses pitch the head back and forward by about a third of a radian. Under a wide brim that shows the hat's underside or buries the face, so his Win and Lose clips turn the head the other way.
+- An outline round every puff reads as a pile of snowballs from behind. Only the cloud's body carries the ink outline, and the biggest puffs sit at the sides, where the original's chase view shows them.
+- From the PS1 chase camera the hat is a wide, floppy straw mound that hides most of the cone. `brim` in `model.py` reshapes the lathe beyond the cone's base: wider than the cape, drooping at the sides and most at the back, shorter and turned up a little in front so the eyes still show, with a ragged rim. The straw is painted as coarse fibres and a plait, darker in tufts toward the rim.
+- The PS1 hat is bright orange on the Select Racer screen and a duller ochre in the chase view. Measure both and pick the paint between them, under the game's lighting.
+
 ## White Mage and the Cosmic Carpet
 
 ```sh
@@ -248,15 +273,14 @@ One armature carries her and the carpet, and the rest pose is the riding pose: s
 - The carpet is a chain of bones from front to back (`carpet_front`, `carpet`, `carpet_back`, `carpet_tail`), weighted along the carpet's loft. Every loop ripples the chain and bobs `carpet`, and she sits on `carpet`, so she bobs with it. Nothing on her is turned in code except the head.
 - She is modelled at a child's size round her seat and grown by `RIDER_SCALE` in `model.py` (`grown()`), so she stands about as tall as Goblin in his cart, as on the Select Racer screen, while the carpet keeps its own size.
 - The hair is one thick shell (`bob()`): the outer surface rises from a lower edge that follows `HAIR_EDGE` (the forehead in front, straight down past the cheeks to the jaw, the nape behind) to the crown, turns in over a rim and comes back up inside. It swells into `HAIR_LOBES` chunky locks whose tips hang below the hollows, and the painter lays its grooves in those hollows and shades the back of the bob darker toward the nape.
-- The staff rides on `staff` under the right hand. `reach()` in `clips.py` poses an arm by the directions its upper arm and forearm should point, and turns the staff so the orb points where asked whatever the arm does.
+- The staff rides on `staff` under the right hand. Arms are posed with the shared `anim.reach` by the directions the upper arm and forearm should point, and it turns the staff so the orb points where asked whatever the arm does.
 - Blink squashes the eye lenses on `eye.L` and `eye.R`; `mouth` opens by scale for Cast and Win; the hair tie's tuft hangs from `tie`.
 
 Pitfalls met on White Mage:
 
 - The Final Fantasy white mage wears a hood with red triangle trim; the Chocobo Racing one does not. Check the game's select screen and chase view before modelling the series' costume.
 - A lock of hair whose path runs along its up hint gets no frame and does not show. Bangs that hang down need a forward hint.
-- Bell sleeves raised toward the camera show their cuffs as big discs. Pose arms by direction (`reach()`): rotating the upper arm alone swings the forearm, cuff first, toward the camera.
+- Bell sleeves raised toward the camera show their cuffs as big discs. Pose arms by direction (`anim.reach`): rotating the upper arm alone swings the forearm, cuff first, toward the camera.
 - A thin slab lofted with a squarish cross-section gives its flat top only a narrow strip of each ring, so the top's painted pattern comes out blurred across. A rounder section (`CARPET_POWER`) gives the top half of the ring and half of the texture.
 - An eye painted by the loft's v alone covers the lens with the iris. Paint it by the point's place across the lens as the camera sees it.
 - Painted shade on hair belongs where the original shows it: dark round the nape from behind, but bright pink at the sides of the face from the front.
-

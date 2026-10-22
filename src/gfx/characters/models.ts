@@ -3,6 +3,7 @@ import { GLTFLoader, type GLTF } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import bahamutUrl from '../../assets/characters/bahamut.glb?url';
 import behemothUrl from '../../assets/characters/behemoth.glb?url';
+import blackMageUrl from '../../assets/characters/black_mage.glb?url';
 import chocoboUrl from '../../assets/characters/chocobo.glb?url';
 import chubbyUrl from '../../assets/characters/chubby.glb?url';
 import cloudUrl from '../../assets/characters/cloud.glb?url';
@@ -12,7 +13,7 @@ import mogUrl from '../../assets/characters/mog.glb?url';
 import whiteMageUrl from '../../assets/characters/white_mage.glb?url';
 
 /** Racers authored as skinned GLB files by `npm run character`, rather than built from code. */
-const URLS = { bahamut: bahamutUrl, behemoth: behemothUrl, chocobo: chocoboUrl, chubby: chubbyUrl, cloud: cloudUrl, goblin: goblinUrl, golem: golemUrl, mog: mogUrl, white_mage: whiteMageUrl } as const;
+const URLS = { bahamut: bahamutUrl, behemoth: behemothUrl, black_mage: blackMageUrl, chocobo: chocoboUrl, chubby: chubbyUrl, cloud: cloudUrl, goblin: goblinUrl, golem: golemUrl, mog: mogUrl, white_mage: whiteMageUrl } as const;
 export type ModelId = keyof typeof URLS;
 
 const models = new Map<ModelId, GLTF>();

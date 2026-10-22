@@ -3,7 +3,7 @@
     Blender -b --factory-startup --python-exit-code 1 -P scripts/characters/build.py -- bahamut OUT.glb
 
 The character package (`scripts/characters/<name>/`) provides `model.skeleton()`, `model.parts(skeleton)`,
-`paint.PAINTERS`, `paint.SIZES`, `paint.BACKGROUND` and `clips.CLIPS`. Everything else is shared pipeline.
+`paint.PAINTERS`, `paint.SIZES`, `paint.BACKGROUND` and `clips.CLIPS`, and optionally `paint.AO_STRENGTH` and `paint.GLOW`. Everything else is shared pipeline.
 """
 
 from __future__ import annotations
@@ -21,6 +21,7 @@ ATLAS = 1024
 AO_DISTANCE = 0.45
 AO_STRENGTH = 0.4
 OUTLINE_KEEP = 0.45
+GLOW_SIZE = 256
 
 
 def main(name: str, out: Path) -> None:
@@ -39,7 +40,11 @@ def main(name: str, out: Path) -> None:
     # A character can soften its ambient occlusion, for example a bright, flat-shaded body.
     scene.bake_ao(body, AO_DISTANCE, getattr(paint, "AO_STRENGTH", AO_STRENGTH))
     texture = scene.image(f"{name}_atlas", colour)
-    body.data.materials.append(scene.textured_material(name, texture))
+    # A character can name skins that light themselves, such as glowing eyes, with a strength each; they get a small
+    # emission mask.
+    skins = getattr(paint, "GLOW", {})
+    glow = scene.image(f"{name}_glow", atlas.glow(colour, rects, skins, GLOW_SIZE)) if skins else None
+    body.data.materials.append(scene.textured_material(name, texture, glow))
     outline.data.materials.append(scene.plain_material("Outline", paint.OUTLINE))
     for clip in clips.CLIPS:
         anim.bake(rig, clip)

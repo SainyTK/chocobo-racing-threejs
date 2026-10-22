@@ -79,3 +79,29 @@ def band(x: np.ndarray, center: float, width: float, soft: float = 0.02) -> np.n
     """1 inside |x - center| < width / 2, with soft edges."""
     d = np.abs(x - center) - width / 2
     return np.clip(0.5 - d / max(soft, 1e-4), 0, 1)
+
+
+def value_noise(u: np.ndarray, v: np.ndarray, cells: int, seed: int, rows: int | None = None) -> np.ndarray:
+    """Smooth random values in 0..1 on a grid of `cells` around u and `rows` along v (as many as `cells` unless
+    given), wrapping around u so a loft shows no seam."""
+    rows = rows or cells
+    grid = np.random.default_rng(seed).random((rows + 1, cells))
+    x, y = u * cells, v * rows
+    x0, y0 = np.floor(x).astype(int), np.clip(np.floor(y).astype(int), 0, rows - 1)
+    fx, fy = x - x0, y - y0
+    fx, fy = fx * fx * (3 - 2 * fx), fy * fy * (3 - 2 * fy)
+    x0, x1 = x0 % cells, (x0 + 1) % cells
+    top = grid[y0, x0] * (1 - fx) + grid[y0, x1] * fx
+    bottom = grid[y0 + 1, x0] * (1 - fx) + grid[y0 + 1, x1] * fx
+    return top * (1 - fy) + bottom * fy
+
+
+def glow(img: np.ndarray, rects: dict[str, Rect], skins: dict[str, float], size: int) -> np.ndarray:
+    """An emission mask for skins that light themselves: the atlas colour inside their rectangles, scaled by each skin's
+    strength, and black elsewhere, averaged down to `size` pixels square, since it only needs to cover those rectangles."""
+    out = np.zeros_like(img)
+    for name, strength in skins.items():
+        r = rects[name]
+        out[r.y : r.y + r.h, r.x : r.x + r.w] = img[r.y : r.y + r.h, r.x : r.x + r.w] * strength
+    f = img.shape[0] // size
+    return out.reshape(size, f, size, f, 3).mean(axis=(1, 3))

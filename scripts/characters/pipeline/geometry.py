@@ -347,3 +347,59 @@ def box(
 ) -> Part:
     """A flat-ended rounded box from `start` to `end`, the width across and the height toward `up_hint`."""
     return flat(loft(name, skin, [start, end], superellipse(lambda t: half_width, lambda t: half_height, power), around, along, up_hint), around)
+
+
+def lathe(
+    name: str, skin: str, centre: Vec, axis: Vec, profile: Sequence[tuple[float, float]], around: int, phase: float = 0.0, along: int | None = None
+) -> Part:
+    """A solid of revolution about `axis` through `centre`, from (offset along the axis, radius) points.
+
+    The ends close with a pole when their radius is zero; `phase` turns the ring, for example to square up a four-sided
+    one. u runs around, v along the profile by arc length, so a painter can tell the faces of a wheel from its tread.
+    With `along`, the profile is first smoothed by a spline through its points and resampled in that many even steps,
+    for a curved outline such as a hat's drawn from a few points; without it the points are used as they are.
+    """
+    if along:
+        profile = [(p.x, p.y) for p in catmull_rom([(x, r, 0.0) for x, r in profile], along)]
+    centre = Vector(centre)
+    d = Vector(axis).normalized()
+    side = d.cross(Vector((0, 0, 1))) if abs(d.z) < 0.9 else d.cross(Vector((1, 0, 0)))
+    side.normalize()
+    up = side.cross(d)
+    lengths = [0.0]
+    for (x0, r0), (x1, r1) in zip(profile, profile[1:], strict=False):
+        lengths.append(lengths[-1] + math.hypot(x1 - x0, r1 - r0))
+    rings = [(x, r, length / lengths[-1]) for (x, r), length in zip(profile, lengths, strict=True)]
+    verts: list[Vector] = []
+    params: list[tuple[float, float]] = []
+    index: list[list[int]] = []
+    for x, r, v in rings:
+        if r < 1e-6:
+            verts.append(centre + d * x)
+            params.append((0.5, v))
+            index.append([len(verts) - 1] * around)
+            continue
+        row = []
+        for j in range(around):
+            a = phase + 2 * math.pi * j / around
+            verts.append(centre + d * x + (side * math.cos(a) + up * math.sin(a)) * r)
+            params.append((j / around, v))
+            row.append(len(verts) - 1)
+        index.append(row)
+    faces: list[tuple[int, ...]] = []
+    uvs: list[list[tuple[float, float]]] = []
+    for i in range(len(rings) - 1):
+        v0, v1 = rings[i][2], rings[i + 1][2]
+        for j in range(around):
+            a, b, c, e = index[i][j], index[i][(j + 1) % around], index[i + 1][(j + 1) % around], index[i + 1][j]
+            u0, u1 = j / around, (j + 1) / around
+            if a == b:
+                faces.append((a, c, e))
+                uvs.append([((u0 + u1) / 2, v0), (u1, v1), (u0, v1)])
+            elif c == e:
+                faces.append((a, b, c))
+                uvs.append([(u0, v0), (u1, v0), ((u0 + u1) / 2, v1)])
+            else:
+                faces.append((a, b, c, e))
+                uvs.append([(u0, v0), (u1, v0), (u1, v1), (u0, v1)])
+    return Part(name, skin, verts, faces, uvs, params=params)

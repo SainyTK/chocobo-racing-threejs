@@ -14,11 +14,11 @@ Units are game metres; armature space has +X left, -Y forward, +Z up.
 from __future__ import annotations
 
 import math
-from collections.abc import Callable, Sequence
+from collections.abc import Callable
 
 from mathutils import Vector
 
-from pipeline.geometry import Part, box, ellipse, ellipsoid, loft, mirror, smoothstep, spline
+from pipeline.geometry import Part, box, ellipse, ellipsoid, lathe, loft, mirror, smoothstep, spline
 from pipeline.scene import BoneSpec
 from pipeline.weights import along, rigid
 
@@ -121,55 +121,6 @@ def skeleton() -> dict[str, BoneSpec]:
 
 
 # Shapes.
-
-
-def lathe(name: str, skin: str, centre: Vector, axis: Vector, profile: Sequence[tuple[float, float]], around: int, phase: float = 0.0) -> Part:
-    """A solid of revolution about `axis` through `centre`, from (offset along the axis, radius) points.
-
-    The ends close with a pole when their radius is zero; `phase` turns the ring, for example to square up a four-sided
-    one. u runs around, v along the profile by arc length, so a painter can tell the faces of a wheel from its tread.
-    """
-    d = axis.normalized()
-    side = d.cross(Vector((0, 0, 1))) if abs(d.z) < 0.9 else d.cross(Vector((1, 0, 0)))
-    side.normalize()
-    up = side.cross(d)
-    lengths = [0.0]
-    for (x0, r0), (x1, r1) in zip(profile, profile[1:], strict=False):
-        lengths.append(lengths[-1] + math.hypot(x1 - x0, r1 - r0))
-    rings = [(x, r, length / lengths[-1]) for (x, r), length in zip(profile, lengths, strict=True)]
-    verts: list[Vector] = []
-    params: list[tuple[float, float]] = []
-    index: list[list[int]] = []
-    for x, r, v in rings:
-        if r < 1e-6:
-            verts.append(centre + d * x)
-            params.append((0.5, v))
-            index.append([len(verts) - 1] * around)
-            continue
-        row = []
-        for j in range(around):
-            a = phase + 2 * math.pi * j / around
-            verts.append(centre + d * x + (side * math.cos(a) + up * math.sin(a)) * r)
-            params.append((j / around, v))
-            row.append(len(verts) - 1)
-        index.append(row)
-    faces: list[tuple[int, ...]] = []
-    uvs: list[list[tuple[float, float]]] = []
-    for i in range(len(rings) - 1):
-        v0, v1 = rings[i][2], rings[i + 1][2]
-        for j in range(around):
-            a, b, c, e = index[i][j], index[i][(j + 1) % around], index[i + 1][(j + 1) % around], index[i + 1][j]
-            u0, u1 = j / around, (j + 1) / around
-            if a == b:
-                faces.append((a, c, e))
-                uvs.append([((u0 + u1) / 2, v0), (u1, v1), (u0, v1)])
-            elif c == e:
-                faces.append((a, b, c))
-                uvs.append([(u0, v0), (u1, v0), ((u0 + u1) / 2, v1)])
-            else:
-                faces.append((a, b, c, e))
-                uvs.append([(u0, v0), (u1, v0), (u1, v1), (u0, v1)])
-    return Part(name, skin, verts, faces, uvs, params=params)
 
 
 def head_point(t: float, a: float, lift: float = 0.0) -> Vector:

@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from pipeline.atlas import Painter, band, fill, hex_rgb, mix
+from pipeline.atlas import Painter, band, fill, hex_rgb, mix, value_noise
 
 from .model import CARPET_POWER
 
@@ -50,14 +50,6 @@ def shaded(base: str, light: str, dark: str, k: float = 0.6) -> Painter:
         return mix(img, fill(dark, u), np.clip(-up, 0, 1) * k)
 
     return painter
-
-
-def noise(u: np.ndarray, v: np.ndarray, waves: tuple[tuple[int, float, float], ...]) -> np.ndarray:
-    """A sum of sines in whole waves round u, so no seam shows where u wraps: (waves round, waves along, phase)."""
-    out = np.zeros_like(u)
-    for k, (nu, nv, ph) in enumerate(waves):
-        out += np.sin(2 * np.pi * (nu * u + nv * v) + ph + k) / len(waves)
-    return out
 
 
 def strands(u: np.ndarray, v: np.ndarray, count: int) -> np.ndarray:
@@ -134,7 +126,7 @@ def zigzag(x: np.ndarray, count: int) -> np.ndarray:
 
 def cloth(u: np.ndarray, v: np.ndarray, folds: int) -> np.ndarray:
     """White cloth: soft vertical folds and a fine weave, a little darker underneath."""
-    img = mix(fill(WHITE, u), fill(WHITE_SHADE, u), np.clip(noise(u, v, ((folds, 0.3, 0.0), (folds + 3, 0.6, 1.1))) * 0.9, 0, 1) * 0.6)
+    img = mix(fill(WHITE, u), fill(WHITE_SHADE, u), np.clip((value_noise(u, v, folds, folds, rows=2) - 0.45) * 2, 0, 1) * 0.6)
     weave = (np.sin(2 * np.pi * u * 180) * np.sin(2 * np.pi * v * 120) > 0.6) * 0.08
     return mix(img, fill(WHITE_FOLD, u), np.broadcast_to(weave, u.shape))
 

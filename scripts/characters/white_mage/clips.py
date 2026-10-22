@@ -12,8 +12,9 @@ from __future__ import annotations
 import math
 from collections.abc import Sequence
 
-from mathutils import Quaternion, Vector
+from mathutils import Vector
 
+from pipeline import anim
 from pipeline.anim import Clip, Pose, mirrored
 from white_mage.model import ELBOW, SHOULDER, WRIST
 
@@ -21,28 +22,15 @@ TAU = math.tau
 EYES = ("eye.L", "eye.R")
 STAFF_REST = Vector((-1, 0, 0))
 """At rest the staff lies across her lap with the orb out to her right."""
-V3 = tuple[float, float, float]
-
-
-def euler(q: Quaternion) -> V3:
-    e = q.to_euler("XYZ")
-    return (e.x, e.y, e.z)
 
 
 def reach(side: str, upper: Sequence[float], lower: Sequence[float], k: float = 1.0, staff: Sequence[float] | None = None) -> Pose:
-    """One arm with the upper arm pointing along `upper` and the forearm along `lower`, armature-space directions, by
-    weight k from the riding pose. With `staff`, the right fist also turns the staff so the orb points that way."""
+    """One arm aimed with `anim.reach` so the upper arm and forearm point along `upper` and `lower`, armature-space
+    directions for that side. With `staff`, the right fist also turns the staff so the orb points that way."""
     flip = Vector((1 if side == "L" else -1, 1, 1))
-    up_rest, low_rest = (ELBOW - SHOULDER) * flip, (WRIST - ELBOW) * flip
-    arm = up_rest.rotation_difference(Vector(upper))
-    world = (arm @ low_rest).rotation_difference(Vector(lower)) @ arm
-    fore = arm.inverted() @ world
-    arm, fore = Quaternion().slerp(arm, k), Quaternion().slerp(fore, k)
-    pose: Pose = {f"arm.{side}": (euler(arm), (0, 0, 0)), f"forearm.{side}": (euler(fore), (0, 0, 0))}
-    if staff is not None:
-        turn = (arm @ fore).inverted() @ STAFF_REST.rotation_difference(Vector(staff))
-        pose["staff"] = (euler(Quaternion().slerp(turn, k)), (0, 0, 0))
-    return pose
+    rest = (((ELBOW - SHOULDER) * flip).normalized(), ((WRIST - ELBOW) * flip).normalized())
+    held = ("staff", STAFF_REST, staff) if staff is not None else None
+    return anim.reach(side, rest, Vector(upper).normalized(), Vector(lower).normalized(), k, held)
 
 
 def envelope(t: float, seconds: float) -> float:

@@ -38,6 +38,8 @@ export function skinnedModel(r: Rig, id: ModelId, width = .032): SkinnedModel {
     if (o.name.startsWith('Outline')) { outline = `#${source.color.getHexString()}`; o.material = outlineMaterial(outline, width, r.skin); o.castShadow = false; o.userData.outline = true; return; }
     const m = toon('#ffffff', r.skin, { shadowReach: SELF_SHADOW_REACH });
     m.map = source.map; m.vertexColors = !!o.geometry.attributes.color; o.material = m; o.castShadow = o.receiveShadow = true;
+    // Parts that light themselves, such as glowing eyes, come as an emission mask over the same UVs.
+    if (source.emissiveMap) { m.emissiveMap = source.emissiveMap; m.emissive.set('#ffffff'); }
   });
   r.model.add(root);
   const mixer = new THREE.AnimationMixer(root), actions = new Map(gltf.animations.map(clip => [clip.name, mixer.clipAction(clip)]));

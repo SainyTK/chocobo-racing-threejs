@@ -123,7 +123,8 @@ def image(name: str, rgb: np.ndarray) -> bpy.types.Image:
     return img
 
 
-def textured_material(name: str, img: bpy.types.Image) -> bpy.types.Material:
+def textured_material(name: str, img: bpy.types.Image, glow: bpy.types.Image | None = None) -> bpy.types.Material:
+    """The body's material: the atlas as base colour and, when given, a glow mask as emission (glTF emissiveTexture)."""
     mat = bpy.data.materials.new(name)
     mat.use_nodes = True
     nodes = mat.node_tree.nodes
@@ -131,6 +132,11 @@ def textured_material(name: str, img: bpy.types.Image) -> bpy.types.Material:
     tex = nodes.new("ShaderNodeTexImage")
     tex.image = img
     mat.node_tree.links.new(tex.outputs["Color"], bsdf.inputs["Base Color"])
+    if glow:
+        emission = nodes.new("ShaderNodeTexImage")
+        emission.image = glow
+        mat.node_tree.links.new(emission.outputs["Color"], bsdf.inputs["Emission Color"])
+        bsdf.inputs["Emission Strength"].default_value = 1.0
     mat.use_backface_culling = True
     bsdf.inputs["Roughness"].default_value = 1.0
     bsdf.inputs["Metallic"].default_value = 0.0

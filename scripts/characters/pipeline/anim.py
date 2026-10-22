@@ -6,7 +6,7 @@ Armature space: +X is the character's left, -Y forward, +Z up. A positive X angl
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 
 import bpy
@@ -51,6 +51,27 @@ def aim(rest: Vector, target: Vector, parent: Quaternion | None = None) -> tuple
     turn = rest.rotation_difference(local)
     e = turn.to_euler("XYZ")
     return (e.x, e.y, e.z), (parent @ turn) if parent else turn
+
+
+def reach(
+    side: str,
+    rest: tuple[Vector, Vector],
+    upper: Sequence[float],
+    lower: Sequence[float],
+    k: float = 1.0,
+    held: tuple[str, Vector, Sequence[float]] | None = None,
+) -> Pose:
+    """The `arm.<side>` and `forearm.<side>` bones aimed so the upper arm and forearm point along `upper` and `lower`,
+    unit armature-space directions, blended from their unit rest directions `rest` by k. `held` is (bone, rest direction,
+    direction) for something in the fist, such as a staff, aimed too whatever the arm does; otherwise it simply turns
+    with the forearm."""
+    (ax, ay, az), turn = aim(rest[0], rest[0].lerp(Vector(upper), k).normalized())
+    (fx, fy, fz), turn = aim(rest[1], rest[1].lerp(Vector(lower), k).normalized(), turn)
+    pose: Pose = {f"arm.{side}": ((ax, ay, az), (0, 0, 0)), f"forearm.{side}": ((fx, fy, fz), (0, 0, 0))}
+    if held:
+        bone, base, direction = held
+        pose[bone] = (aim(base, base.lerp(Vector(direction).normalized(), k).normalized(), turn)[0], (0, 0, 0))
+    return pose
 
 
 def bake(rig: bpy.types.Object, clip: Clip, fps: int = 30) -> bpy.types.Action:
