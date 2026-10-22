@@ -112,23 +112,23 @@ export const RACER_HEIGHT = 3.6;
  * pulls in to a white ball. Times are seconds since use; the rays end last.
  */
 export const ACTIVATION_BURST: BurstLook = {
-  cross: [.08, .45], glow: [.1, .45], core: [.4, 1], rays: [.15, 1.3],
+  cross: [.08, .5], glow: [.15, .85], core: [.75, 1.35], rays: [.2, 1.4],
   crossColor: '#ffffff', glowInner: '#d6d0e8', glowRim: '#9a7fc4', coreColor: '#ffffff', rayColor: '#fff4fb', rayTip: '#e48ad8',
   size: { cross: 1.6, glowFrom: .3, glowTo: .95, core: .6, coreEnd: .14, rays: 10, rayFrom: 1, rayTo: 2.6 },
   plane: 'screen', centre: .4, fill: .6, squash: 1, wash: .6,
 };
 /** Mug's burst: a softer white disc with a lavender edge, a little wider. */
 export const MUG_BURST: BurstLook = {
-  ...ACTIVATION_BURST, cross: [.05, .4], glow: [.08, .5], core: [.5, 1.1], rays: [.6, 1.2],
+  ...ACTIVATION_BURST, cross: [.05, .45], glow: [.15, .95], core: [.85, 1.35], rays: [.55, 1.4],
   glowInner: '#e8ebf9', glowRim: '#9c9ce4', rayColor: '#f2d4f0', rayTip: '#b049c6',
   size: { ...ACTIVATION_BURST.size, glowFrom: .35, glowTo: 1.1, core: .65 },
 };
-/** Magic Plus's burst spreads to five or six kart widths before it pulls in. */
+/** Magic Plus's burst spreads to three or four racer widths before it pulls in, with fewer, longer rays. */
 export const MAGIC_BURST: BurstLook = {
   ...ACTIVATION_BURST, cross: [.13, .6], glow: [.13, .6], core: [.6, 1.1], rays: [.3, 1.35],
   glowInner: '#f0eee8', glowRim: '#a5a8e8', rayColor: '#ffd7de', rayTip: '#e4a8c8',
-  size: { cross: 2.6, glowFrom: .6, glowTo: 2.1, core: .9, coreEnd: .2, rays: 12, rayFrom: 1.6, rayTo: 4 },
-  fill: .32, squash: .7,
+  size: { cross: 2.2, glowFrom: .5, glowTo: 1.4, core: .75, coreEnd: .2, rays: 7, rayFrom: 1.4, rayTo: 3.6 },
+  fill: .38, squash: .7,
 };
 
 /** Grip-Up, fitted to the remake's 7 s: times since use, sizes in racer heights. */
@@ -162,7 +162,7 @@ export const MUG = {
 
 /** Barrier: a pulse every `period` seconds, each `pulse` long; sizes in racer heights. */
 export const BARRIER = {
-  period: .71, pulse: .3, firstPulse: .9, lastPulseDelay: .08,
+  period: .71, pulse: .3, firstPulse: 1.3, lastPulseDelay: .08,
   /** The share of a pulse after which the white cap lifts off and the clear sphere fades. */
   capAt: .55,
   width: 1.25, height: 1, centre: .5, forward: .6, carpet: .08, sparkleRate: 10,
@@ -179,7 +179,7 @@ export const MAGIC_PLUS = {
 
 /** Receive: times since the catch; sizes in racer heights. */
 export const RECEIVE = {
-  grow: [.13, .53], clear: [.53, .8], streak: [.1, .5], halo: [.23, .6], rays: [.36, 1.1], sink: [.95, 1.45], seated: 1.5,
-  orbHeight: 1.5, orbMin: .08, orbMax: .36, orbClear: .5, stoneScale: 1.6, rayCount: 9,
+  grow: [.2, .65], clear: [.65, 1], streak: [.2, .7], halo: [.4, .8], rays: [.55, 1.6], sink: [1.15, 1.62], seated: 1.67,
+  orbHeight: 1.5, orbMin: .08, orbMax: .5, orbClear: .66, stoneScale: 1.6, rayCount: 9, wash: .55,
   orbCore: '#fefcfd', orbFringe: '#8f86e0', pillar: '#bcb6ec', haloInner: '#d8d2f4', haloRim: '#8a7fd6', ray: '#f2bce4', rayTip: '#b88ee8',
 } as const;

@@ -216,11 +216,11 @@ Deliberate deviations:
 ## Ability effects: Grip-Up, Mug, Magic Plus, Barrier and Receive
 
 These follow PS1 footage read frame by frame: Golem's two Grand Prix runs (17 Grip-Ups), Goblin's Grand Prix (14 Mugs) and a Chocobo run where a CPU Goblin mugs the player about every 20 s, Goblin and Black Magician with Magic Plus (7 triggers), a White Mage Grand Prix with Barrier (9 raises, 3 blocks) and Chubby Chocobo's Grand Prix (8 catches).
-They draw into the same flare batch as the effects above, so they add no draw call of their own; stones carried by Mug's helper or caught by Receive add one while they are on screen, and Mug's helper adds four while it runs.
+They draw into the same flare batch as the effects above, so they add no draw call of their own; stones carried by Mug's helper or caught by Receive add one while they are on screen, and Mug's helper adds six (its body and two legs, each with an ink outline) while it is on screen, about 1.6 s per Mug.
 Colours, sizes and phase times live in `abilities/looks.ts`, next to the others.
 
 Grip-Up, Mug, Barrier and Magic Plus open with the same flash in the frame after the gauge empties: a thin white cross of light through the racer, a pale disc with a violet rim about twice the kart's width, the racer washing out to white, then the disc pulling in to a white ball while thin white and pink rays shoot out.
-The remake draws that flash in `abilities/activation.ts`, with one look per ability: Mug's is softer and lavender, and Magic Plus's spreads to five or six kart widths.
+The remake draws it with the same `activationBurst()` as Dash (`abilities/burst.ts`), facing the camera, with one `BurstLook` per ability: Mug's is softer and lavender, and Magic Plus's spreads to three or four racer widths. Dash keeps its cross and glow flat on the road, as its footage shows.
 
 | Effect | Original | Remake |
 | --- | --- | --- |
@@ -235,7 +235,7 @@ The remake draws that flash in `abilities/activation.ts`, with one look per abil
 | Barrier up | Nothing stays on screen: every 0.71 s a frosty pale-cyan bowl rises from the carpet, closes into a nearly opaque white oval round her, lifts off as a cap with a small ring on top and leaves a clear cyan sphere that fades in 0.3 s; small sparkle crosses near the carpet between pulses | Same |
 | Barrier block | The spell's own effect plays, she rides on, at most one more pulse plays and the Barrier is gone; no block sprite | Same |
 | Receive waiting | Nothing on the racer | Same |
-| Receive catch | A white orb swells above his head on a faint light pillar, with a horizontal streak on the road, a lavender glow and pink rays round him; the orb clears with a cross flare to show the caught stone, which hovers and sinks to the end of his line about 1.7 s after the hit | Same, over 1.5 s |
+| Receive catch | A white orb swells above his head on a faint light pillar, with a horizontal streak on the road, a lavender glow and pink rays round him; the orb clears with a cross flare to show the caught stone, which hovers and sinks to the end of his line about 1.7 s after the hit | Same, with the same timing |
 
 What a rival sees: no footage shows a CPU Golem, Goblin, Black Magician, White Mage or Chubby Chocobo using these abilities in view of the player.
 The remake draws every one of them in the world round the racer, so a rival behind or beside sees the same sprites at its own distance, and the Studio shows each from the chase camera, the side and 20 m behind.
@@ -247,7 +247,7 @@ Deliberate deviations:
 | Original | Remake | Reason |
 | --- | --- | --- |
 | Grip-Up shows its rings for about 10.2 s | The rings last the remake's 7 s Grip-Up | Timings are gameplay |
-| Barrier pulses for as long as it stays up | The 4 s Barrier pulses from 0.9 s after it rises, about four pulses | Timings are gameplay |
+| Barrier pulses for as long as it stays up | The 4 s Barrier pulses from 1.3 s after it rises, about four pulses | Timings are gameplay |
 | The Mug helper is a 2D sprite seen from one angle | A small 3D model; each leg of its trip is drawn in the frame of the racer it visits | It has to read from any camera, and a victim far ahead must see it pass |
 | The Magic Plus stone flips black every 30 fps frame | It flickers 12.5 times a second | A 15 a second blink can line up with a 30 fps or 60 fps frame clock and vanish |
 | Receive is usually caught after the hit reaction | The catch plays without a crash | Receive cancels the hit in the simulation |

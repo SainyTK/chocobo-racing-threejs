@@ -105,7 +105,7 @@ export class AbilityFx {
     let best = this.flare.tint(p.id, out);
     const charge = this.charge.tint(p.charging, tinted); if (charge > best) { best = charge; out.copy(tinted); }
     const boost = p.charging > 0 ? 0 : this.boost.tint(p.id, tinted); if (boost > best) { best = boost; out.copy(tinted); }
-    const wash = this.activation.wash(p.id, this.time); if (wash > best) { best = wash; out.set('#ffffff'); }
+    const wash = Math.max(this.activation.wash(p.id, this.time), this.receive.wash(p.id, this.time)); if (wash > best) { best = wash; out.set('#ffffff'); }
     return best;
   }
 }

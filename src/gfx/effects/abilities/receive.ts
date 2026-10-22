@@ -25,6 +25,12 @@ export class ReceiveFx {
     if (stackIndex !== undefined) this.cues.arriving(racer, stackIndex, time + RECEIVE.seated);
   }
   reset() { this.catches.length = 0; }
+  /** How far the catch's glow washes the racer's model toward white, 0 to 1. */
+  wash(racer: string, time: number) {
+    let k = 0;
+    for (const c of this.catches) if (c.racer === racer) k = Math.max(k, swell(within(time - c.start, RECEIVE.halo), .4) * RECEIVE.wash);
+    return k;
+  }
   /** `slotAt` finds where the caught stack is drawn in the racer's line. */
   draw(batch: FlareBatch, frames: ReadonlyMap<string, RacerFrame>, slotAt: (racer: string) => THREE.Vector3 | null, time: number) {
     for (const c of this.catches) {
@@ -36,14 +42,15 @@ export class ReceiveFx {
         const radius = h * (clear >= 0 ? R.orbMax + (R.orbClear - R.orbMax) * clear : R.orbMin + (R.orbMax - R.orbMin) * grow);
         // Solid white while it grows, then see-through with a cross flare as the stone shows inside.
         const solid = clear >= 0 ? 1 - smooth(clear) : 1, alpha = clear >= 0 ? 1 - clear * clear : Math.min(1, grow * 4);
-        batch.glow(orb, radius, R.orbCore, R.orbFringe, alpha * (.45 + .55 * solid), .35, .55 + .4 * solid);
+        batch.glow(orb, radius * 1.25, R.orbFringe, R.orbFringe, alpha * .35, .2, .9);
+        batch.glow(orb, radius, R.orbCore, R.orbFringe, alpha * (.55 + .45 * solid), .3, .3 + .3 * solid);
         batch.ray(f.at, batch.up, batch.right, h * R.orbHeight, h * .1, R.pillar, R.pillar, alpha * .35, 1, .2);
         if (clear >= 0) for (let i = 0; i < 4; i++) batch.screenRay(orb, i * Math.PI / 2, radius * 1.8, h * .025, '#ffffff', R.orbFringe, alpha, .2, 1);
       }
       const ground = swell(within(t, R.streak), .2);
       if (ground > 0) for (const a of [0, Math.PI]) batch.screenRay(f.at, a, h * 1.6, h * .03, '#ffffff', R.pillar, ground * .8, .1, 1);
       const halo = swell(within(t, R.halo), .4);
-      if (halo > 0) { mid.copy(f.at).setY(f.at.y + h * .45); const k = batch.lift(mid, h * .9); batch.glow(mid, k * h * (.75 + .35 * within(t, R.halo)), R.haloInner, R.haloRim, halo * .75, .55, .6, .85); }
+      if (halo > 0) { mid.copy(f.at).setY(f.at.y + h * .45); const k = batch.lift(mid, h * .9); batch.glow(mid, k * h * (.75 + .35 * within(t, R.halo)), R.haloInner, R.haloRim, halo * .9, .55, .6, .85); }
       const rays = swell(within(t, R.rays), .2);
       if (rays > 0) {
         const seed = Math.floor(time * 30);
