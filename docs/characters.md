@@ -267,7 +267,7 @@ Pitfalls met on Black Magician:
 npm run character -- white_mage
 ```
 
-White Mage on her flying carpet is one skinned GLB (376 KB, 19 bones, six clips), built by `scripts/characters/white_mage/`.
+White Mage on her flying carpet is one skinned GLB (375 KB, 19 bones, six clips), built by `scripts/characters/white_mage/`.
 One armature carries her and the carpet, and the rest pose is the riding pose: she sits on the carpet with her legs folded and the staff across her lap.
 
 - The carpet is a chain of bones from front to back (`carpet_front`, `carpet`, `carpet_back`, `carpet_tail`), weighted along the carpet's loft. Every loop ripples the chain and bobs `carpet`, and she sits on `carpet`, so she bobs with it. Nothing on her is turned in code except the head.
