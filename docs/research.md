@@ -24,17 +24,19 @@ These describe this repository's behavior, not a claim of exact original code.
 
 | Area | Implemented behavior | Remaining differences |
 | --- | --- | --- |
-| Driving | World position, heading, velocity, lateral grip, acceleration, braking, reverse, drifting, wall response, falls and recovery | Hand-tuned arcade solver, no bit-for-bit physics match |
+| Driving | World position, heading, velocity, a lateral grip limit of about 4 g per racer, brake-tap sharp turns, short drifts with a 1.9 s over-drift spin, boost kicks that bleed off, wall hits that cost speed by impact, mass-based bumps, falls and recovery | Hand-tuned arcade solver, no bit-for-bit physics match |
 | Race validation | Twelve sequential gates per lap, reverse-crossing rejection, split times, finish ordering | Newly authored track layouts and gate locations |
-| Racers | Eight distinct handmade low-poly character/vehicle models, with different driving stats | No ripped meshes, original animations or textures; simplified silhouettes |
-| Inventory | Three slots trailing behind the racer, LIFO use, matching stones merged into one stack up to level three, theft by driving into a trailing stack | A merged stack frees slots, which the original does not do. Numeric timing and some defensive interactions are interpretations |
-| Magic | All eight main spell families, level-dependent effects, aimed and homing fireballs, physical ice traps, Doom transfer | Simplified visuals and attack targeting; no original effect assets |
-| Abilities | Dash, Flap, Grip-Up, Mug, Magic Plus, Barrier, Receive and Charge; independent selection | Recharge durations and effects are hand-tuned; Mug targets a nearby rival |
-| Grand Prix | Four local rounds, cumulative points, next grid follows finishing order, final champion | Courses proceed from the selected course through the next three; no difficulty-class unlocks |
+| Racers | Eight distinct handmade low-poly character/vehicle models, with driving stats balanced against the original's top speeds (84 to 88 MPH), and hit, cast, overtake, win and lose reactions | No ripped meshes, original animations or textures; simplified silhouettes |
+| Inventory | Three stones trailing behind the racer, LIFO use, matching stones merged into one stack up to level three with every stone still taking a place, theft by driving into a trailing stack | Numeric timing and some defensive interactions are interpretations |
+| Magic | All eight main spell families, per-course stone sets from the original's Story chapters in fixed-colour lanes, position-weighted "?" stones, targeting by race progress, the original's three hit tiers with a 2.5 s safe window, single-target Mini in 25% steps, Doom transfer, and CPU casting habits per character | Cid's Test Track has Moogle Forest's stones, where the original's first course had none. Durations are hand-tuned; no original effect assets |
+| Abilities | Dash, Flap, Grip-Up, Mug, Magic Plus, Barrier, Receive and Charge with the original's recharge times; each racer defaults to its own, and the player can choose another | Magic Plus recharges in 20 s and Charge in 14 s, both measured in all-CPU races. Dash lasts 2 s and Charge 1 s, shorter than the original, because boosts are worth more with this grip model. Barrier is a timed 4 s shield |
+| Race classes | Chocobo, Behemoth and Bahamut Class set CPU pace, cornering, brake taps, hazard misreads and shortcut use; Bahamut also makes every racer 10% faster. Mild catch-up keyed on the leading human | Every class is available from the start |
+| Courses | Per-course boost pads, mud and slick patches, jump ramps with airtime, a gap, shortcuts that count the road they skip, and timed hazards that warn before they strike | Newly authored placements inspired by the original's gimmicks |
+| Grand Prix | Four local rounds, cumulative points, next grid follows finishing order, final champion, at the chosen class | Courses proceed from the selected course through the next three; no difficulty-class unlocks |
 | Time Attack | Solo race with no pickups, saved best-race ghost and interpolated replay of actual recorded positions | Browser-local saves, configurable lap count, no memory-card import |
 | Versus | Player against one selected CPU rival | No split-screen or second local controller |
 | Online | Six-player private rooms with AI fill, authoritative simulation, recovery and rematches | Browser addition, not emulation of the original multiplayer |
-| Presentation | Gold title, blue beveled menus, portrait order, MPH, stone slots, ability gauge and minimap | Newly authored interface, fonts, synthesized music and scenery |
+| Presentation | Gold title, blue beveled menus, animated portrait order, MPH, stone slots, ability gauge, minimap, one callout at a time, a finish sequence with slow motion, orbit and podium, and synthesized engines, spell sounds and character barks | Newly authored interface, fonts, synthesized music, sounds and scenery |
 
 Not implemented: Story, Relay, secret characters, bonus courses, custom stat editing, original cutscenes, original soundtrack, exact maps, split-screen, public matchmaking or ranked online leaderboards. The in-game About screen states these limits.
 
@@ -73,7 +75,7 @@ The server limits rooms to six members and 100 active rooms. It bounds message s
 
 Snapshot buffering trades display latency for smoother arrival jitter. Extrapolation becomes unreliable around collisions. [11]
 
-The server sends full snapshots at 20 Hz. Clients send inputs about 30 times per second. Remote vehicles interpolate world position and heading with an 85 ms buffer. The local vehicle extrapolates current velocity for at most 100 ms, without inventing authoritative progress. Recovery teleports snap instead of interpolating through scenery. There is no full input prediction/reconciliation.
+The client predicts its own driving with the same shared driving code and reconciles to the server's authoritative state, replaying outstanding inputs for at most 250 ms. Remote vehicles interpolate world position and heading by simulation time with a 70 to 140 ms jitter-aware buffer and at most 100 ms extrapolation. Recovery teleports snap instead of interpolating through scenery. See `multiplayer-performance.md` for the measurements.
 
 Snapshots are volatile; room operations use acknowledged requests with visible errors. WebSocket transport still has TCP head-of-line blocking. This release targets LAN or nearby-server play, not high-latency competitive racing.
 
@@ -99,7 +101,7 @@ Scenery and rigid vehicle parts merge by material. Low-segment geometry, simple 
 
 The Web Audio guidance recommends starting or resuming sound after user interaction and providing sound controls. [14]
 
-Audio is synthesized locally after a gesture, with a persistent mute option. No Square Enix recordings or melodies are bundled. Text inputs do not consume race shortcuts. Pointer capture supports simultaneous steering and throttle on touch devices. Spell and ability taps remain active for 150 ms so they cross a simulation/network tick. Blur and visibility changes clear input. Local race menus pause simulation; online menus do not pause the room.
+Audio is synthesized locally after a gesture, with a persistent mute option that also stops the engine loops. No Square Enix recordings or melodies are bundled. Text inputs do not consume race shortcuts. Pointer capture supports simultaneous steering and throttle on touch devices: the left thumb steers proportionally on a pad that floats to wherever it lands, and the right thumb can slide between DRIVE, DRIFT and BRAKE without lifting. Spell and ability taps remain active for 150 ms so they cross a simulation/network tick. Blur and visibility changes clear input. Local race menus pause simulation; online menus do not pause the room.
 
 Manual acceleration is the default. Auto-accelerate is an option, not automatic steering. Keyboard and touch paths are tested separately. Gamepad mappings exist but physical-controller validation is not claimed. Modal focus handling and labeled controls help menu accessibility, but the game is not nonvisually playable.
 

@@ -150,3 +150,25 @@ Every course's scenery was rebuilt on a shared stage kit, with one art file per 
   WebKit showed 500 draw calls on Cid's Test Track, so scenery chunks grew from 72 m to 128 m, roughly halving the mesh count.
   The test's driving steps now wait on race time, not wall time, because on a busy machine the capped frame step lets the race clock lag behind.
 - The full Playwright suite was not re-run for this change.
+
+## Original-feel pass (2026-10-22)
+
+Driving, magic, courses, presentation and touch controls were retuned toward the 1999 game, as described in the README.
+
+- `npx tsc --noEmit` passes, and `npx vitest run` passes 189 tests in 12 files.
+  New tests cover per-course stone sets, stacks filling the inventory, position-weighted "?" stones, progress targeting, Mini steps, the safe window, Doom pass locks, Mug, Barrier and Receive rules, CPU stone lanes, and every course gimmick in `tests/courses.test.ts`.
+- The full Playwright suite, now 21 cases, passed in 25.9 minutes on commit 287eb56. The only later commit changes `tests/tunnel.test.ts`.
+- `tests/touch-controls.e2e.ts` checks the two-thumb layout at eight iPad and phone sizes in both orientations: control sizes, no overlaps between controls and HUD, the floating steering zone, and no page scroll.
+  It also drives multi-touch steering, DRIVE, DRIFT and BRAKE sliding, and full touch laps at 1180x820 and 820x1180.
+- Headless all-CPU races, 8 courses x 8 seeds x 3 laps per class, finished every race.
+  There were 1, 0 and 1 falls on Chocobo, Behemoth and Bahamut Class, and 98, 37 and 107 timed-hazard hits.
+- On Behemoth Class without items, a scripted clean driver who skips shortcuts beats the best CPU by a median of 2.0 s.
+
+Bugs found and fixed during the pass:
+
+- Racers could drive through finished racers parked on the line. Finished racers now roll to a roadside slot and have no contact mass.
+- The tightest hairpins folded the road's inside edge over itself. A racer on the inside line jumped about 11 m in projected progress and lost that much lap distance. The apexes are now eased to a radius of at least the road's half-width plus 1 m.
+- The keyboard e2e pilot kept a brake held after a pause and restart, so the test course could time out. The restarted pilot now releases the old keys.
+- `tests/tunnel.test.ts` gave up after 1 s while the server was still starting under load. It now waits for the readiness line as an event.
+
+Not covered: no real phone or iPad was used, character barks were measured for level but not judged by ear, and Firefox was not tested.

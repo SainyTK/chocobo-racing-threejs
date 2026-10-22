@@ -43,41 +43,168 @@ Open http://localhost:3000.
 - Versus: one-on-one racing against a selected CPU rival.
 - Online: private six-player rooms. Empty positions use CPU racers. Share the six-character code or invite link.
 
-Choose among eight racers and eight courses. Abilities are independent of character choice. Lap count is configurable from one to three. Grand Prix starts on your selected course and continues through the next three in course order.
+Choose among eight racers and eight courses. Each racer starts with its own ability, and you can pick any other ability for yourself. CPU racers always use their own. Lap count is configurable from one to three. Grand Prix starts on your selected course and continues through the next three in course order.
+
+The CLASS setting sets the challenge for Quick Race, Grand Prix, Versus and online rooms.
+Chocobo Class has relaxed rivals who misread hazards and rarely take shortcuts.
+Behemoth Class, the default, has rivals who brake and drift well.
+Bahamut Class makes every racer 10% faster, and its rivals drive at the limit and take most shortcuts.
+CPU racers get a small speed lift when they fall far behind the leading human and are held back a little when far ahead.
+Within 30 m of that human there is no lift, so catch-up never carries a CPU past you.
+Time Attack has no class setting.
+The online host's class applies to the whole room.
 
 ### Driving
 
-Manual acceleration is on by default. You must steer around corners. The game does not guide your heading along the road. Brake before tight turns; use boosts on straights. Options includes auto-accelerate, which does not steer for you.
+Manual acceleration is on by default. You must steer around corners. The game does not guide your heading along the road. Options includes auto-accelerate, which does not steer for you.
 
-| Action | Keyboard | Touch / standard gamepad |
-| --- | --- | --- |
-| Accelerate | W or up arrow | GAS / right trigger |
-| Steer | A/D or left/right arrows | Arrows / left stick |
-| Brake | S or down arrow | BRAKE / left trigger |
-| Reverse | X | REV / B |
-| Drift | Shift while steering, or accelerator + brake | DRIFT / A |
-| Cast latest stone | Space | MAGIC / X |
-| Ability | E | ABILITY / Y |
-| Recover | R | RECOVER button |
-| Look behind | B | LOOK button |
-| Race menu | Escape | Pause button |
+| Action | Keyboard | Touch | Standard gamepad |
+| --- | --- | --- | --- |
+| Accelerate | W or up arrow | Hold DRIVE | Right trigger |
+| Steer | A/D or left/right arrows | Left thumb on the floating steering pad | Left stick |
+| Brake | S or down arrow | BRAKE | Left trigger |
+| Reverse | X | Reverse button | B |
+| Drift | Shift while steering, or accelerator + brake | DRIFT, or DRIVE + BRAKE | A |
+| Cast latest stone | Space | MAGIC | X |
+| Ability | E | Ability button | Y |
+| Recover | R | Recover button | - |
+| Look behind | B | Look-behind button | - |
+| Race menu | Escape | Pause button | - |
 
-A long drift causes a spin, not a release turbo. Release the pedals during an over-drift spin, then press accelerate to perform a Spin Dash. A timed accelerator press just before GO gives a dash start.
+Racers grip hard enough to take most medium corners near top speed, but a corner taken too fast runs wide.
+Lift, brake, or tap the brake while steering to turn tighter.
+Each tap, up to three in a row, tightens the turn further for a moment and costs a little speed.
+A drift is a short, tight slide that also costs speed, so long slides lose time.
+After 1.9 s of continuous drifting the racer spins out; there is no release turbo.
+Release the pedals during an over-drift spin, then press accelerate to perform a Spin Dash.
+A timed accelerator press just before GO gives a dash start.
 
-Carry up to three stacks of Magic Stones, trailing in a line behind your racer.
-A stone that matches your latest stack merges into it, up to level three, so it frees a slot for another pickup.
+Boosts start with an instant kick, and the extra speed bleeds away over about a second and a half once the boost ends.
+Boost pads last 1.6 s.
+Grass and rough ground slow you over about half a second.
+Wall hits cost speed in proportion to how hard you hit, and Grip-Up glances off walls.
+In bumps, bigger racers shove smaller ones: Chubby Chocobo, Behemoth and Golem are the heaviest.
+
+On a touch screen, put your left thumb down anywhere on the lower left and slide it left or right to steer.
+The steering pad appears where your thumb lands and returns to the corner when you lift it.
+The right thumb rests on DRIVE in the bottom-right corner, with DRIFT and BRAKE stacked to its left.
+You can roll your thumb between DRIVE, DRIFT and BRAKE without lifting it.
+DRIFT keeps accelerating, so sliding onto it from DRIVE keeps you driving.
+MAGIC, which previews your stones, sits above DRIVE, and the ability button sits above DRIFT.
+Look behind, recover and reverse are small buttons in a row above them, or beside the ability button on short landscape phones.
+With auto-accelerate on, DRIVE shows AUTO and stays lit.
+A held key overrides touch steering.
+
+### Magic Stones
+
+Stones lie on the road in rows of three or four coloured lanes, and each colour is one spell, so steer into the colour you want.
+Each course uses the stone set the original introduced in its Story chapter.
+Cid's Test Track and Moogle Forest have only Haste and "?" stones, The Ancient Gate adds Fire, and each later course adds one more: Ice, Thunder, Mini, Reflect and Doom.
+A "?" stone, drawn as a white orb with a question mark, rolls a random spell.
+Racers in the back half of the field get stronger random spells, and only they can roll Ultima.
+A taken stone comes back after 3.5 s.
+
+You hold up to three stones, trailing in a line behind your racer.
+A stone that matches your latest stack merges into it for a stronger spell, up to level three, but every stone still takes a place until you cast.
+A level three stack fills all three HUD slots.
 Level two and three stacks glow, and level three blazes.
 The latest stack casts first, at its full level.
 Reflect and Doom never merge.
-Reflect can defend automatically while held.
 Drive into a rival's trailing stack to take it.
-A collision can pass a Doom curse.
+
+Single-target spells pick their victim by race progress, so from first place they hit second place.
+
+| Spell | Level 1 | Level 2 | Level 3 |
+| --- | --- | --- | --- |
+| Fire | Flies straight ahead | Homes on the racer ahead | A homing fireball at every racer ahead, or at everyone from first place |
+| Ice | Drops an ice sheet behind you | Drops six sheets | Freezes every rival |
+| Thunder | Spins out the racer ahead | Crashes the racer ahead | Strikes every rival |
+| Haste | 2 s boost | 4 s boost | 7 s boost |
+| Mini | Shrinks the racer ahead by 25% | By 50% | Shrinks every rival |
+| Ultima | Spins out every rival | Crashes every rival | The longest crash, for every rival |
+
+Mini also cuts top speed by the same share and stacks on a racer who is already small.
+Shrunken racers can be squashed by a bump.
+Black Magician's cloud, White Mage's carpet and anyone flying with Flap pass over ice sheets.
+Doom puts a 10 s curse on the racer ahead, and bumping a rival passes it on.
+After a pass, both racers' contacts pause for 2 s, so the curse cannot bounce straight back.
+Reflect protects automatically while held, and a cast Reflect shields you for 5 s.
+It returns level one and two spells to the caster, and only blocks level three spells, Ice and Ultima.
+
+Hits come in three tiers: a 1 s spin-out, a 1.6 s crash and a 2.4 s heavy crash, and Ultima III is longer still.
+Every level three spell is a heavy crash.
+After any crash the racer blinks and cannot be hit for 2.5 s, so hits never chain.
+
+### Abilities
+
+Every ability gauge starts empty and fills at a constant rate.
+
+| Ability | Racer | Recharge | Effect |
+| --- | --- | --- | --- |
+| Dash | Chocobo | 16 s | A 2 s boost |
+| Flap | Mog | 11 s | Fly over ice and rough ground for 5 s |
+| Grip-Up | Golem | 11 s | Extra grip, steering and acceleration for 7 s |
+| Mug | Goblin | 18 s | Takes one stone from the best placed rival who holds one, or gives a random stone; it waits while your inventory is full |
+| Magic Plus | Black Magician | 20 s | Automatically adds a level to your latest stack |
+| Barrier | White Mage | 16 s | Automatically raises a shield for 4 s or until it blocks one hit |
+| Receive | Chubby Chocobo | 18 s | Automatically catches the next spell that hits you as a stone of the same level, if there is room |
+| Charge | Behemoth | 14 s | A 1 s boost that spins out rivals you ram |
+
+CPU racers cast only when a spell has a valid target, and each character has its own habit.
+Chocobo and Chubby Chocobo hoard stones, Golem, Goblin and Black Magician build them up, Mog and White Mage cast quickly, and Behemoth specialises in Fire.
+
+### Courses
+
+Every course has its own boost pads, surface patches, jumps, shortcuts and timed hazards.
+Mud and goo slow you down, and ice, oil and icing make you slide.
+Timed hazards show a pulsing striped mark on the road before they strike, and a hit crashes you like a spell.
+Ramps throw racers into the air, and a racer more than 2.6 m up clears any hazard.
+Shortcuts leave the road at a shallow angle, turn evenly and rejoin at the same angle, and the road wall opens 12 m before each mouth.
+A clean line through one gains roughly 0.6 to 1.7 s.
+
+| Course | Gimmicks |
+| --- | --- |
+| Cid's Test Track | Four boost pads, a jump ramp on the back straight, an oil slick on the hairpin apex |
+| Moogle Forest | A woodland trail shortcut through the double left bend, three mud pools on the apexes |
+| The Ancient Gate | A walled side passage on the long right-hander, two stone doors that close the road half at a time |
+| Mythril Mines | A hidden rail-bed shortcut with no stones, runaway mine carts crossing the road from tunnel portals |
+| The Black Manor | A cage that drops on the sharp left (go wide to slip past), two ghosts sweeping across the hall, a jump over the blood pond |
+| Floating Gardens | A ramp over a 13 m gap between islands, a railless sky-bridge shortcut, an ice slick on the hairpin |
+| Gingerbread Land | A slippery syrup shortcut after the first right turn with a lone "?" stone halfway along, a candy ramp, giant cutlery stuck in the road, an icing slick after the tunnel |
+| Vulcan-O Valley | Four falling boulders on the racing line with shadow warnings, three lava geysers at the edges of bends |
+
+Leaving a cliff edge, a sky bridge or landing in a gap is a fall.
+The Floating Gardens ramp always carries a racer over the gap; only a spell hit in mid-air drops a racer in.
+A rescue just before a gap restarts the racer with a run-up.
+The tightest hairpins are eased slightly at the apex, so the road's inside edge never folds over itself, and standings, lap crossings and finish times stay correct for a racer on the inside line.
+
+### Camera and HUD
+
+The chase camera rides low behind the racer.
+It leans into drifts, spins and wall bounces, pulls back briefly when a boost starts and jolts lightly on wall hits.
+The field of view widens with speed and further on boosts, and speed lines streak across the screen near top speed.
+Rivals close to the camera fade out so they never fill the screen.
+On portrait screens the camera sits higher and closer and looks further down the road, so the racer sits above your thumbs and the road ahead fills the middle; tablets in portrait get a blend of the two framings.
+
+A portrait strip at the top shows the race order.
+Portraits slide when places change, bob when that racer casts and spin while it is crashed.
+One callout at a time announces the moment that matters most, and between events it shows your lasting status, such as a Doom countdown, wrong way or a missed checkpoint.
+After you cross the line, a local race plays in slow motion, then an orbit shot circles your racer and a podium shows the top three before the results.
+Online races skip the slow motion, and Time Attack skips the podium.
+Escape, Enter, Space or a click skips to the next shot.
+Finished racers roll to a stop at the roadside.
 
 Local menus pause the race. Online rooms continue running. Disconnected online racers get CPU control and can reconnect within 60 seconds, including after a page reload.
 
 ### Music
 
-Each of the eight courses has its own newly composed, multi-part synthesized music loop inspired by the 1999 soundtrack's course themes. Menus use a separate tune. Local race pauses stop the music; online race menus do not pause it. The sound toggle controls both music and effects.
+Each of the eight courses has its own newly composed, multi-part synthesized music loop inspired by the 1999 soundtrack's course themes. Menus use a separate tune. Local race pauses stop the music; online race menus do not pause it. The sound toggle controls music, effects and engines.
+
+Sound effects are synthesized too.
+Each vehicle has its own engine hum, and you also hear the nearest rival's engine.
+Every spell has cast and impact sounds by level, alongside sounds for bumps, walls, boosts, pickups, steals, falls, laps and the countdown.
+Each character has short voice barks when you select it and when it casts, gets hit, overtakes or wins.
+Rival sounds within 90 m play quieter and panned toward where they happen.
 
 Music starts after a click, tap or driving key because browsers require a user gesture. No original recordings or transcribed game melodies are bundled. See [stage music references and composition notes](docs/stage-music-reference.md).
 
@@ -105,7 +232,7 @@ Install Node.js 22.12 or newer and [cloudflared](https://developers.cloudflare.c
 
 2. Copy the actual `https://...trycloudflare.com` URL printed by cloudflared. It changes whenever the tunnel restarts. Keep the command running.
 
-3. Open the same tunnel URL on every device. Choose **Online**, create a room on one device, then join its six-character room code on the others. Open the tunnel URL before copying an invite; a localhost invite does not work on a teammate's phone. With two players, the remaining four racers are CPU-controlled. On a phone, push the joystick up or diagonally to drive. The right-side buttons use items, activate the selected ability, and drift. Use mobile data on the phone to test separate internet connections, or the same Wi-Fi for a same-network test through the tunnel.
+3. Open the same tunnel URL on every device. Choose **Online**, create a room on one device, then join its six-character room code on the others. Open the tunnel URL before copying an invite; a localhost invite does not work on a teammate's phone. With two players, the remaining four racers are CPU-controlled. On a phone, hold DRIVE with your right thumb and steer with your left thumb anywhere on the lower left. MAGIC and the ability button sit above DRIVE, and DRIFT and BRAKE sit next to it. Use mobile data on the phone to test separate internet connections, or the same Wi-Fi for a same-network test through the tunnel.
 
 4. Optionally append `/?netPerf` to the tunnel URL to collect bounded frame/network diagnostics. Do not add `netDelay`, `netJitter` or `netDrop` for a real-connection test. Desktop Chrome's developer console can copy the telemetry with:
 
@@ -120,6 +247,7 @@ Share the temporary URL only with the test team; anyone with it can access the l
 ## Studio
 
 The studio is an internal viewer for game elements: racers, Magic Stones, spell effects, stage objects, whole courses and music.
+Characters include their hit, cast, overtake, win and lose reactions, and the effects preview every spell's cast and hit at each level.
 
 ```sh
 npm run studio
@@ -146,6 +274,7 @@ Quality switches between the game's High and Low settings.
 The Courses category builds a complete course in a pane, lit by its own sky, fog and sun.
 "Race camera lap" drives a Chocobo round the course behind the game's chase camera; drag to look around it and scroll to pull back.
 "Aerial overview", "Start line" and the six "Trackside" views orbit fixed points of the course.
+Each gimmick also has its own variant, such as "Shortcut at 590 m", seen from a racer's chase-camera height 24 m before it.
 "Prop sheet" lays out the course's named props side by side with labels, for working on one prop at a time.
 Course files hot-reload, so scenery can be built and judged here without starting a race.
 
@@ -157,9 +286,11 @@ Each course's look lives in one file under `src/gfx/stage/courses/`: its sky, fo
 `src/gfx/stage/kit.ts` collects props in world space and merges them per 128 m chunk and material layer, so the camera culls whole sections and a course draws in a few hundred calls.
 Props are authored as `Parts`: geometry painted per vertex with baked ambient occlusion, on a solid, wind-swayed foliage or glowing layer.
 Small dressing marked `detail` disappears on Low quality.
+The gimmicks themselves (pads, patches, ramps, gaps, shortcuts and hazards) are simulation data in `shared/track/layouts/`, so the server, client prediction and renderer all read the same layout. Each course file dresses them with matching models.
 
 `npx tsx tests/stage-report.ts [ids] [--props]` prints build time and triangle counts per course, and with `--props` the cost of every catalog prop.
-`tests/stage.test.ts` builds every course headless and checks budgets, disposal, Low-quality detail hiding, and that nothing stands on the road between the surface and 9 m overhead, where the chase camera rides.
+`tests/stage.test.ts` builds every course headless and checks budgets, disposal, Low-quality detail hiding, and that nothing stands on the road or a shortcut between the surface and 9 m overhead, where the chase camera rides. Moving hazard parts are skipped, since they enter the racing line on purpose.
+`tests/courses.test.ts` checks that every gimmick sits on its course, that shortcuts leave and rejoin the road at their join angle, and the jump, gap, hazard and shortcut-stone rules.
 
 ## Production
 
@@ -234,29 +365,39 @@ Reports are in `output/playwright-report/`; screenshots are in `output/testing/`
 ## Code
 
 - `shared/math.ts`: clamp, modulo and angle helpers shared by the simulation and the client.
-- `shared/track/`: eight closed circuits (`tracks.ts`), road sampling and world-to-road projection (`sampling.ts`), and stones, boost pads and hazards (`objects.ts`).
+- `shared/track/`: eight closed circuits (`tracks.ts`), road sampling and world-to-road projection (`sampling.ts`), and placed stones and boost pads (`objects.ts`).
+  `layouts/` holds one gimmick layout per course: pads, surface patches, ramps, gaps, shortcuts and timed hazards.
+  `stone-layouts.ts` lists each course's stone fields and `stone-placement.ts` places them.
+  `shortcuts.ts` builds shortcut centre lines, `route.ts` decides whether a racer is on the road or a shortcut, `hazards.ts` gives each timed hazard's state from race time, and `surface.ts` answers patch, ramp and gap queries.
 - `shared/game/`: 60 Hz free driving, bots, spells, abilities, collisions and validated laps.
-  Settings and data live in `constants.ts`, `abilities.ts`, `items.ts` and `racers.ts`.
-  Race setup is in `setup.ts`, spell hits in `combat.ts`, item and ability use in `actions.ts`, and the bot driver in `bot.ts`.
-  `step/` runs one tick: per-racer physics, projectiles, racer contacts and standings.
+  Settings and data live in `constants.ts`, `handling.ts` (driving tuning and the grip limit), `difficulty.ts` (race classes), `abilities.ts`, `spells.ts` (hit tiers and spell timings), `items.ts` and `racers.ts`.
+  Race setup is in `setup.ts`, the inventory in `inventory.ts`, spell targets in `targeting.ts`, spell hits in `combat.ts`, item and ability use in `actions.ts`, jumps in `air.ts` and ground grip in `traction.ts`.
+  The CPU driver is `bot.ts`, which combines `bot-driving.ts` (pedals, steering and pace), `bot-course.ts` (shortcuts and hazards) and `bot-magic.ts` with `bot-personalities.ts` (casting).
+  `step/` runs one tick: per-racer physics, walls and course edges, pads and hazards, finished racers, projectiles, racer contacts and standings.
 - `server/index.ts`: authoritative room server, sessions and input validation.
-- `src/scene.ts`: chase camera, course loading, pickups, shadows, bloom post-processing and 3D-rendered portraits.
+- `src/scene.ts`: course loading, pickups, shadows, bloom post-processing and 3D-rendered portraits.
+- `src/gfx/camera/`: the chase camera (`chase.ts`), its framing per screen shape (`framing.ts`) and the finish orbit and podium shots (`finish.ts`). `src/gfx/finish-stage.ts` and `src/gfx/podium.ts` stage those shots.
 - `src/gfx/characters/`: the eight rigged racers and vehicles, built in code with cel shading and outlines, with running, flapping, blinking and spring animations.
-  `index.ts` builds a racer by index, `rig.ts` batches parts into few draw calls, `parts/` holds shared pieces (bird body, eyes, wheels, carpet texture) and `racers/` has one file per racer.
+  `index.ts` builds a racer by index, `rig.ts` batches parts into few draw calls, `poses.ts` holds the hit, cast, overtake, win and lose reactions, `parts/` holds shared pieces (bird body, eyes, wheels, carpet texture) and `racers/` has one file per racer.
+  `src/gfx/reactions.ts` picks a racer's reaction from race events.
 - `src/gfx/effects/`: spell and race effects: fireballs, ice traps, lightning, Ultima, Reflect bubbles, Doom runes, boost trails, drift sparks and status auras.
-  `index.ts` holds the `Effects` controller; `bolt.ts`, `trail.ts`, `bursts.ts`, `status.ts` and `pickup.ts` each hold one effect component.
+  `index.ts` holds the `Effects` controller; `spells.ts` draws each spell's cast and impact by level; `speed-lines.ts` draws the screen-space speed streaks; `bolt.ts`, `trail.ts`, `bursts.ts`, `status.ts` and `pickup.ts` each hold one effect component.
 - `src/gfx/particles/`: instanced billboard particle pools and their shaders.
 - `src/gfx/orbs/`: Magic Stone orbs. Each stone is a glass sphere with its element ray-marched inside it: a flame, a turning cluster of ice crystals, plasma-globe lightning, a speed dash with trailing spikes, a mirror ball, shrinking rings, a Doom skull in smoke, a star core and a white question mark.
   `interiors.ts` holds one shader per stone, `glass.ts` the shell and `index.ts` builds an orb. Track pickups, held stones and HUD slots all use them. `stack.ts` wraps a held orb in its level two or three aura.
 - `src/gfx/stage/`: course scenery.
-  `course.ts` assembles a course; `kit.ts` places and merges props; `terrain.ts` builds the ground heightfield and textured road; `sky.ts` the sky dome and distant mountains; `liquid.ts` water, lava and cloud seas; `ambient.ts` drifting particles; `textures.ts` procedural road and ground textures; `props/` shared props; `courses/` one file per course.
+  `course.ts` assembles a course; `kit.ts` places and merges props; `patches.ts`, `ramps.ts`, `shortcuts.ts` and `hazards.ts` draw the course gimmicks; `terrain.ts` builds the ground heightfield and textured road; `sky.ts` the sky dome and distant mountains; `liquid.ts` water, lava and cloud seas; `ambient.ts` drifting particles; `textures.ts` procedural road and ground textures; `props/` shared props; `courses/` one file per course.
 - `src/gfx/pipeline.ts`: renderer settings, bloom composer and lights shared by the game and the studio.
 - `src/gfx/materials/`: toon, glow, outline, ghost, fresnel shell, crystal and ground decal materials, one per file.
 - `src/gfx/geometry/`: the geometry helpers used to sculpt the models (baked transforms, primitives, rocks and swept tubes).
 - `src/main.ts`: modes, menus, HUD, input, local race loop and ghost recording.
+- `src/hud/`: the race-order portrait strip (`standings.ts`) and the single callout (`callout.ts`, `messages.ts`).
+- `src/finish-sequence.ts`: timing of the slow motion, orbit and podium after the player finishes.
+- `src/touch-controls.ts`, `src/touch-steering.ts` and `src/mobile-hud.ts`: the two-thumb touch controls. `src/touch-layout.css` holds the geometry tokens that `src/touch-controls.css` and `src/touch-hud.css` share.
 - `studio/`: the internal element viewer (`npm run studio`). `registry.ts` lists the elements, `elements/` defines them by category and `viewport.ts` renders one pane. `music-player.ts` previews the game's scores in the active music pane.
 - `src/network.ts`: reconnects, world-space interpolation and bounded extrapolation.
-- `src/audio.ts`: Web Audio instruments, stage music scheduling and sound effects.
+- `src/audio.ts`: Web Audio instruments, stage music scheduling, sound playback and engine loops.
+- `src/sfx/`: synthesized sound recipes, character voices and engine profiles. `src/race-audio.ts` maps race events to them.
 - `src/music/`: separate original scores for all eight courses, menu music and shared score types.
 - `docs/research.md`: original-game research, sources, technology choices and fidelity limits.
 
