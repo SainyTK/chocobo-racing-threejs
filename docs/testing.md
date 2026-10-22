@@ -220,3 +220,14 @@ Bahamut joined as a ninth racer with a skinned GLB model and the Megaflare abili
 - Playwright on a dev server at port 3331: the racer select test (now naming all nine racers), Time Attack with its phantom, two online clients with rejoin and rematch, Versus, and the impaired-network desktop and mobile test all passed. The Studio suite (`npm run test:studio`) passed after the Studio was changed to load racer models just before its first pane.
 
 Not covered: the per-course keyboard laps, Grand Prix and the touch-control suites were not re-run, and no real phone was used.
+
+## Cloud racer (2026-10-22)
+
+Cloud joined as a tenth racer: a skinned GLB of Cloud on the Hardy-Daytona, with Dash as his default ability and Goblin's driving stats.
+
+- Wire version: `shared/wire.ts` now exports `WIRE_VERSION`, and it is 3. The client sends it in the socket handshake; the server serves fixed-order snapshots only to that version and tells a fixed-order client of any other version to reload (`outdated`) before disconnecting it. Clients that send no version still receive full JSON state. The bump covers Bahamut's `flare` field, which was added to `DYNAMIC_FIELDS` without one; Cloud adds no field. `tests/server.test.ts` checks that a version 2 client is refused with the notice, and every other socket test connects as version 3.
+- `npx tsc --noEmit` passes, and `npx vitest run` passes 212 tests in 12 files, including the outdated-client test.
+- `npm run build` passes, and the GLB ships as a 338 KB asset. `npm run test:studio` passes 3 of 3.
+- Playwright on a dev server at port 3341: the racer select test (naming all ten racers), two online clients with rejoin and rematch, and the impaired-network desktop and mobile test pass. Piloted races as Cloud finished with no page errors.
+
+Not covered after the final model change: the per-course keyboard laps, Grand Prix, Time Attack, Versus and the touch-control suites. An earlier full run on this branch passed them, apart from two keyboard laps that timed out under CPU load and passed on rerun. No real phone was used.

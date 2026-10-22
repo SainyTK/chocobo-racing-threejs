@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { Server } from 'socket.io';
 import { cleanInput, createRace, makeRacer, neutralInput, stepRace, TICK, RACERS, ABILITY_IDS, GRID_SIZE, DIFFICULTY_IDS, DEFAULT_DIFFICULTY, type AbilityId, type DifficultyId, type Race } from '../shared/game/index.ts';
-import { encodeSnapshot } from '../shared/wire.ts';
+import { WIRE_VERSION, encodeSnapshot } from '../shared/wire.ts';
 import { TRACKS, type TrackId } from '../shared/track/index.ts';
 
 interface Member { id: string; name: string; character: number; abilityId: AbilityId; connected: boolean }
@@ -28,7 +28,7 @@ export async function createGameServer({ development = false, diagnostics = fals
   const rooms = new Map<string, Room>(), sessions = new Map<string, Session>();
   const view = (r: Room) => ({ code: r.code, host: r.host, track: r.track, laps: r.laps, members: r.members, phase: r.race?.phase || 'lobby' });
   const broadcast = (r: Room) => io.to(r.code).emit('room', view(r));
-  const channel = (socket: any) => socket.handshake.auth?.wire === 2 ? 'v2' : 'v1';
+  const channel = (socket: any) => socket.handshake.auth?.wire === WIRE_VERSION ? 'v2' : 'v1';
   const sendInitial = (socket: any, race: Race) => socket.emit(channel(socket) === 'v2' ? 'race' : 'state', race);
   const join = (socket: any, code: string) => { socket.join(code); socket.join(`${code}:${channel(socket)}`); };
   function leave(session: Session) {
@@ -43,6 +43,9 @@ export async function createGameServer({ development = false, diagnostics = fals
   }
   io.on('connection', socket => {
     if (io.engine.clientsCount > 800) { socket.disconnect(true); return; }
+    // A fixed-order client from another release would misread every snapshot field, so it is told to reload instead.
+    const wire = socket.handshake.auth?.wire;
+    if (typeof wire === 'number' && wire !== WIRE_VERSION) { socket.emit('outdated', { wire: WIRE_VERSION }); socket.disconnect(true); return; }
     const token = typeof socket.handshake.auth?.token === 'string' ? socket.handshake.auth.token : '';
     let session = sessions.get(token);
     if (!session) { session = { id: randomUUID(), token: randomBytes(24).toString('hex'), socket: null, room: null, seen: Date.now(), inputAt: 0, inputSeq: 0, appliedSeq: 0, actionSeq: 0, pendingActions: [] }; sessions.set(session.token, session); }

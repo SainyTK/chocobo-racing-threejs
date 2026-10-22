@@ -20,4 +20,5 @@ export const BOT_MAGIC: BotMagic[] = [
   { hold: 'hoard', favourite: 'ice' }, // Chubby Chocobo
   { hold: 'specialist', favourite: 'fire' }, // Behemoth
   { hold: 'build', favourite: 'fire' }, // Bahamut: no source; builds Fire, the nearest thing to his Flare
+  { hold: 'specialist', favourite: 'thunder' }, // Cloud: holds one attack type like Behemoth (GameFAQs 74730); Thunder is a guess
 ];
