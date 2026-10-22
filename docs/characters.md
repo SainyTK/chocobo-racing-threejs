@@ -1,7 +1,7 @@
 # Racer models
 
 Most racers are built in code from primitives in `src/gfx/characters/racers/*.ts`: rigid parts on a joint hierarchy, baked into vertex-coloured toon meshes by `Rig`.
-Chocobo, Bahamut and Cloud are authored as skinned, textured GLBs, by Blender scripts in this repository.
+Chocobo, Chubby Chocobo, Bahamut and Cloud are authored as skinned, textured GLBs, by Blender scripts in this repository.
 This page describes that pipeline so the next racer can reuse it.
 
 ## Pipeline
@@ -10,6 +10,7 @@ This page describes that pipeline so the next racer can reuse it.
 npm run character -- bahamut
 npm run character -- cloud
 npm run character -- chocobo
+npm run character -- chubby
 ```
 
 `scripts/characters/build.mjs` runs Blender headless (`/Applications/Blender.app/Contents/MacOS/Blender`, or the `BLENDER` environment variable) on `scripts/characters/build.py`, which writes `src/assets/characters/<name>.glb`.
@@ -56,11 +57,11 @@ Measured in the Studio with `createCharacter` (triangles of the body and of the 
 | --- | --- | --- | --- | --- |
 | Chocobo | 11,956 | 4,705 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Chocobo (the procedural model had 12,708, 7,456 and 35) |
 | Behemoth | 12,192 | 9,308 | 23 | none |
-| Chubby Chocobo | 14,768 | 10,024 | 35 | none |
+| Chubby Chocobo | 12,038 | 4,976 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Chubby Chocobo (the procedural model had 14,768, 10,024 and 35) |
 | Bahamut | 11,928 | 4,899 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Bahamut |
 | Cloud | 11,032 | 4,570 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Cloud |
 
-The Bahamut GLB is 469 KB with 36 bones and six clips; the Cloud GLB is 329 KB with 24 bones and six clips.
+The Bahamut GLB is 469 KB with 36 bones and six clips; the Cloud GLB is 329 KB with 24 bones and six clips; the Chubby Chocobo GLB is 323 KB with 20 bones and seven clips.
 A new racer should stay near 12,000 body triangles and one atlas.
 
 ## Pitfalls
@@ -104,9 +105,6 @@ At rest the wings stick straight out sideways with their flat faces to the front
 Flap is a wingbeat that starts and ends at rest; the racer plays an additive copy of it (`AnimationUtils.makeClipAdditive`, made once per clip) whenever `flying` is set, so the wings beat on top of whatever the body is doing: the menu hop, jumps, the Flap ability and the win.
 The four wheels are bones turned by `driven()`, and the exhaust and contact anchors in the racer must follow the skate positions in `chocobo/model.py`.
 
-Chubby Chocobo is still built in code by `src/gfx/characters/parts/bird.ts`, which now only serves him.
-To rebuild him on the pipeline, give him his own `Bird` (a rounder, wider body, no `scarf` if he has none, `tufts` for his crest) and keep the bird skeleton, painters and pose helpers. His trike replaces the Jet-Blades: model it on its own bones the way the skates hang off `foot`, and turn its wheels with `driven()`.
-
 Pitfalls met on Chocobo:
 
 - Profile keys interpolated with `curve` flatten at every key and ripple a smooth body. `geometry.spline` is a cubic through the keys and keeps the body round.
@@ -118,3 +116,30 @@ Pitfalls met on Chocobo:
 - A feather fan pointing straight back is seen end-on from the chase camera as a row of dark triangles. Keep the tail small and low.
 - The race view is decided by the skates: big black rear wheels about as wide as they are tall, poking out past the body's sides, the red engines between them and the blue boots visible above. A red cowl over the wheel hides the boots.
 
+## Chubby Chocobo on the Phat-Burner Plus
+
+```sh
+npm run character -- chubby
+```
+
+Chubby Chocobo is one skinned GLB for the bird and his trike, built from `scripts/characters/chubby/` on top of the shared bird package.
+His `Bird` is a wide, squat pear with a slight notch at the neck and no crest; the pointed nub on the crown is a plump feather.
+The package adds what the bird package does not have: closed, happy eyes (a dark arc on each `eye` bone, so Blink squints them), a flat duck's bill on `head` and `jaw`, the thistle on his chest, arm-like wings that reach forward to the handlebars, thick legs with clawed feet on `foot` bones, and the trike.
+It replaces the bird's wing bones with ones that run from the shoulder to the hand on the grip, and moves the `tail` bone up to the tail, which sits high on his back above the engine.
+
+The trike hangs off a `trike` bone under `root`.
+`fork` turns about the raked steering axis and carries the handlebars, horn, front wheel and pedal axle; `wheel_front` and `wheel_rear` (one bone for both rear wheels) spin.
+No clip keys these three bones; `racers/chubby.ts` turns them with `driven()`.
+The handlebars turn only a little with the steering (`STEER` in the racer), because his hands rest on the grips and do not follow them.
+
+`racers/chubby.ts` blends Idle and Ride by speed and plays Cast, Win and Lose on the reaction's clock, with the additive Flap from Chocobo whenever `flying` is set.
+Idle waves his left wing halfway through each loop, as the original does on the Select Racer screen.
+The exhaust and contact anchors in the racer must follow the engine and rear wheel positions in `chubby/model.py`.
+
+Pitfalls met on Chubby Chocobo:
+
+- Measure the race view, not the CG model sheet. The sheet's belly is much fatter than the in-game model, which from behind is only about 1.3 times as wide as its head.
+- The chase camera sits lower and closer than the original's, so a body that matches the original's height reads too tall. He is modelled a little squatter than the sheet.
+- His back is a big smooth surface turned away from the sun, and the toon ramp keeps half of the direct light in its darkest band, so the sun's soft shadow-map edge leaves dark patches across it and under the wings. Baked ambient occlusion is not the cause. His body does not receive shadows (it still casts them).
+- A tyre lofted with end caps has a domed face that bulges out past the rim; a hub disc must stand proud of it or it disappears inside the tyre.
+- A belly that bulges forward swallows the fork and the middle of the handlebars. Move the steering head forward with the belly.
