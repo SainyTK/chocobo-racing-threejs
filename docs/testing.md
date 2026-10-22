@@ -174,3 +174,17 @@ Bugs found and fixed during the pass:
 - `tests/tunnel.test.ts` gave up after 1 s while the server was still starting under load. It now waits for the readiness line as an event.
 
 Not covered: no real phone or iPad was used, character barks were measured for level but not judged by ear, and Firefox was not tested.
+
+## Bahamut racer (2026-10-22)
+
+Bahamut joined as a ninth racer with a skinned GLB model and the Megaflare ability.
+
+- `npx tsc --noEmit` passes, and `npx vitest run` passes 201 tests in 12 files.
+  New tests cover the nine-racer roster, Megaflare's warning, its strike through Barrier and Reflect, the safe window it respects, the CPU firing rule and Bahamut hovering over Ice sheets.
+- `npm run build` passes. The model loaders sit in their own 73 KB chunk, and the GLB ships as a 469 KB asset.
+- All-CPU balance, 8 courses x 9 grid starts x 3 seeds x 3 laps on Behemoth Class (216 races): Bahamut won 34.0% of his races with a mean place of 2.89, against Chubby Chocobo's 33.3% and 2.85.
+  The original's 45 s Megaflare with a heavy crash won 63%, and Bahamut won 18.8% with Megaflare switched off.
+- The Studio and the game were checked in headless Chrome: menu idle, driving, drifting, every reaction, the racer select grid and HUD portraits, a 1400 x 800 race, a 390 x 844 phone race, a Megaflare cast in a piloted race and Bahamut on the podium.
+  The skinned Time Attack ghost material compiles and draws both a code-built racer and Bahamut.
+
+Not covered: the Playwright suites were not re-run, because their configured ports were reserved by other work on this machine, and no real phone was used.
