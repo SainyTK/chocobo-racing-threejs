@@ -41,6 +41,7 @@ export function createCharacter(index: number): Character {
       if (s.pose?.kind === 'win') s = { ...s, flying: 1 };
       b.update?.(s, k);
       if (s.pose) applyPose(b.r.model, b.head, s.pose);
+      b.sync?.();
     },
     dispose() {
       b.r.root.traverse(o => { if (o instanceof THREE.Mesh) { if (!o.geometry.userData.shared) o.geometry.dispose(); for (const m of Array.isArray(o.material) ? o.material : [o.material]) m.dispose(); } });

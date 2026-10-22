@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { damp } from '../math.ts';
 import { POSE_SECONDS } from '../poses.ts';
 import { Rig } from '../rig.ts';
-import { anchor, driven, skinnedModel } from '../skinned.ts';
+import { anchor, driven, overlay, skinnedModel } from '../skinned.ts';
 import type { Build } from '../types.ts';
 
 /** Loops blend by speed; Cast, Win and Lose follow the reaction's own clock so every viewer sees the same frame. */
@@ -23,13 +23,13 @@ export function chocobo(): Build {
   const beat = action('Flap').getClip();
   if (!additive.has(beat)) additive.set(beat, THREE.AnimationUtils.makeClipAdditive(beat.clone()));
   const flap = m.mixer.clipAction(additive.get(beat)!); flap.play(); flap.weight = 0;
-  const head = m.bone('head'), weights: Record<ClipName, number> = { Idle: 0, Skate: 0, Cast: 0, Win: 0, Lose: 0 };
+  const turn = overlay(m, 'head'), head = turn.j, weights: Record<ClipName, number> = { Idle: 0, Skate: 0, Cast: 0, Win: 0, Lose: 0 };
   const turning = [...['L', 'R'].map(s => ({ d: driven(m, `wheel_front.${s}`, [1, 0, 0], 'x'), r: FRONT_RADIUS })), ...['L', 'R'].map(s => ({ d: driven(m, `wheel_rear.${s}`, [1, 0, 0], 'x'), r: REAR_RADIUS }))];
   // Boost flames and smoke leave the exhaust tips; drift sparks and dust come from under the rear wheels.
   const exhausts = [anchor(m, 'foot.L', [1, .65, -.8]), anchor(m, 'foot.R', [-1, .65, -.8])];
   const contacts = [anchor(m, 'foot.L', [.58, .02, -.5]), anchor(m, 'foot.R', [-.58, .02, -.5])];
   let fresh = true, flapping = 0;
-  return { r, head, height: 3.5, wheels: turning.map(w => ({ j: w.d.j, r: w.r })), steer: [], exhausts, contacts, outline: m.outline, update(s, k) {
+  return { r, head, height: 3.5, wheels: turning.map(w => ({ j: w.d.j, r: w.r })), steer: [], exhausts, contacts, outline: m.outline, sync: turn.sync, update(s, k) {
     const pose = s.pose, ended = pose?.kind === 'win' || pose?.kind === 'lose' ? pose : null;
     const casting = pose?.kind === 'cast' ? 1 : 0, cruise = ended ? 0 : 1 - casting, skating = s.menu ? 0 : Math.min(1, k * 3);
     const target: Record<ClipName, number> = { Idle: cruise * (1 - skating), Skate: cruise * skating, Cast: casting, Win: ended?.kind === 'win' ? 1 : 0, Lose: ended?.kind === 'lose' ? 1 : 0 };
@@ -40,8 +40,8 @@ export function chocobo(): Build {
     if (ended) { const c = clips[ended.kind === 'win' ? 'Win' : 'Lose']; c.time = ended.t % c.getClip().duration; }
     clips.Skate.timeScale = .6 + k * .9;
     const b = (s.t + .6) % BLINK.every; blink.weight = b < BLINK.seconds ? 1 : 0; blink.time = Math.min(b, BLINK.seconds);
-    m.mixer.update(s.dt);
+    m.update(s.dt);
     for (const w of turning) w.d.sync();
-    head.rotation.y += s.menu ? Math.sin(s.t * .7) * .35 : s.steer * .3;
+    head.rotation.y = s.menu ? Math.sin(s.t * .7) * .35 : s.steer * .3;
   } };
 }

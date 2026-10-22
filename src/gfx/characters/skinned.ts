@@ -5,8 +5,17 @@ import { outlineMaterial } from '../materials/outline.ts';
 import { characterModel, type ModelId } from './models.ts';
 import type { Rig } from './rig.ts';
 
-/** One instance of a skinned racer model, posed by its own mixer. `outline` is the hull's ink colour from the model. */
-export interface SkinnedModel { root: THREE.Object3D; mixer: THREE.AnimationMixer; actions: Map<string, THREE.AnimationAction>; outline: string; bone(name: string): THREE.Object3D }
+/**
+ * One instance of a skinned racer model, posed by its own mixer. `outline` is the hull's ink colour from the model.
+ * Advance it with `update`, not `mixer.update`, so bones turned on top of the clips start each frame from the clip pose.
+ */
+export interface SkinnedModel {
+  root: THREE.Object3D; mixer: THREE.AnimationMixer; actions: Map<string, THREE.AnimationAction>; outline: string; overlays: Overlay[];
+  bone(name: string): THREE.Object3D; update(dt: number): void;
+}
+
+/** A bone that code turns on top of its clips, through a stand-in joint `j`; see `overlay`. */
+export interface Overlay { j: THREE.Object3D; restore(): void; capture(): void; sync(): void }
 
 /**
  * Clones a loaded racer model into the rig with the game's look: the textured body gets the shared toon ramp, rim
@@ -25,9 +34,11 @@ export function skinnedModel(r: Rig, id: ModelId, width = .032): SkinnedModel {
   });
   r.model.add(root);
   const mixer = new THREE.AnimationMixer(root), actions = new Map(gltf.animations.map(clip => [clip.name, mixer.clipAction(clip)]));
+  const overlays: Overlay[] = [];
   return {
-    root, mixer, actions, outline,
+    root, mixer, actions, outline, overlays,
     bone(name) { const b = root.getObjectByName(THREE.PropertyBinding.sanitizeNodeName(name)); if (!b) throw new Error(`${id} has no bone ${name}`); return b; },
+    update(dt) { for (const o of overlays) o.restore(); mixer.update(dt); for (const o of overlays) o.capture(); },
   };
 }
 
@@ -48,3 +59,30 @@ export function driven(m: SkinnedModel, bone: string, axis: [number, number, num
   const local = new THREE.Vector3(...axis).normalize().applyQuaternion(toBone);
   return { j, sync() { b.quaternion.copy(rest).multiply(turn.setFromAxisAngle(local, j.rotation[angle])); } };
 }
+
+/**
+ * A stand-in joint for a bone that the shared animator turns on top of its clips, such as the head. The animator and
+ * the reaction poses set `j.rotation` in model axes every frame (x nods, y turns), and `sync`, called after them,
+ * turns the bone by it on top of the clip pose. `j` sits where the bone is, so its world position can be read.
+ *
+ * Turning the bone itself does not work: the mixer only writes a bone when its blended clip value changes, so on any
+ * frame it skips, a turn added to the bone piles onto the last frame's and the head spins, and zeroing its rotation
+ * throws away the bone's own rest tilt. `SkinnedModel.update` therefore puts back the clip value before each mixer
+ * update and keeps the result for `sync`.
+ */
+export function overlay(m: SkinnedModel, bone: string): Overlay {
+  const b = m.bone(bone), j = new THREE.Object3D(), clip = b.quaternion.clone(), turn = new THREE.Quaternion();
+  m.root.updateMatrixWorld(true);
+  // The bone's rest orientation in model space converts a turn about model axes into one about the bone's own axes.
+  const rest = m.root.getWorldQuaternion(new THREE.Quaternion()).invert().multiply(b.getWorldQuaternion(new THREE.Quaternion())), back = rest.clone().invert();
+  b.parent!.add(j); j.position.copy(b.position);
+  const o: Overlay = {
+    j,
+    restore() { b.quaternion.copy(clip); },
+    capture() { clip.copy(b.quaternion); },
+    sync() { turn.setFromEuler(j.rotation); b.quaternion.copy(clip).multiply(back).multiply(turn).multiply(rest); j.position.copy(b.position); },
+  };
+  m.overlays.push(o);
+  return o;
+}
+

@@ -19,4 +19,5 @@ export interface Character {
 
 export interface Wheel { j: THREE.Object3D; r: number }
 
-export interface Build { r: Rig; head: THREE.Object3D; height: number; wheels: Wheel[]; steer: THREE.Object3D[]; exhausts: THREE.Object3D[]; smokes?: boolean; contacts: THREE.Object3D[]; outline: string; update?: (s: AnimState, k: number) => void }
+/** `sync` runs last each frame, after the reaction poses, for racers that apply code-driven turns to skinned bones. */
+export interface Build { r: Rig; head: THREE.Object3D; height: number; wheels: Wheel[]; steer: THREE.Object3D[]; exhausts: THREE.Object3D[]; smokes?: boolean; contacts: THREE.Object3D[]; outline: string; update?: (s: AnimState, k: number) => void; sync?: () => void }
