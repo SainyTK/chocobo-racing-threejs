@@ -53,24 +53,21 @@ HEAD_WIDTH = ((0, 0.12), (0.08, 0.32), (0.25, 0.45), (0.48, 0.48), (0.7, 0.46), 
 HEAD_DEPTH = ((0, 0.12), (0.08, 0.3), (0.25, 0.42), (0.48, 0.44), (0.7, 0.43), (0.88, 0.32), (1, 0.06))
 """The skull: a soft, round face with full cheeks and a rounded chin. The hair covers all but the face."""
 HAIR_CENTRE = HEAD_CENTRE + Vector((0, 0.06, 0.06))
-HAIR_RADII = (0.63, 0.58, 0.47)
+HAIR_RADII = (0.57, 0.58, 0.44)
 """(side, front-back, up) of the bob's outer surface before the flare."""
 HAIR_FRONT = 0.53
 """Front-back radius of the bob over the face: smaller than behind, so the bangs lie close over the forehead."""
-HAIR_EDGE = ((0, 0.1), (0.35, 0.12), (0.56, 0.06), (0.68, -0.3), (0.8, -1.0), (1.0, -1.02), (1.35, -0.86), (1.7, -0.8), (math.pi, -0.86))
-"""Elevation of the hair's lower edge, by the angle from straight ahead: the bangs just above the eyes, then side locks
-falling past the cheeks to the jaw, and down to the nape behind."""
-PART, PART_LIFT = math.pi / 2 + 0.28, 0.16
-"""The gentle part in the bangs, over her right eye, where the edge rises a little."""
-HAIR_FLARE = 0.22
+HAIR_EDGE = ((0, 0.12), (0.45, 0.12), (0.7, -0.05), (0.95, -0.3), (1.3, -0.82), (1.7, -0.8), (math.pi, -0.86))
+"""Elevation of the hair's lower edge, by the angle from straight ahead: the bangs above the eyes, the temples, and down
+to the nape behind. The side locks hang below the temples as separate pieces."""
+BANG_RISE = 0.3
+"""The bangs sweep up toward her left: over her left eye the edge is this many radians higher, showing the forehead."""
+HAIR_FLARE = 0.4
 """How far the ends of the bob flare out round the nape, as the chase view shows."""
 HAIR_LOBES, HAIR_LOBE, HAIR_SCALLOP = 11, 0.08, 0.16
 """The bob is made of chunky locks: `HAIR_LOBES` ridges round the head swell out by up to `HAIR_LOBE` toward the
 ends, and each ends in a tip hanging `HAIR_SCALLOP` radians lower than the hollows between them."""
 HAIR_SEAM = -math.pi / 2
-HAIR_SWEEP = 0.35
-"""Over the face the locks sweep from her right toward her left: a lock's crest is this many radians further right at
-the crown than at its tip, so the bangs flow from the part instead of hanging straight."""
 EYE_AZIMUTH, EYE_Z = 0.4, 2.22
 MOUTH_Z = 2.03
 TIE = HAIR_CENTRE + Vector((0.34, 0.22, 0.47))
@@ -162,8 +159,9 @@ def lobe(a: float) -> float:
 
 def hair_edge(a: float) -> float:
     """Elevation of the hair's lower edge at ring angle a: lock tips hang lower than the hollows, except over the face."""
-    tips = HAIR_SCALLOP * lobe(a) * (0.7 + 0.3 * smoothstep(0.7, 1.2, from_front(a)))
-    return spline(HAIR_EDGE, from_front(a)) - tips + PART_LIFT * math.exp(-(((a - PART) / 0.15) ** 2))
+    tips = HAIR_SCALLOP * lobe(a) * (1.1 - 0.1 * smoothstep(0.7, 1.2, from_front(a)))
+    rise = BANG_RISE * smoothstep(math.pi / 2 + 0.25, math.pi / 2 - 0.45, a) * sweep(a)
+    return spline(HAIR_EDGE, from_front(a)) - tips + rise
 
 
 def hair_point(a: float, e: float, scale: float = 1.0) -> Vector:
@@ -171,8 +169,9 @@ def hair_point(a: float, e: float, scale: float = 1.0) -> Vector:
     swelling into locks toward it."""
     edge = hair_edge(a)
     low = 1 - smoothstep(edge, edge + 0.9, e)
-    crest = lobe(a + HAIR_SWEEP * sweep(a) * (1 - low))
-    flare = 1 + HAIR_FLARE * low * smoothstep(0.8, 1.4, from_front(a)) + HAIR_LOBE * crest * (0.1 + 0.9 * low)
+    crest = lobe(a)
+    # Over the face the bangs stay smooth; the locks only swell into ridges from the sides round to the back.
+    flare = 1 + HAIR_FLARE * low * smoothstep(0.9, 1.5, from_front(a)) + HAIR_LOBE * crest * (0.1 + 0.9 * low) * (1 - sweep(a))
     rx, ry, rz = HAIR_RADII
     ry = HAIR_FRONT + (ry - HAIR_FRONT) * smoothstep(0.6, 1.6, from_front(a))
     c = math.cos(e) * flare * scale
@@ -233,6 +232,18 @@ def lerp_e(a: float, s: float) -> float:
     return edge + (math.pi / 2 * 0.97 - edge) * (1 - (1 - s) ** 1.15)
 
 
+def side_lock() -> Part:
+    """The lock on her left that hangs straight down from the temple past the cheek to the jaw, clear of the face and
+    flaring a little outward at its rounded tip."""
+    a = math.pi / 2 - 0.82
+    root = hair_point(a, -0.05)
+    pts = [root + Vector((-0.02, 0, 0.04)), head_point(head_t(2.2), a, 0.1), head_point(head_t(2.02), a + 0.02, 0.12), head_point(head_t(1.9), a + 0.04, 0.16)]
+    return rigid(
+        loft("side_lock", "lock", pts, ellipse(lambda t: 0.085 * (1 - 0.55 * t**1.5), lambda t: 0.04 * (1 - 0.4 * t)), 12, 10, (math.cos(a), -math.sin(a), 0)),
+        "head",
+    )
+
+
 def crown_tuft() -> Part:
     """The tuft on the crown: a soft lock that rises and curls back."""
     base = HAIR_CENTRE + Vector((0, -0.1, HAIR_RADII[2] - 0.05))
@@ -266,8 +277,8 @@ def face_parts() -> list[Part]:
         "skin",
         [(0, HEAD_CENTRE.y, HEAD_BOTTOM), (0, HEAD_CENTRE.y, HEAD_TOP)],
         lambda t, a: (spline(HEAD_WIDTH, t) * math.cos(a), spline(HEAD_DEPTH, t) * math.sin(a)),
-        40,
-        28,
+        36,
+        24,
         (0, -1, 0),
     )
     nose = ellipsoid("nose", "hand", head_point(head_t(2.13), math.pi / 2, -0.02), (0.05, 0.045, 0.04), axis=(0, -1, -0.3), around=10, along=6)
@@ -308,22 +319,24 @@ def robe_parts() -> list[Part]:
     return [robe, rigid(cowl, "chest"), rigid(neck, "chest"), rigid(pendant, "chest")]
 
 
+SLEEVE = ((0, 0.11), (0.45, 0.13), (0.75, 0.17), (0.9, 0.22), (0.96, 0.18), (1, 0.08))
+"""Radius of the bell sleeve from the shoulder (0) to the cuff (1)."""
+
+
 def arm_parts() -> list[Part]:
     """A wide bell sleeve from the shoulder to past the wrist, and the hand coming out of it."""
-    cuff = WRIST + (WRIST - ELBOW).normalized() * 0.06
+    cuff = WRIST + (WRIST - ELBOW).normalized() * 0.03
     sleeve = loft(
         "sleeve",
         "sleeve",
         [SHOULDER, SHOULDER.lerp(ELBOW, 0.5) + Vector((0.03, 0, 0)), ELBOW, ELBOW.lerp(cuff, 0.5), cuff],
-        ellipse(
-            lambda t: spline(((0, 0.11), (0.45, 0.13), (0.75, 0.16), (1, 0.21)), t), lambda t: spline(((0, 0.11), (0.45, 0.13), (0.75, 0.17), (1, 0.22)), t)
-        ),
+        # The bell widens to the cuff and then rolls in round the wrist, so its end is the sleeve's own white cloth and
+        # no flat disc shows round the hand.
+        ellipse(lambda t: spline(SLEEVE, t), lambda t: spline(SLEEVE, t) * 1.05),
         14,
-        12,
+        14,
         (0, 0, 1),
     )
-    # The cuff's cap sinks back into the sleeve, so the open end reads as a hollow.
-    sleeve.verts[-1] = cuff - (cuff - ELBOW).normalized() * 0.2
     along(sleeve, [("arm.L", 0), ("forearm.L", 0.45)], 0.12)
     hand = ellipsoid("hand", "hand", WRIST + Vector((-0.03, -0.08, -0.01)), (0.1, 0.08, 0.075), axis=(-0.3, -1, 0), around=12, along=6)
     return [sleeve, rigid(hand, "hand.L")]
@@ -386,7 +399,7 @@ def carpet() -> Part:
 
 def parts(_spec: dict[str, BoneSpec]) -> list[Part]:
     left = [*arm_parts(), *leg_parts()]
-    rider = [*face_parts(), rigid(bob(), "head"), crown_tuft(), *hair_tie(), *robe_parts(), *staff_parts()]
+    rider = [*face_parts(), rigid(bob(), "head"), side_lock(), mirror(side_lock(), "side_lock.R"), crown_tuft(), *hair_tie(), *robe_parts(), *staff_parts()]
     rider += left + [mirror(p, p.name + ".R") for p in left]
     for p in rider:
         p.verts = [grown(v) for v in p.verts]

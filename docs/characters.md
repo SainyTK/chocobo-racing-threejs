@@ -65,7 +65,7 @@ Measured in the Studio with `createCharacter` (triangles of the body and of the 
 | Chocobo | 11,956 | 4,705 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Chocobo (the procedural model had 12,708, 7,456 and 35) |
 | Mog | 12,632 | 4,902 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Mog (the code-built Mog in his old car had 10,720, 5,844 and 24) |
 | Goblin | 12,740 | 5,416 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Goblin (the code-built Goblin in his plank wagon had 8,220, 4,816 and 20) |
-| White Mage | 12,556 | 4,922 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every White Mage (the code-built White Mage in her hood had 6,022, 2,322 and 11) |
+| White Mage | 12,676 | 4,974 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every White Mage (the code-built White Mage in her hood had 6,022, 2,322 and 11) |
 | Chubby Chocobo | 10,994 | 4,552 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Chubby Chocobo (the procedural model had 14,768, 10,024 and 35) |
 | Bahamut | 11,928 | 4,899 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Bahamut |
 | Cloud | 11,032 | 4,570 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Cloud |
@@ -272,7 +272,7 @@ One armature carries her and the carpet, and the rest pose is the riding pose: s
 
 - The carpet is a chain of bones from front to back (`carpet_front`, `carpet`, `carpet_back`, `carpet_tail`), weighted along the carpet's loft. Every loop ripples the chain and bobs `carpet`, and she sits on `carpet`, so she bobs with it. Nothing on her is turned in code except the head.
 - She is modelled at a child's size round her seat and grown by `RIDER_SCALE` in `model.py` (`grown()`), so she stands about as tall as Goblin in his cart, as on the Select Racer screen, while the carpet keeps its own size.
-- The hair is one thick shell (`bob()`), bangs and side locks included. The outer surface rises from a lower edge that follows `HAIR_EDGE` (the bangs just above the eyes with a gentle part at `PART`, side locks falling past the cheeks to the jaw, the nape behind) to the crown, turns in over a rounded rim and comes back up inside. It swells into `HAIR_LOBES` soft locks whose tips hang below the hollows; over the face they sweep from the part toward her left (`HAIR_SWEEP`), and lie close over the forehead (`HAIR_FRONT`). The painter lays its grooves in the hollows, fades them out toward the crown, and shades the back darker toward the nape.
+- The hair is one thick shell (`bob()`), bangs included. The outer surface rises from a lower edge that follows `HAIR_EDGE` (the bangs above the eyes, the temples, the nape behind) to the crown, turns in over a rounded rim and comes back up inside. Over the face it lies close to the head (`HAIR_FRONT`) and its edge sweeps up toward her left (`BANG_RISE`), so the bangs fall diagonally and show the forehead above her left eye. From the sides round to the back it swells into `HAIR_LOBES` locks whose tips hang below the hollows and flare out round the nape. Two side locks (`side_lock()`) hang as separate pieces from the temples past the cheeks to the jaw, clear of the face. The painter adds only fine strands, and shades the back darker toward the nape.
 - The staff rides on `staff` under the right hand. Arms are posed with the shared `anim.reach` by the directions the upper arm and forearm should point, and it turns the staff so the orb points where asked whatever the arm does.
 - Blink squashes the eye lenses on `eye.L` and `eye.R`; `mouth` opens by scale for Cast and Win; the hair tie's tuft hangs from `tie`.
 
@@ -280,7 +280,8 @@ Pitfalls met on White Mage:
 
 - The Final Fantasy white mage wears a hood with red triangle trim; the Chocobo Racing one does not. Check the game's select screen and chase view before modelling the series' costume.
 - Bangs made of separate flat locks read as a faceted helmet from the front. Let the hair shell itself come down over the forehead, with soft scalloped tips and a sweep, so the hair is one smooth mass.
-- Locks whose grooves all run up to the crown read as an onion. Fade the grooves and the modelled ridges out toward the crown.
+- Locks whose grooves all run up to the crown read as an onion, and ridges over the face read as a helmet. Keep the bangs smooth and leave lock ridges to the sides and the back.
+- A bell sleeve's cuff closed by a cap shows as a flat grey disc round the hand. Let the sleeve's own profile widen to the cuff and then roll in round the wrist (`SLEEVE`), so its end is white cloth.
 - Bell sleeves raised toward the camera show their cuffs as big discs. Pose arms by direction (`anim.reach`): rotating the upper arm alone swings the forearm, cuff first, toward the camera.
 - A thin slab lofted with a squarish cross-section gives its flat top only a narrow strip of each ring, so the top's painted pattern comes out blurred across. A rounder section (`CARPET_POWER`) gives the top half of the ring and half of the texture.
 - An eye painted by the loft's v alone covers the lens with the iris. Paint it by the point's place across the lens as the camera sees it.
