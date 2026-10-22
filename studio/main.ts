@@ -9,8 +9,6 @@ import { StudioMusicPlayer } from './music-player.ts';
 import { musicForVariant } from './music/review.ts';
 import { loadCharacterModels } from '../src/gfx/characters/index.ts';
 
-await loadCharacterModels();
-
 const LETTERS = 'ABCD';
 const $ = <T extends HTMLElement>(sel: string, root: ParentNode = document) => root.querySelector<T>(sel)!;
 const esc = (s: string) => s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
@@ -258,4 +256,6 @@ function frame(now: number) {
   if (captureNext) { captureNext = false; saveImage(); }
   requestAnimationFrame(frame);
 }
+// Racer models load before the first pane is built; the toolbar and the music status are live meanwhile.
+await loadCharacterModels();
 commit(); requestAnimationFrame(frame);

@@ -187,4 +187,6 @@ Bahamut joined as a ninth racer with a skinned GLB model and the Megaflare abili
 - The Studio and the game were checked in headless Chrome: menu idle, driving, drifting, every reaction, the racer select grid and HUD portraits, a 1400 x 800 race, a 390 x 844 phone race, a Megaflare cast in a piloted race and Bahamut on the podium.
   The skinned Time Attack ghost material compiles and draws both a code-built racer and Bahamut.
 
-Not covered: the Playwright suites were not re-run, because their configured ports were reserved by other work on this machine, and no real phone was used.
+- Playwright on a dev server at port 3331: the racer select test (now naming all nine racers), Time Attack with its phantom, two online clients with rejoin and rematch, Versus, and the impaired-network desktop and mobile test all passed. The Studio suite (`npm run test:studio`) passed after the Studio was changed to load racer models just before its first pane.
+
+Not covered: the per-course keyboard laps, Grand Prix and the touch-control suites were not re-run, and no real phone was used.
