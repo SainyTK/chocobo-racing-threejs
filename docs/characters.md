@@ -1,7 +1,7 @@
 # Racer models
 
-Most racers are built in code from primitives in `src/gfx/characters/racers/*.ts`: rigid parts on a joint hierarchy, baked into vertex-coloured toon meshes by `Rig`.
-Chocobo, Mog, Golem, Black Magician, Chubby Chocobo, Bahamut, Cloud and Behemoth are authored as skinned, textured GLBs, by Blender scripts in this repository.
+White Mage is still built in code from primitives in `src/gfx/characters/racers/white-mage.ts`: rigid parts on a joint hierarchy, baked into vertex-coloured toon meshes by `Rig`.
+The other racers, Chocobo, Mog, Golem, Goblin, Black Magician, Chubby Chocobo, Bahamut, Cloud and Behemoth, are authored as skinned, textured GLBs, by Blender scripts in this repository.
 This page describes that pipeline so the next racer can reuse it.
 
 ## Pipeline
@@ -13,6 +13,7 @@ npm run character -- chocobo
 npm run character -- golem
 npm run character -- chubby
 npm run character -- mog
+npm run character -- goblin
 npm run character -- black_mage
 ```
 
@@ -24,7 +25,7 @@ The shared pipeline lives in `scripts/characters/pipeline/`:
 
 | Module | Job |
 | --- | --- |
-| `geometry.py` | Smooth paths, lofted tubes (`loft`, `ellipsoid`, `claw`), surfaces of revolution (`lathe`), round (`ellipse`) and rounded-box (`superellipse`) rings, flat-ended boxes (`box`, `flat`), Coons patches for membranes, thickening and mirroring. Every part carries its own (u, v) parameters. |
+| `geometry.py` | Smooth paths, lofted tubes (`loft`, `ellipsoid`, `claw`), surfaces of revolution about any axis (`lathe`, from (offset, radius) points, optionally smoothed by a spline), round (`ellipse`) and rounded-box (`superellipse`) rings, flat-ended boxes (`box`, `flat`), Coons patches for membranes, thickening and mirroring. Every part carries its own (u, v) parameters. |
 | `weights.py` | Skin weights without painting: `rigid`, `along` (blend down a loft between consecutive bones) and `nearest` (inverse distance to bone segments). At most four influences per vertex. |
 | `atlas.py` | Packs one rectangle per skin into a 1024 x 1024 atlas, maps part UVs into it with padding, and paints each skin with numpy. `value_noise` gives painters smooth noise that wraps around a loft; `glow` makes the small emission mask. |
 | `scene.py` | Armature, joined body mesh, the outline hull (welded and decimated), the ambient-occlusion bake into vertex colours, materials and the GLB export with meshopt compression and WebP textures. |
@@ -63,6 +64,7 @@ Measured in the Studio with `createCharacter` (triangles of the body and of the 
 | --- | --- | --- | --- | --- |
 | Chocobo | 11,956 | 4,705 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Chocobo (the procedural model had 12,708, 7,456 and 35) |
 | Mog | 12,632 | 4,902 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Mog (the code-built Mog in his old car had 10,720, 5,844 and 24) |
+| Goblin | 12,740 | 5,416 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Goblin (the code-built Goblin in his plank wagon had 8,220, 4,816 and 20) |
 | Chubby Chocobo | 10,994 | 4,552 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Chubby Chocobo (the procedural model had 14,768, 10,024 and 35) |
 | Bahamut | 11,928 | 4,899 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Bahamut |
 | Cloud | 11,032 | 4,570 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Cloud |
@@ -72,7 +74,7 @@ Measured in the Studio with `createCharacter` (triangles of the body and of the 
 
 The Bahamut GLB is 469 KB with 36 bones and six clips; the Cloud GLB is 329 KB with 24 bones and six clips; the Chubby Chocobo GLB is 301 KB with 20 bones and seven clips.
 The Behemoth GLB is 407 KB with 37 bones and six clips; the code-built Behemoth it replaced had 12,192 and 9,308 triangles in 23 meshes.
-The Golem GLB is 384 KB with 23 bones and six clips.
+The Golem GLB is 399 KB with 23 bones and six clips.
 The Black Magician GLB is 338 KB with 20 bones and six clips.
 A new racer should stay near 12,000 body triangles and one atlas.
 
@@ -209,8 +211,33 @@ Pitfalls met on Golem:
 - A tyre lofted along its axle closes each side in a cone; `flat` turns the cones into flat sidewalls, so a hub disc can sit on the outside.
 - From the raised chase camera, wheel arches over the rear tyres hide them behind blue blocks. The original shows the rear tyres whole with only a thin ledge on top.
 - The chase camera looks down on the back, so a big back rock hides a head that sits low between the shoulders. Keep the back rock low and the head standing well above the shoulders.
-- Rough stone is painted, not modelled: `stone` in `golem/paint.py` lays a Voronoi pattern of lighter and darker faces with thin cracks over blotches and speckles. Each skin passes how many times farther its loft runs around than along, or the faces stretch into stripes, and the detail fades out near the loft's poles, where it would swirl into a pinwheel.
+- Rough stone is painted, not modelled: `stone` in `golem/paint.py` lays a Voronoi pattern of lighter and darker faces with cracks over blotches, grain, speckles and dark hollows. The noise is sampled in 3D on the loft taken as a stretched sphere (`solid_noise`), so it stays round up to the poles; the faces and cracks are drawn in (u, v), so each skin passes how many times farther its loft runs around than along, and they fade out near the poles.
+- A loft's end cap is one fan of triangles that shows a single row of the texture. Close a boulder's rings down to a small cap (`rock` in `golem/model.py`), or the cap reads as radial streaks.
+- Keep grain and speckles a few atlas pixels wide, or they alias into streaks.
 - Painter noise must use whole waves around a loft's u, or a seam shows where u wraps, straight down the middle of the back from the chase camera.
+
+## Goblin and the Gob-Cart H4
+
+```sh
+npm run character -- goblin
+```
+
+Goblin in his mine cart is one skinned GLB (345 KB, 22 bones, six clips), built by `scripts/characters/goblin/`.
+One armature carries the goblin and the cart, and the rest pose is the riding pose, so his fists sit on the crank bar.
+
+- The cart hangs off `cart`. Each front wheel turns about an upright pivot at its hub (`steer.L`, `steer.R`) and spins on `wheel_front.L` and `wheel_front.R` below it; the rear pair shares `wheel_rear`. `racers/goblin.ts` turns all five through `driven()`, and the front pivots go in `Build.steer`, so the shared animator steers them.
+- The lantern hangs from `lantern`, which `racers/goblin.ts` swings sideways on the spring Mog's pom-pom uses (`spring.ts`) through a second `overlay()`. It does not tip back with speed, which would push it into the front wall.
+- The clips never key the wheels, the steering or the lantern (`DRIVEN` in `clips.py`). Blink squashes the eyeballs on `eye.L` and `eye.R`; the club rides on `club` under the right forearm.
+- The helmet is a `shell` that rises from a lower edge on the skull, which follows `BRIM` round the head, to straight sides and a broad crown at `HELMET_TOP`, with a rolled rim lofted along that edge and a pale stripe over the crown. The wheels, drum, bracelet and lantern cap are `lathe`s, which give the painter a v along the profile so the wheel's faces, tread and axle caps paint apart.
+
+Pitfalls met on Goblin:
+
+- A `box` that stands upright needs a horizontal `up_hint`; with the default hint along its length it gets no frame and does not show.
+- A raised forearm tips whatever the fist holds back over the shoulder. Pitch the held bone forward by about the forearm's lift so the club stands up.
+- A pupil painted by the loft's v covers far more of an eyeball than it seems: v 0.8 is three quarters of the radius. Keep the pupil to about v 0.93.
+- A hanging part in front of a wall must not swing back with speed, or it disappears into the wall.
+- From the PS1's chase camera the helmet is a tall, boxy dome, about as tall as the mane is wide. A helmet that follows the skull reads as a low cap from behind, and a mane much wider than the helmet looks like a wig.
+- Eyes sunk into the face show only as slits under the rim. Bring them forward off the face so the whites read as round balls.
 
 ## Black Magician and the MagiCloud MK-1
 
@@ -220,7 +247,7 @@ npm run character -- black_mage
 
 Black Magician and his cloud share one armature (`scripts/characters/black_mage/`), with the riding pose as the rest pose: he stands on the cloud with his feet apart and the staff upright in his right fist.
 The hips hang from `cloud`, so the cloud's bob carries him; the puffs swell on their own leaf bones (`puff`, `puff.L`, `puff.R`), because scaling a bone scales its children too.
-The hat is a `lathe` of one outline from the brim's underside, round the drooping rim and up the broad cone; its upper cone is weighted to `hat_tip`, which `racers/black-mage.ts` turns through a second `overlay()`, so no clip keys it: the tip lags behind, leaning back with speed and swinging out of turns.
+The hat is a `lathe` about the vertical axis, smoothed through a few points (`along`), of one outline from the brim's underside, round the drooping rim and up the broad cone; its upper cone is weighted to `hat_tip`, which `racers/black-mage.ts` turns through a second `overlay()`, so no clip keys it: the tip lags behind, leaning back with speed and swinging out of turns.
 The cape is a thickened patch that hangs from `chest` and swings on `cape.L` and `cape.R`, one per half.
 `reach` in `clips.py` aims an arm with `aim`, and for the right arm also aims the staff, because a staff that only follows the forearm points down as soon as the arm is raised.
 His eyes and, faintly, the cloud are in `GLOW`, so the eyes glow under the brim and the cloud's shaded side stays pale.

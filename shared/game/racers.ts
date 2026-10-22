@@ -5,7 +5,7 @@ export const RACERS = [
   { name: 'Chocobo', color: '#ffb52e', light: '#ffd98a', vehicle: 'Jet-Blades CR', ability: 'dash' as AbilityId, speed: 39.3, acceleration: 23, grip: 10, steering: 1.65, size: 1, hovers: false },
   { name: 'Mog', color: '#f7ece5', light: '#ffffff', vehicle: 'Mog-Mobile R2', ability: 'flap' as AbilityId, speed: 39.3, acceleration: 27, grip: 10, steering: 1.8, size: .93, hovers: false },
   { name: 'Golem', color: '#bcaba2', light: '#d4c7be', vehicle: "Rockin' Roller V8", ability: 'grip' as AbilityId, speed: 38.9, acceleration: 19, grip: 13, steering: 1.83, size: 1.18, hovers: false },
-  { name: 'Goblin', color: '#83ba62', light: '#c4dc8c', vehicle: 'Gob-Cart H4', ability: 'mug' as AbilityId, speed: 39.9, acceleration: 24, grip: 8.5, steering: 1.65, size: .92, hovers: false },
+  { name: 'Goblin', color: '#d4502a', light: '#d9a074', vehicle: 'Gob-Cart H4', ability: 'mug' as AbilityId, speed: 39.9, acceleration: 24, grip: 8.5, steering: 1.65, size: .92, hovers: false },
   { name: 'Black Magician', color: '#4a30b8', light: '#8c78e8', vehicle: 'MagiCloud MK-1', ability: 'magic' as AbilityId, speed: 39.3, acceleration: 23, grip: 9.5, steering: 1.7, size: 1, hovers: true },
   { name: 'White Mage', color: '#eee9dd', light: '#f6d3db', vehicle: 'Cosmic Carpet', ability: 'barrier' as AbilityId, speed: 38.5, acceleration: 26, grip: 13, steering: 1.8, size: .92, hovers: true },
   { name: 'Chubby Chocobo', color: '#fff6d9', light: '#ffffff', vehicle: 'Phat-Burner Plus', ability: 'receive' as AbilityId, speed: 38.5, acceleration: 23, grip: 14, steering: 1.93, size: 1.3, hovers: false },

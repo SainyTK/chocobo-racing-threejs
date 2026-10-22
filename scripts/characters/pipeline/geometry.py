@@ -349,35 +349,57 @@ def box(
     return flat(loft(name, skin, [start, end], superellipse(lambda t: half_width, lambda t: half_height, power), around, along, up_hint), around)
 
 
-def lathe(name: str, skin: str, profile: Sequence[tuple[float, float]], around: int, along: int, centre: Vec = (0, 0, 0)) -> Part:
-    """A surface of revolution about the vertical axis through `centre`, for hats, bells and domes whose outline is
-    easier to draw than to loft: `profile` is (radius, height) points from the bottom pole to the top pole, both at
-    radius 0, smoothed by a spline. u runs around (u = 0 at the back, the ring angle a = 2 pi u - pi / 2 with sin(a)
-    pointing forward), v along the profile."""
-    pts = catmull_rom([(r, 0.0, z) for r, z in profile], along)
-    c = Vector(centre)
+def lathe(
+    name: str, skin: str, centre: Vec, axis: Vec, profile: Sequence[tuple[float, float]], around: int, phase: float = 0.0, along: int | None = None
+) -> Part:
+    """A solid of revolution about `axis` through `centre`, from (offset along the axis, radius) points.
+
+    The ends close with a pole when their radius is zero; `phase` turns the ring, for example to square up a four-sided
+    one. u runs around, v along the profile by arc length, so a painter can tell the faces of a wheel from its tread.
+    With `along`, the profile is first smoothed by a spline through its points and resampled in that many even steps,
+    for a curved outline such as a hat's drawn from a few points; without it the points are used as they are.
+    """
+    if along:
+        profile = [(p.x, p.y) for p in catmull_rom([(x, r, 0.0) for x, r in profile], along)]
+    centre = Vector(centre)
+    d = Vector(axis).normalized()
+    side = d.cross(Vector((0, 0, 1))) if abs(d.z) < 0.9 else d.cross(Vector((1, 0, 0)))
+    side.normalize()
+    up = side.cross(d)
+    lengths = [0.0]
+    for (x0, r0), (x1, r1) in zip(profile, profile[1:], strict=False):
+        lengths.append(lengths[-1] + math.hypot(x1 - x0, r1 - r0))
+    rings = [(x, r, length / lengths[-1]) for (x, r), length in zip(profile, lengths, strict=True)]
     verts: list[Vector] = []
     params: list[tuple[float, float]] = []
-    for i in range(1, along):
+    index: list[list[int]] = []
+    for x, r, v in rings:
+        if r < 1e-6:
+            verts.append(centre + d * x)
+            params.append((0.5, v))
+            index.append([len(verts) - 1] * around)
+            continue
+        row = []
         for j in range(around):
-            a = -math.pi / 2 + 2 * math.pi * j / around
-            verts.append(c + Vector((pts[i].x * math.cos(a), -pts[i].x * math.sin(a), pts[i].z)))
-            params.append((j / around, i / along))
+            a = phase + 2 * math.pi * j / around
+            verts.append(centre + d * x + (side * math.cos(a) + up * math.sin(a)) * r)
+            params.append((j / around, v))
+            row.append(len(verts) - 1)
+        index.append(row)
     faces: list[tuple[int, ...]] = []
     uvs: list[list[tuple[float, float]]] = []
-    for i in range(along - 2):
+    for i in range(len(rings) - 1):
+        v0, v1 = rings[i][2], rings[i + 1][2]
         for j in range(around):
-            a, b = i * around + j, i * around + (j + 1) % around
-            faces.append((a, b, b + around, a + around))
-            u0, u1, v0, v1 = j / around, (j + 1) / around, (i + 1) / along, (i + 2) / along
-            uvs.append([(u0, v0), (u1, v0), (u1, v1), (u0, v1)])
-    for end, ring in ((0, 0), (1, (along - 2) * around)):
-        verts.append(c + Vector((0, 0, pts[0 if end == 0 else -1].z)))
-        params.append((0.5, float(end)))
-        p, v, w = len(verts) - 1, float(end), (1 if end == 0 else along - 1) / along
-        for j in range(around):
-            a, b = ring + j, ring + (j + 1) % around
-            faces.append((b, a, p) if end == 0 else (a, b, p))
-            first, second = ((j + 1) / around, w), (j / around, w)
-            uvs.append([first, second, ((j + 0.5) / around, v)] if end == 0 else [second, first, ((j + 0.5) / around, v)])
+            a, b, c, e = index[i][j], index[i][(j + 1) % around], index[i + 1][(j + 1) % around], index[i + 1][j]
+            u0, u1 = j / around, (j + 1) / around
+            if a == b:
+                faces.append((a, c, e))
+                uvs.append([((u0 + u1) / 2, v0), (u1, v1), (u0, v1)])
+            elif c == e:
+                faces.append((a, b, c))
+                uvs.append([(u0, v0), (u1, v0), ((u0 + u1) / 2, v1)])
+            else:
+                faces.append((a, b, c, e))
+                uvs.append([(u0, v0), (u1, v0), (u1, v1), (u0, v1)])
     return Part(name, skin, verts, faces, uvs, params=params)

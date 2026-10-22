@@ -107,7 +107,7 @@ The Rockin' Roller V8 is a small blue 4WD jeep, as the manual says ("4WD jeep"),
 The front wheels steer on their own knuckles.
 Golem is built from separate rounded boulders of rough grey-brown stone: a tall block head under a thick brim that overhangs a black face with two angry yellow eyes, huge round shoulder boulders whose tops sit level with his eyes, long rocky arms and big fists on the steering wheel, with red wristbands studded with white spikes.
 His Win clip, one fist punched up and the other arm thrown out, is the pose he strikes on the podium and in the racer select screen.
-His stone was matched region by region, by measuring the PS1 frames and the remake's under the game's lighting. In the chase view the original's shoulders are the lightest stone (about 53% lightness), the back is darker (23% to 32%) and the back of the head is a dark brown block (16% to 19%); in the racer select screen the shoulders read 47%, the forearms 40%, the chest 37% and the head darker than the shoulders. The remake measures 52%, 34%, 17%, and in the menu 52%, 42% and 41% for the shoulders, forearms and head.
+His stone was matched region by region, by measuring lightness and hue in the PS1 frames and in the remake's under the game's lighting. In the chase view the original's shoulders measure about 53% lightness, the back 23% to 32% and the back of the head, a dark brown block, 16% to 19%; the remake measures 43% to 45%, 38% and 17%. In the racer select screen the original's shoulders measure 49% to 53% and its head top 43%, and on the podium its body measures 50%, its arms 36% and its head top 27%; the remake's menu view measures 46% for the shoulders and 30% for the head, so the head reads clearly darker than the shoulders from every side.
 The stone is painted rough: lighter and darker faces split by thin dark cracks, with blotches and speckles, and no extra geometry.
 His roster colour follows the model's stone.
 
@@ -176,6 +176,25 @@ Deliberate deviations:
 | Slots refill within a lap, possibly with another kind; held stacks blink in bursts | Fixed kinds, 3.5 s respawn, steady 4 and 8 blinks a second | Keeps the existing simulation; a steady blink always shows the level |
 
 All track stones draw in three instanced draw calls (stones, shadows and pickup bursts, the last only while a burst plays) and every racer's held stones in one more.
+
+## Goblin
+
+Goblin follows the PS1 in-game model, checked side by side against two Grand Prix played as him and a Cid's Test Track run (the chase view from behind, the GOAL orbit and the Select Racer screen), with the official model sheet for shapes only.
+The Gob-Cart H4 is a wooden mine cart, as the manual says: an open box of light planks with riveted grey iron posts at the corners, four big wooden disc wheels outside the box with iron axle caps, a lantern hanging from the middle of the front wall, and a drum with a crank bar inside the front wall.
+The code-built cart it replaced was a flat plank wagon with black rubber tyres and a steering wheel.
+Goblin sits in the box: tan skin, a red-orange helmet whose rolled rim frowns down over big round eyes, a big round nose, long pointed ears, a magenta-violet mane that fills the space between the helmet and the rim from behind, a green chest band, a bandaged left hand, a bracelet on the right wrist and a wooden club in his right fist.
+The code-built Goblin was green-skinned with a red cap; the game's model is tan, and his roster colour is now the helmet's red-orange.
+Colours were measured on the PS1 frames and on ours under the game's lighting: helmet hue about 18, mane hue about 305, planks hue about 42.
+In the Select Racer screen he shakes his club beside his head, which his menu idle does too.
+
+Deliberate deviations:
+
+| Original | Remake | Reason |
+| --- | --- | --- |
+| The pencil sketch draws a tapered hopper on flanged rail wheels | A straight box on plain disc wheels | The game model and the CG model sheet use the straight box |
+| The helmet is a tall, boxy dome with a pale stripe, over a mane about as wide as the helmet is tall | The same tall, boxy helmet with a pale stripe over the crown, a little taller than the CG sheet's rounder dome | The race view is the reference; the CG dome is lower |
+| No win or lose animation is seen in a race | He shakes the club and pumps his fist on the podium, and slumps over the bar when he loses | Every racer here acts out win and lose reactions |
+| The cart has no engine | No exhaust smoke; boost flames leave the back corners of the box | A push cart has no engine smoke |
 
 ## Technology choice
 

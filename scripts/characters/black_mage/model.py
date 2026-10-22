@@ -59,24 +59,24 @@ HEAD_RADII = (0.42, 0.38, 0.36)
 EYE = Vector((0.17, -0.36, 2.5))
 BRIM_RADIUS = 1.1
 HAT_PROFILE = (
-    (0.0, 2.74),
-    (0.6, 2.72),
-    (0.92, 2.64),
-    (1.07, 2.55),
-    (BRIM_RADIUS, 2.57),
-    (1.06, 2.61),
-    (0.9, 2.7),
-    (0.72, 2.77),
-    (0.63, 2.86),
-    (0.55, 3.06),
-    (0.43, 3.3),
-    (0.29, 3.53),
-    (0.15, 3.7),
-    (0.06, 3.79),
-    (0.0, 3.81),
+    (2.74, 0.0),
+    (2.72, 0.6),
+    (2.64, 0.92),
+    (2.55, 1.07),
+    (2.57, BRIM_RADIUS),
+    (2.61, 1.06),
+    (2.7, 0.9),
+    (2.77, 0.72),
+    (2.86, 0.63),
+    (3.06, 0.55),
+    (3.3, 0.43),
+    (3.53, 0.29),
+    (3.7, 0.15),
+    (3.79, 0.06),
+    (3.81, 0.0),
 )
 """The hat's outline from the middle of the brim's underside out to the rim, back over the brim's top and up the cone
-to the tip, as (radius, height). The brim is about as wide as the cape and droops toward its rim, and the broad cone
+to the tip, as (height, radius). The brim is about as wide as the cape and droops toward its rim, and the broad cone
 stands about as tall as the brim is wide, as on the select screen."""
 HAT_TILT = -0.12
 """The hat sits tipped back a little, so the eyes show under the front of the brim."""
@@ -144,8 +144,8 @@ def head_parts() -> list[Part]:
     head = ellipsoid("head", "face", J["head"], (rz, rx, ry), axis=(0, 0, 1), around=20, along=12, up_hint=(0, -1, 0))
     eye = ellipsoid("eye", "eye", EYE, (0.05, 0.12, 0.13), axis=(0.3, -1, 0), around=12, along=6)
     eye.outline = False
-    hat = lathe("hat", "hat", HAT_PROFILE, 36, 34, (0, J["hat"][1], 0))
-    base, tip, pivot = 2.96, HAT_PROFILE[-1][1], Vector(J["hat"])
+    hat = lathe("hat", "hat", (0, J["hat"][1], 0), (0, 0, 1), HAT_PROFILE, 36, along=34)
+    base, tip, pivot = 2.96, HAT_PROFILE[-1][0], Vector(J["hat"])
     tilt = Matrix.Rotation(HAT_TILT, 3, "X")
     for v in hat.verts:
         k = smoothstep(base, tip, v.z) ** 1.4
