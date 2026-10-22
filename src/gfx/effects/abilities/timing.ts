@@ -7,3 +7,5 @@ export const smooth = (k: number) => { const x = Math.min(1, Math.max(0, k)); re
 export const hash = (n: number) => { const x = Math.sin(n * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
 /** A random between `a` and `b` from `hash`. */
 export const hashIn = (n: number, a: number, b: number) => a + hash(n) * (b - a);
+/** Progress 0 to 1 of `t` through `[from, to]`, held at 0 before and 1 after. */
+export const progress = (t: number, [from, to]: readonly number[]) => Math.min(1, Math.max(0, (t - from) / (to - from)));

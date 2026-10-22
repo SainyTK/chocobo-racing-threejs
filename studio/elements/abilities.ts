@@ -1,11 +1,13 @@
 import * as THREE from 'three';
-import { MEGAFLARE, RACERS, makeRacer, type AbilityId, type Racer } from '../../shared/game/index.ts';
+import { MEGAFLARE, RACERS, makeRacer, stackPositions, type AbilityId, type Item, type Racer } from '../../shared/game/index.ts';
 import { ABILITY_SECONDS } from '../../shared/game/abilities.ts';
-import { HASTE_SECONDS } from '../../shared/game/spells.ts';
+import { BARRIER_SECONDS, HASTE_SECONDS } from '../../shared/game/spells.ts';
 import { HANDLING } from '../../shared/game/handling.ts';
 import { createCharacter, type Character, type Pose } from '../../src/gfx/characters/index.ts';
 import { flapLift, type BoostKind } from '../../src/gfx/effects/abilities/index.ts';
 import { chaseFraming } from '../../src/gfx/camera/framing.ts';
+import { HELD_STONE } from '../../src/gfx/stones/looks.ts';
+import { MugHelper } from '../../src/gfx/effects/abilities/mug-helper.ts';
 import type { Instance, StudioContext, StudioElement } from '../types.ts';
 import type { ViewState } from '../viewport.ts';
 
@@ -20,8 +22,19 @@ const crossed = (u: number, prev: number, at: number) => prev < at && u >= at;
 const tint = new THREE.Color();
 
 function actor(name: string, id: string, x: number, z: number): Actor {
-  const character = index(name), c = createCharacter(character);
-  return { p: makeRacer(id, name, character), c, at: new THREE.Vector3(x, 0, z) };
+  const character = index(name), c = createCharacter(character), p = makeRacer(id, name, character);
+  p.px = x; p.pz = z;
+  return { p, c, at: new THREE.Vector3(x, 0, z) };
+}
+
+/** Every actor's held stones in their line behind it, drawn as a race draws them. */
+function drawHeld({ fx }: StudioContext, actors: Actor[], t: number) {
+  fx.held.begin(t);
+  for (const a of actors) stackPositions(a.p).forEach((at, i) => {
+    const stack = a.p.stones[i], look = fx.abilities.heldLook(a.p.id, i), scale = a.c.root.scale.x;
+    if (!look.hidden) fx.held.add(new THREE.Vector3(at.x, a.at.y + HELD_STONE.lift * scale, at.z), stack.kind, stack.level, scale, i * 2.1, look.blink);
+  });
+  fx.held.end();
 }
 
 /** Where the camera sits for a view of `a`. Dragging turns it round the racer from that starting angle. */
@@ -53,7 +66,7 @@ function abilityScene(variant: string, ctx: StudioContext, actors: Actor[], peri
         const k = ctx.fx.abilities.tint(a.p, tint); a.c.skin.flash.value = k; a.c.skin.flashColor.value.copy(tint);
       }
       group.updateMatrixWorld(true);
-      ctx.fx.abilities.update(dt, ctx.camera, racers, chars);
+      ctx.fx.abilities.update(dt, ctx.camera, racers, chars); drawHeld(ctx, actors, t);
     },
     dispose() { for (const a of actors) a.c.dispose(); },
   };
@@ -73,6 +86,9 @@ function element(id: string, name: string, tags: string[], variants: { id: strin
 
 const boost = (id: string, name: string, racer: string, kind: BoostKind, seconds: number, tags: string[], ability?: AbilityId) =>
   element(id, name, ['boost', 'spikes', ...tags], VIEWS, (variant, ctx) => abilityScene(variant, ctx, [actor(racer, 'player', 0, 0)], seconds + 1.4, boostScript(kind, seconds, ability)));
+
+/** Sets a racer's held line, as each loop starts. */
+const hold = (a: Actor, ...stacks: [Item, number][]) => { a.p.stones = stacks.map(([kind, level]) => ({ kind, level })); };
 
 export const abilities: StudioElement[] = [
   boost('dash', 'Dash', 'Chocobo', 'dash', ABILITY_SECONDS.dash, ['chocobo', 'cloud'], 'dash'),
@@ -102,4 +118,43 @@ export const abilities: StudioElement[] = [
       }
     }, variant === 'caster' ? 0 : 1);
   }),
+  element('grip', 'Grip-Up', ['golem', 'rings', 'traction'], VIEWS, (variant, ctx) => abilityScene(variant, ctx, [actor('Golem', 'player', 0, 0)], ABILITY_SECONDS.grip + 1.2, (u, prev, [g], { fx }) => {
+    if (crossed(u, prev, .3)) fx.abilities.used('grip', g.p.id);
+    g.p.gripUp = u >= .3 ? Math.max(0, .3 + ABILITY_SECONDS.grip - u) : 0;
+  })),
+  element('mug', 'Mug', ['goblin', 'steal', 'stone', 'helper'], [{ id: 'chase', label: 'Chase camera on Goblin' }, { id: 'victim', label: 'Chase camera on the victim' }, { id: 'side', label: 'From the side' }, { id: 'nobody', label: 'Nobody to rob' }, { id: 'helper', label: 'The helper running' }], (variant, ctx) => {
+    if (variant === 'helper') {
+      const h = new MugHelper(), dir = new THREE.Vector3(1, 0, 0);
+      return { object: h.root, focus: { target: new THREE.Vector3(0, 1.1, 0), distance: 6 }, update(t) { h.place(h.root.position.set(0, 0, 0), dir, t, 0); }, dispose() { h.dispose(); } };
+    }
+    const actors = [actor('Goblin', 'player', 0, 0), ...variant === 'nobody' ? [] : [actor('Chocobo', 'victim', 3, 14)]];
+    return abilityScene(variant === 'victim' || variant === 'nobody' ? 'chase' : variant, ctx, actors, 3.2, (u, prev, [thief, victim], { fx }) => {
+      if (crossed(u, prev, 0)) { hold(thief, ['thunder', 1]); if (victim) hold(victim, ['fire', 1], ['haste', 1]); }
+      if (!crossed(u, prev, .3)) return;
+      const kind = victim ? victim.p.stones.pop()!.kind : 'ice' as Item;
+      thief.p.stones.push({ kind, level: 1 });
+      fx.abilities.used('mug', thief.p.id); fx.abilities.mugged(thief.p.id, victim?.p.id, kind, thief.p.stones.length - 1);
+    }, variant === 'victim' ? 1 : 0);
+  }),
+  element('magic-plus', 'Magic Plus', ['black magician', 'level', 'stone', 'passive'], VIEWS, (variant, ctx) => abilityScene(variant, ctx, [actor('Black Magician', 'player', 0, 0)], 4, (u, prev, [m], { fx }) => {
+    if (crossed(u, prev, 0)) hold(m, ['fire', 1]);
+    if (!crossed(u, prev, .3)) return;
+    m.p.stones[0].level = 2; fx.abilities.used('magic', m.p.id); fx.abilities.raised(m.p.id, 0);
+  })),
+  element('barrier', 'Barrier', ['white mage', 'shield', 'block', 'passive'], [...VIEWS, { id: 'block', label: 'Blocking Thunder' }], (variant, ctx) => {
+    const block = 2.4;
+    return abilityScene(variant === 'block' ? 'chase' : variant, ctx, [actor('White Mage', 'player', 0, 0)], BARRIER_SECONDS + 1.2, (u, prev, [w], { fx }) => {
+      if (crossed(u, prev, .3)) fx.abilities.used('barrier', w.p.id);
+      w.p.barrier = u >= .3 ? Math.max(0, .3 + BARRIER_SECONDS - u) : 0;
+      if (variant !== 'block' || u < block) return;
+      if (crossed(u, prev, block)) { fx.strike(w.at.clone().setY(1.5), 1, false); fx.abilities.blocked(w.p.id); }
+      w.p.barrier = 0;
+    });
+  }),
+  element('receive', 'Receive', ['chubby chocobo', 'catch', 'stone', 'passive'], VIEWS, (variant, ctx) => abilityScene(variant, ctx, [actor('Chubby Chocobo', 'player', 0, 0)], 3.4, (u, prev, [c], { fx }) => {
+    if (crossed(u, prev, 0)) hold(c, ['fire', 1]);
+    if (crossed(u, prev, .3)) fx.strike(c.at.clone().setY(1.5), 1, false);
+    if (!crossed(u, prev, .35)) return;
+    c.p.stones.push({ kind: 'thunder', level: 1 }); fx.abilities.received(c.p.id, 'thunder', 1, c.p.stones.length - 1);
+  })),
 ];

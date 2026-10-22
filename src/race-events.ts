@@ -35,3 +35,9 @@ export function castInfo(e: GameEvent): { kind: Item; level: number } | null {
   const spell = SPELLS.find(s => e.text === `${s.name}!`);
   return { kind: e.type as Item, level: spell?.level ?? 1 };
 }
+
+/** The spell a `receive` event caught, from its text "Received Spell name!". */
+export function receiveInfo(e: GameEvent): { kind: Item; level: number } | null {
+  const spell = SPELLS.find(s => e.text === `Received ${s.name}!`);
+  return spell ? { kind: spell.kind, level: spell.level } : null;
+}
