@@ -1,46 +1,59 @@
 import * as THREE from 'three';
-import type { RacerProfile } from '../../../../shared/game/index.ts';
-import { ellipsoid, ball, rbox, cyl } from '../../geometry/primitives.ts';
-import { sweep, horn, tube } from '../../geometry/sweep.ts';
+import { damp } from '../math.ts';
+import { POSE_SECONDS } from '../poses.ts';
 import { Rig } from '../rig.ts';
-import type { Build, Wheel } from '../types.ts';
-import { eyes } from '../parts/eyes.ts';
-import { wheel } from '../parts/wheel.ts';
+import { anchor, driven, skinnedModel, type SkinnedModel } from '../skinned.ts';
+import type { Build } from '../types.ts';
 
-export function behemoth(c: RacerProfile): Build {
-  const r = new Rig(), fur = r.t(c.color), furL = r.t(c.light), mane = r.t('#574276'), bone = r.t('#f2dcae'), frame = r.t('#e8783e'), body = r.t('#5f586f'), wheels: Wheel[] = [], steer: THREE.Object3D[] = [], exhausts: THREE.Object3D[] = [], contacts: THREE.Object3D[] = [];
-  const car = r.joint(r.model);
-  r.add(car, body, rbox(2.1, .45, 2.9, .16, [0, .78, 0]), rbox(1.7, .35, .8, .14, [0, .9, 1.25], [.3, 0, 0]));
-  r.add(car, r.t('#ffd84a'), rbox(2.15, .08, .3, .03, [0, 1.02, .6]), rbox(2.15, .08, .3, .03, [0, 1.02, -.6]));
-  r.add(car, frame, tube([[-.95, .95, -1.1], [-.88, 2.2, -1.0], [-.6, 2.85, -.95], [.6, 2.85, -.95], [.88, 2.2, -1.0], [.95, .95, -1.1]], .07), tube([[-.82, 2.6, -.98], [-.85, 1.7, .6], [-.9, 1.0, 1.2]], .06), tube([[.82, 2.6, -.98], [.85, 1.7, .6], [.9, 1.0, 1.2]], .06));
-  r.add(car, r.t('#3a3644'), rbox(1.3, .5, .6, .1, [0, 1.18, -1.25]));
-  for (const s of [-1, 1]) {
-    r.add(car, r.t('#bfc4cc'), cyl(.09, .11, .7, [s * .45, 1.55, -1.42], [-.3, 0, 0], 12)); exhausts.push(r.joint(car, [s * .45, 1.9, -1.55]));
-    r.add(car, r.g('#ff3a3a', 2), rbox(.2, .1, .04, .02, [s * .8, .85, -1.47]));
-    const st = r.joint(car, [s * 1.18, .55, 1.0]); steer.push(st); wheels.push(wheel(r, st, [0, 0, 0], .55, .5, '#e8783e', true));
-    wheels.push(wheel(r, car, [s * 1.22, .64, -1.0], .64, .58, '#e8783e', true)); contacts.push(r.joint(car, [s * 1.22, .04, -1.1]));
-  }
-  const torso = r.joint(r.model, [0, 1.95, -.25]);
-  r.add(torso, fur, ellipsoid([.95, .82, .9])); r.add(torso, furL, ellipsoid([.62, .6, .4], [0, -.12, .55]));
-  for (let k = 0; k < 6; k++) r.add(torso, mane, horn([[(k % 2 - .5) * .4, .62 - k * .12, -.45 - k * .1], [(k % 2 - .5) * .5, .9 - k * .14, -.75 - k * .1], [(k % 2 - .5) * .6, 1.05 - k * .16, -1.05 - k * .08]], .17));
-  const arms: THREE.Object3D[] = [];
-  for (const s of [-1, 1]) { const a = r.joint(torso, [s * .82, .25, .2]); arms.push(a); r.add(a, fur, sweep([[0, 0, 0], [s * .2, -.35, .35], [s * .1, -.5, .8]], t => .26 - t * .06)); r.add(a, furL, ball(.22, [s * .08, -.5, .9])); for (const x of [-.08, 0, .08]) r.add(a, bone, horn([[s * .08 + x, -.45, 1.05], [s * .08 + x, -.52, 1.15]], .04)); }
-  const tail = r.joint(torso, [0, -.2, -.85]); r.add(tail, fur, tube([[0, 0, 0], [0, .3, -.5], [0, .9, -.75], [0, 1.3, -.6]], .09)); r.add(tail, mane, ellipsoid([.2, .32, .2], [0, 1.4, -.55]));
-  const head = r.joint(torso, [0, .75, .75]);
-  r.add(head, fur, ellipsoid([.72, .62, .6])); r.add(head, furL, ellipsoid([.56, .34, .42], [0, -.24, .45]));
-  r.add(head, r.t('#3c2b4e'), ellipsoid([.2, .11, .1], [0, -.08, .84]));
-  for (const s of [-1, 1]) {
-    r.add(head, bone, horn([[s * .2, -.32, .7], [s * .22, -.5, .74], [s * .2, -.66, .7]], .07));
-    r.add(head, bone, horn([[s * .42, .38, .05], [s * .82, .78, -.05], [s * 1.15, .7, -.42], [s * 1.12, .35, -.6], [s * .95, .2, -.45]], .2));
-    r.add(head, mane, rbox(.3, .07, .08, .03, [s * .24, .27, .53], [0, s * -.2, s * .38]));
-  }
-  for (let k = 0; k < 5; k++) { const a = (k - 2) * .45; r.add(head, mane, horn([[Math.sin(a) * .45, .35, -.25], [Math.sin(a) * .65, .55, -.55], [Math.sin(a) * .8, .45, -.9]], .2)); }
-  const blink = eyes(r, head, { y: .1, z: .45, sep: .26, w: .13, h: .12, turn: .5, iris: '#ffc94a', slit: true });
-  return { r, head, height: 4.0, wheels, steer, exhausts, contacts, outline: '#22182e', update(s, k) {
-    torso.position.y = 1.95 + Math.abs(Math.sin(s.t * 12)) * .04 * k + Math.sin(s.t * 1.8) * .03;
-    tail.rotation.y = Math.sin(s.t * 3) * .3 - s.steer * .3; tail.rotation.x = -k * .5;
-    arms.forEach((a, i) => { a.rotation.z = (i ? -1 : 1) * s.steer * .12; });
-    head.rotation.y = s.menu ? Math.sin(s.t * .6) * .3 : s.steer * .25; head.rotation.x = Math.sin(s.t * 1.8) * .03;
-    blink.scale.y = (s.t * .6 + 2) % 3.8 < .1 ? .1 : 1;
+/** Loops blend by speed; Charge, Win and Lose follow the reaction's own clock so every viewer sees the same frame. */
+const LOOPS = ['Idle', 'Drive'] as const, POSED = ['Charge', 'Win', 'Lose'] as const;
+type ClipName = typeof LOOPS[number] | typeof POSED[number];
+/** Seconds between blinks, and how long one lasts. */
+const BLINK = { every: 4.1, seconds: .18 };
+/** Road wheels per track, their radius, and the spacing of the track pads, as built in scripts/characters/behemoth. */
+const ROAD_WHEELS = 4, WHEEL_RADIUS = .2, PAD_PITCH = .2;
+
+/**
+ * The track pads under a tank: a bone slid backwards by the distance driven, wrapped to one pad spacing so the evenly
+ * spaced pads look like an endless belt. `sync` places it after the mixer update.
+ */
+function pads(m: SkinnedModel, bone: string) {
+  const b = m.bone(bone), rest = b.position.clone();
+  m.root.updateMatrixWorld(true);
+  const toParent = b.parent!.getWorldQuaternion(new THREE.Quaternion()).invert().multiply(m.root.getWorldQuaternion(new THREE.Quaternion()));
+  const back = new THREE.Vector3(0, 0, -1).applyQuaternion(toParent);
+  return { sync(distance: number) { b.position.copy(rest).addScaledVector(back, ((distance % PAD_PITCH) + PAD_PITCH) % PAD_PITCH); } };
+}
+
+/** Behemoth in the Behemo-Buggy 99: one skinned model for the beast and his tank, with road wheels and pads moved in code. */
+export function behemoth(): Build {
+  const r = new Rig(), m = skinnedModel(r, 'behemoth');
+  const action = (name: string) => { const a = m.actions.get(name); if (!a) throw new Error(`Behemoth has no ${name} clip`); a.play(); a.weight = 0; return a; };
+  const clips = Object.fromEntries([...LOOPS, ...POSED].map(n => [n, action(n)])) as Record<ClipName, ReturnType<typeof action>>, blink = action('Blink');
+  for (const a of [...POSED.map(n => clips[n]), blink]) a.timeScale = 0;
+  const head = m.bone('head'), posed = head.quaternion.clone(), weights: Record<ClipName, number> = { Idle: 0, Drive: 0, Charge: 0, Win: 0, Lose: 0 };
+  const wheels = ['L', 'R'].flatMap(side => Array.from({ length: ROAD_WHEELS }, (_, i) => driven(m, `wheel${i + 1}.${side}`, [1, 0, 0], 'x')));
+  const belts = [pads(m, 'pads.L'), pads(m, 'pads.R')];
+  // Smoke and boost flames from the two exhausts at the back of the hull; drift sparks from the rear of the tracks.
+  const exhausts = [anchor(m, 'tank', [.42, .76, -1.42]), anchor(m, 'tank', [-.42, .76, -1.42])];
+  const contacts = [anchor(m, 'tank', [1.06, .04, -1.3]), anchor(m, 'tank', [-1.06, .04, -1.3])];
+  let fresh = true;
+  return { r, head, height: 3.9, wheels: wheels.map(w => ({ j: w.j, r: WHEEL_RADIUS })), steer: [], exhausts, contacts, outline: m.outline, update(s, k) {
+    const pose = s.pose, ended = pose?.kind === 'win' || pose?.kind === 'lose' ? pose : null;
+    const charging = pose?.kind === 'cast' ? 1 : 0, cruise = ended ? 0 : 1 - charging, drive = s.menu ? 0 : Math.min(1, k * 3);
+    const target: Record<ClipName, number> = { Idle: cruise * (1 - drive), Drive: cruise * drive, Charge: charging, Win: ended?.kind === 'win' ? 1 : 0, Lose: ended?.kind === 'lose' ? 1 : 0 };
+    for (const n of [...LOOPS, ...POSED]) { weights[n] = fresh ? target[n] : damp(weights[n], target[n], 12, s.dt); clips[n].weight = weights[n]; }
+    fresh = false;
+    if (pose?.kind === 'cast') clips.Charge.time = Math.min(1, pose.t / POSE_SECONDS.cast) * clips.Charge.getClip().duration;
+    if (ended) { const c = clips[ended.kind === 'win' ? 'Win' : 'Lose']; c.time = ended.t % c.getClip().duration; }
+    clips.Drive.timeScale = .7 + k * .8;
+    const b = (s.t + 2.3) % BLINK.every; blink.weight = b < BLINK.seconds ? 1 : 0; blink.time = Math.min(b, BLINK.seconds);
+    // The mixer skips bones whose clip value did not change, so first take back last frame's turns and nods.
+    head.quaternion.copy(posed);
+    m.mixer.update(s.dt);
+    posed.copy(head.quaternion);
+    for (const w of wheels) w.sync();
+    for (const belt of belts) belt.sync(wheels[0].j.rotation.x * WHEEL_RADIUS);
+    head.rotation.y += s.menu ? Math.sin(s.t * .6) * .3 : s.steer * .25;
   } };
 }

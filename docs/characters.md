@@ -1,7 +1,7 @@
 # Racer models
 
 Most racers are built in code from primitives in `src/gfx/characters/racers/*.ts`: rigid parts on a joint hierarchy, baked into vertex-coloured toon meshes by `Rig`.
-Chocobo, Bahamut and Cloud are authored as skinned, textured GLBs, by Blender scripts in this repository.
+Chocobo, Bahamut, Cloud and Behemoth are authored as skinned, textured GLBs, by Blender scripts in this repository.
 This page describes that pipeline so the next racer can reuse it.
 
 ## Pipeline
@@ -55,12 +55,13 @@ Measured in the Studio with `createCharacter` (triangles of the body and of the 
 | Racer | Triangles | Outline triangles | Meshes | Texture |
 | --- | --- | --- | --- | --- |
 | Chocobo | 11,956 | 4,705 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Chocobo (the procedural model had 12,708, 7,456 and 35) |
-| Behemoth | 12,192 | 9,308 | 23 | none |
 | Chubby Chocobo | 14,768 | 10,024 | 35 | none |
 | Bahamut | 11,928 | 4,899 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Bahamut |
 | Cloud | 11,032 | 4,570 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Cloud |
+| Behemoth | 12,220 | 4,224 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Behemoth |
 
 The Bahamut GLB is 469 KB with 36 bones and six clips; the Cloud GLB is 329 KB with 24 bones and six clips.
+The Behemoth GLB is 407 KB with 37 bones and six clips; the code-built Behemoth it replaced had 12,192 and 9,308 triangles in 23 meshes.
 A new racer should stay near 12,000 body triangles and one atlas.
 
 ## Pitfalls
@@ -76,6 +77,16 @@ A new racer should stay near 12,000 body triangles and one atlas.
 - Model a rider in the riding pose, so the hands rest on the grips with no clip; clips then only add motion. A clip that lifts the torso also lifts the hands off the bars, so keep such offsets small.
 - Hair for a toon character is a few solid, blunt, slightly flattened locks on a skull whose back swells into the hair mass. An even ring of spikes reads as a sunflower or a sea urchin; the PS1 Cloud's hair is a swept mass with one dominant lock.
 - A flat part such as a sword blade lying on the back is seen edge-on from the side. Turn its flat a little toward the side camera and give it real thickness, or it reads as a pole.
+- Three's `AnimationMixer` only writes a bone when its clip value changed since the last frame, so code must never add to a mixer-driven bone after `mixer.update`: the addition piles up while the clip holds still and the head spins. Turn such bones through `overlay()` and advance the model with `SkinnedModel.update` (see Runtime).
+
+## A racer with a vehicle
+
+Behemoth and his tank share one armature (`scripts/characters/behemoth/`).
+The rest pose is the driving pose, so his claws sit on the lever rods without help, and a clip that rocks a lever moves the arm by the same distance (`levers` in `clips.py`).
+Road wheels are bones that `racers/behemoth.ts` turns through `driven`, so the shared animator spins them like any racer's wheels.
+The track pads on the bottom run hang from one bone per track that slides back by the distance driven, wrapped to one pad spacing, so evenly spaced pads read as a moving belt.
+The clips never key these bones (`DRIVEN` in `clips.py`).
+Hard-surface boxes use `superellipse` rings; `flat` in Behemoth's `model.py` turns a loft's cone caps into flat ends with their own ring, so smooth shading does not round the corners.
 
 ## Adding the next racer
 
