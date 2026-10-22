@@ -1,40 +1,37 @@
-import * as THREE from 'three';
-import { ellipsoid, ball, torus, lathe } from '../../geometry/primitives.ts';
-import { sweep, horn } from '../../geometry/sweep.ts';
-import { xf } from '../../geometry/transform.ts';
-import { clamp } from '../math.ts';
+import { damp } from '../math.ts';
+import { POSE_SECONDS } from '../poses.ts';
 import { Rig } from '../rig.ts';
-import { toon } from '../../materials/toon.ts';
+import { anchor, overlay, skinnedModel } from '../skinned.ts';
 import type { Build } from '../types.ts';
-import { eyes } from '../parts/eyes.ts';
-import { carpet } from '../parts/carpet.ts';
 
+/** Loops blend by speed; Cast, Win and Lose follow the reaction's own clock so every viewer sees the same frame. */
+const LOOPS = ['Idle', 'Ride'] as const, POSED = ['Cast', 'Win', 'Lose'] as const;
+type ClipName = typeof LOOPS[number] | typeof POSED[number];
+/** Seconds between blinks, and how long one lasts. */
+const BLINK = { every: 3.4, seconds: .16 };
+
+/** White Mage on the Cosmic Carpet: one skinned model for the girl and her floating carpet, which her clips ripple. */
 export function whiteMage(): Build {
-  const r = new Rig(), robe = r.t('#f7f2ea'), red = r.t('#cf3557'), skinM = r.t('#ffdcc0'), hair = r.t('#9a5d3a'), exhausts: THREE.Object3D[] = [], contacts: THREE.Object3D[] = [];
-  const geo = new THREE.PlaneGeometry(2.3, 3.1, 10, 16); geo.rotateX(-Math.PI / 2); const base = Float32Array.from(geo.attributes.position.array as Float32Array);
-  const rugMat = toon('#ffffff', r.skin, { side: THREE.DoubleSide }); rugMat.map = carpet();
-  const rug = new THREE.Mesh(geo, rugMat); rug.position.y = .5; rug.castShadow = true; r.model.add(rug);
-  const tassels = Array.from({ length: 4 }, () => { const m = new THREE.Mesh(new THREE.SphereGeometry(.09, 10, 8), r.t('#ffcf6a')); r.model.add(m); return m; });
-  for (const s of [-1, 1]) { exhausts.push(r.joint(r.model, [s * .9, .5, -1.6])); contacts.push(r.joint(r.model, [s * .9, .1, -1.4])); }
-  const body = r.joint(r.model, [0, .58, 0]);
-  r.add(body, robe, lathe([[.86, 0], [.8, .2], [.6, .7], [.44, 1.12], [.0001, 1.25]]));
-  for (let k = 0; k < 12; k++) { const a = k / 12 * Math.PI * 2; r.add(body, red, xf(new THREE.ConeGeometry(.15, .34, 3), [Math.sin(a) * .82, .2, Math.cos(a) * .82], [0, a, 0], [1, 1, .25])); }
-  for (const s of [-1, 1]) { r.add(body, robe, sweep([[s * .38, .95, .05], [s * .52, .6, .3], [s * .3, .45, .58]], t => .14 + t * .1)); r.add(body, red, xf(new THREE.ConeGeometry(.16, .3, 3), [s * .3, .4, .66], [Math.PI, 0, 0], [1, 1, .3])); r.add(body, skinM, ball(.1, [s * .2, .42, .7])); }
-  const head = r.joint(body, [0, 1.42, .05]);
-  r.add(head, robe, ellipsoid([.62, .6, .6], [0, .04, -.04])); r.add(head, red, torus(.4, .05, [0, -.04, .4]));
-  r.add(head, skinM, ellipsoid([.42, .42, .26], [0, -.06, .32]));
-  r.add(head, hair, ellipsoid([.4, .16, .2], [0, .22, .4], [.3, 0, 0]));
-  for (const s of [-1, 1]) { r.add(head, robe, horn([[s * .3, .5, -.05], [s * .4, .78, -.08], [s * .46, 1.02, -.14]], .19)); r.add(head, r.t('#f4c0cb', { noOutline: true }), ellipsoid([.09, .05, .03], [s * .22, -.2, .55], [0, s * .4, 0])); }
-  for (let k = 0; k < 5; k++) { const a = (k - 2) * .5; r.add(head, red, xf(new THREE.ConeGeometry(.12, .3, 3), [Math.sin(a) * .5, -.45, -.25 - Math.cos(a) * .2], [Math.PI, a, 0], [1, 1, .3])); }
-  const blink = eyes(r, head, { y: -.04, z: .5, sep: .15, w: .1, h: .14, turn: .3, iris: '#6d3f8a' });
-  let phase = 0;
-  return { r, head, height: 3.2, wheels: [], steer: [], exhausts, contacts, outline: '#3a2230', update(s, k) {
-    phase += s.dt * (2 + Math.abs(s.speed) * .25); const a = geo.attributes.position as THREE.BufferAttribute;
-    for (let i = 0; i < a.count; i++) { const x = base[i * 3], z = base[i * 3 + 2], back = clamp((1 - z) / 3, 0, 1); a.setY(i, Math.sin(z * 2.2 + phase * 2.4) * (.04 + back * .14 * (.4 + k)) + Math.sin(x * 2 + phase) * .03 - s.steer * x * .08 + (Math.abs(x) > .95 && z > 1.3 ? .08 : 0)); }
-    a.needsUpdate = true; geo.computeVertexNormals();
-    [[0, 0], [10, 0], [0, 16], [10, 16]].forEach(([ix, iz], i) => { const v = iz * 11 + ix; tassels[i].position.set(a.getX(v), a.getY(v) + .5 - .05, a.getZ(v)); });
-    rug.position.y = .5 + Math.sin(s.t * 2.2) * .07; body.position.y = .58 + Math.sin(s.t * 2.2) * .07;
-    head.rotation.y = s.menu ? Math.sin(s.t * .8) * .3 : s.steer * .25; head.rotation.z = Math.sin(s.t * 1.5) * .04;
-    blink.scale.y = (s.t * .75 + .9) % 3.4 < .1 ? .1 : 1;
+  const r = new Rig(), m = skinnedModel(r, 'white_mage');
+  const action = (name: string) => { const a = m.actions.get(name); if (!a) throw new Error(`White Mage has no ${name} clip`); a.play(); a.weight = 0; return a; };
+  const clips = Object.fromEntries([...LOOPS, ...POSED].map(n => [n, action(n)])) as Record<ClipName, ReturnType<typeof action>>, blink = action('Blink');
+  for (const a of [...POSED.map(n => clips[n]), blink]) a.timeScale = 0;
+  const turn = overlay(m, 'head'), head = turn.j, weights: Record<ClipName, number> = { Idle: 0, Ride: 0, Cast: 0, Win: 0, Lose: 0 };
+  // A carpet has no engine: boost flames trail from its back corners, and drift sparks and dust come from the road below them.
+  const exhausts = [anchor(m, 'carpet_tail', [.8, .9, -1]), anchor(m, 'carpet_tail', [-.8, .9, -1])];
+  const contacts = [anchor(m, 'carpet', [.8, .1, -.9]), anchor(m, 'carpet', [-.8, .1, -.9])];
+  let fresh = true;
+  return { r, head, height: 3.4, wheels: [], steer: [], exhausts, smokes: false, contacts, outline: m.outline, sync: turn.sync, update(s, k) {
+    const pose = s.pose, ended = pose?.kind === 'win' || pose?.kind === 'lose' ? pose : null;
+    const casting = pose?.kind === 'cast' ? 1 : 0, cruise = ended ? 0 : 1 - casting, ride = s.menu ? 0 : Math.min(1, k * 3);
+    const target: Record<ClipName, number> = { Idle: cruise * (1 - ride), Ride: cruise * ride, Cast: casting, Win: ended?.kind === 'win' ? 1 : 0, Lose: ended?.kind === 'lose' ? 1 : 0 };
+    for (const n of [...LOOPS, ...POSED]) { weights[n] = fresh ? target[n] : damp(weights[n], target[n], 12, s.dt); clips[n].weight = weights[n]; }
+    fresh = false;
+    if (pose?.kind === 'cast') clips.Cast.time = Math.min(1, pose.t / POSE_SECONDS.cast) * clips.Cast.getClip().duration;
+    if (ended) { const c = clips[ended.kind === 'win' ? 'Win' : 'Lose']; c.time = ended.t % c.getClip().duration; }
+    clips.Ride.timeScale = .7 + k * .8;
+    const b = (s.t + .9) % BLINK.every; blink.weight = b < BLINK.seconds ? 1 : 0; blink.time = Math.min(b, BLINK.seconds);
+    m.update(s.dt);
+    head.rotation.y = s.menu ? Math.sin(s.t * .8) * .3 : s.steer * .25;
   } };
 }

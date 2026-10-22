@@ -176,6 +176,28 @@ Deliberate deviations:
 | No win or lose animation is seen in a race | He shakes the club and pumps his fist on the podium, and slumps over the bar when he loses | Every racer here acts out win and lose reactions |
 | The cart has no engine | No exhaust smoke; boost flames leave the back corners of the box | A push cart has no engine smoke |
 
+## White Mage
+
+White Mage follows the PS1 in-game model, checked side by side against a Grand Prix played as her (the chase view from behind, the Select Racer screen and the podium), with the official model sheet for shapes only.
+She wears no hood: the game shows a big bob of magenta hair with bangs swept to her left, a tuft on the crown and a blue hair tie with a green tuft on the left of the crown, a round face with big green eyes and pink cheeks, a white poncho-like robe with wide bell sleeves, red triangle trim on the hem and the cuffs, a thick white cowl, a gold pendant, cream boots and red shoes, and a gold staff with a blue orb.
+The code-built White Mage it replaced was the generic Final Fantasy white mage, with a hood with cat-ear points and red triangles round the face and brown hair under it.
+She sits on the carpet with her legs folded in front of her and the staff across her lap, the orb out past her right side, and the carpet floats about half her seated height above the road.
+The Cosmic Carpet is a white field split by its diagonals into yellow left and right triangles and white front and back ones, with thin green lines on the diagonals, a thick red border and corners that curl up.
+The code-built carpet was dark red and purple with gold stars and four gold tassels.
+Colours were measured on the PS1 frames and on ours under the game's lighting: hair hue about 326 lit and a dark wine in the shade round the nape, the robe a near-neutral white.
+Her roster colour, used for her minimap dot, is now the hair's magenta instead of the robe's cream, which was hard to tell from Mog's white.
+
+Deliberate deviations:
+
+| Original | Remake | Reason |
+| --- | --- | --- |
+| The carpet looks rigid | It ripples from front to back and bobs, more as she goes faster | A flying carpet reads better moving; the shape and pattern are the original's |
+| The carpet flies level | It flies a little nose-up | The remake's chase camera sits lower than the original's, and the tilt shows the carpet's top as the original's view does |
+| The robe's red hem trim shows all round when she stands on the podium | Seated, only a thin line of red shows at the back | In the chase view from behind no red hem shows; the robe is tucked under her |
+| Her race and select-screen holds of the staff differ slightly | One hold, across her lap with the orb out to her right | The chase view, which matters most, shows the orb at her right side |
+| No win or lose animation is seen in a race | She waves the staff and her other arm on a win, as on the podium, and slumps when she loses | Every racer here acts out win and lose reactions |
+| The carpet has no engine | No exhaust smoke; boost flames trail from the back corners | A carpet has no engine smoke |
+
 ## Technology choice
 
 | Option | Decision |

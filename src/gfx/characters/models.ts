@@ -9,9 +9,10 @@ import cloudUrl from '../../assets/characters/cloud.glb?url';
 import goblinUrl from '../../assets/characters/goblin.glb?url';
 import golemUrl from '../../assets/characters/golem.glb?url';
 import mogUrl from '../../assets/characters/mog.glb?url';
+import whiteMageUrl from '../../assets/characters/white_mage.glb?url';
 
 /** Racers authored as skinned GLB files by `npm run character`, rather than built from code. */
-const URLS = { bahamut: bahamutUrl, behemoth: behemothUrl, chocobo: chocoboUrl, chubby: chubbyUrl, cloud: cloudUrl, goblin: goblinUrl, golem: golemUrl, mog: mogUrl } as const;
+const URLS = { bahamut: bahamutUrl, behemoth: behemothUrl, chocobo: chocoboUrl, chubby: chubbyUrl, cloud: cloudUrl, goblin: goblinUrl, golem: golemUrl, mog: mogUrl, white_mage: whiteMageUrl } as const;
 export type ModelId = keyof typeof URLS;
 
 const models = new Map<ModelId, GLTF>();
