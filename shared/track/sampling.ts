@@ -11,10 +11,40 @@ function raw(id: TrackId, t: number) {
   const cat = (k: number) => .5 * ((2 * p1[k]) + (-p0[k] + p2[k]) * f + (2 * p0[k] - 5 * p1[k] + 4 * p2[k] - p3[k]) * f * f + (-p0[k] + 3 * p1[k] - 3 * p2[k] + p3[k]) * f * f * f);
   return { x: cat(0), z: cat(1), y: 8 + Math.sin(t * Math.PI * 4) * course.elevation + Math.sin(t * Math.PI * 6) * course.elevation * .3 };
 }
+/** Radius of the circle through three points. */
+function radius(a: { x: number; z: number }, b: { x: number; z: number }, c: { x: number; z: number }) {
+  const cross = (b.x - a.x) * (c.z - b.z) - (b.z - a.z) * (c.x - b.x);
+  return Math.hypot(b.x - a.x, b.z - a.z) * Math.hypot(c.x - b.x, c.z - b.z) * Math.hypot(c.x - a.x, c.z - a.z) / Math.max(1e-9, 2 * Math.abs(cross));
+}
+/** Samples either side used to measure a bend's radius, and how far either side of a too-tight bend the easing reaches. */
+const SPAN = 4, REACH = 24;
+/**
+ * Eases every bend whose centre-line radius is under `min`, so the road's inside edge never folds over itself at a hairpin apex.
+ * Each pass relaxes the points around a too-tight bend toward their neighbours, fully at the bend and fading to nothing `REACH`
+ * samples away, so the bend opens smoothly and the rest of the course keeps its shape. Deterministic: a fixed pass limit.
+ */
+function easeApexes(pts: { x: number; y: number; z: number }[], min: number) {
+  const n = pts.length, weight = new Float64Array(n);
+  for (let pass = 0; pass < 3000; pass++) {
+    weight.fill(0); let tight = false;
+    for (let i = 0; i < n; i++) if (radius(pts[(i - SPAN + n) % n], pts[i], pts[(i + SPAN) % n]) < min) {
+      tight = true;
+      for (let k = -REACH; k <= REACH; k++) { const j = (i + k + n) % n; weight[j] = Math.max(weight[j], (1 - Math.abs(k) / (REACH + 1)) ** 2); }
+    }
+    if (!tight) return;
+    const old = pts.map(p => ({ ...p }));
+    for (let i = 0; i < n; i++) if (weight[i] > 0) {
+      const a = old[(i - 1 + n) % n], b = old[(i + 1) % n], w = weight[i] / 2;
+      pts[i].x = old[i].x + w * ((a.x + b.x) / 2 - old[i].x); pts[i].z = old[i].z + w * ((a.z + b.z) / 2 - old[i].z);
+    }
+  }
+}
 export function trackTable(id: TrackId) {
   if (!tables.has(id)) {
-    const table: Sample[] = []; let d = 0;
-    for (let i = 0; i <= N; i++) { const p = raw(id, i / N), prev = table.at(-1); if (prev) d += Math.hypot(p.x - prev.x, p.z - prev.z); table.push({ ...p, d }); }
+    const pts = Array.from({ length: N }, (_, i) => raw(id, i / N)), table: Sample[] = []; let d = 0;
+    // The inside edge sits `width` from the centre line, so a bend must be at least that wide; a metre more covers the curb.
+    easeApexes(pts, TRACKS[id].width + 1);
+    for (let i = 0; i <= N; i++) { const p = pts[i % N], prev = table.at(-1); if (prev) d += Math.hypot(p.x - prev.x, p.z - prev.z); table.push({ ...p, d }); }
     tables.set(id, table);
   }
   return tables.get(id)!;
