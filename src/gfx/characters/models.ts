@@ -2,9 +2,10 @@ import type * as THREE from 'three';
 import { GLTFLoader, type GLTF } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import bahamutUrl from '../../assets/characters/bahamut.glb?url';
+import behemothUrl from '../../assets/characters/behemoth.glb?url';
 
 /** Racers authored as skinned GLB files by `npm run character`, rather than built from code. */
-const URLS = { bahamut: bahamutUrl } as const;
+const URLS = { bahamut: bahamutUrl, behemoth: behemothUrl } as const;
 export type ModelId = keyof typeof URLS;
 
 const models = new Map<ModelId, GLTF>();

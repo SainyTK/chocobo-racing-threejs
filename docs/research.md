@@ -56,6 +56,14 @@ Deliberate deviations, kept for balance or because the remake lacks the original
 | Unlocked by finishing Story Mode | Available from the start | This remake has no Story Mode |
 | Held stones float under him | Held stones trail behind him like every racer | The remake's shared stone-stealing rule depends on stones trailing |
 
+## Behemoth
+
+Behemoth follows the PS1 in-game model, checked side by side against a Grand Prix played as him (chase view, GOAL fly-arounds and the racer select screen), not the CG ending.
+The Behemo-Buggy 99 is a small tank, as the manual says ("powerful tank"): a camouflage-green hull, mint fenders with tan headlights, a mint "II II" grille, dark tracks with khaki pads, and two control levers with yellow-green knobs that he grips.
+He hunches over it, much wider at the shoulders than the tank: purple fur with mauve patches on the backs of the shoulders, yellow stripes across the upper back broken by a row of red spines, a big low head with red horns, a yellow mane turning orange at the tips, pointed ears, big red-irised eyes, lower fangs, red claws and a tail hanging over the back of the hull.
+The original shows no victory animation in a race; his Win clip, fists pumping over his head, comes from his Grand Prix ending movie.
+His roster colour follows the model's purple.
+
 ## Technology choice
 
 | Option | Decision |

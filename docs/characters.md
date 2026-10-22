@@ -1,7 +1,7 @@
 # Racer models
 
 Most racers are built in code from primitives in `src/gfx/characters/racers/*.ts`: rigid parts on a joint hierarchy, baked into vertex-coloured toon meshes by `Rig`.
-Bahamut is the first racer authored as a skinned, textured GLB, by a Blender script in this repository.
+Bahamut and Behemoth are authored as skinned, textured GLB files, by Blender scripts in this repository.
 This page describes that pipeline so the next racer can reuse it.
 
 ## Pipeline
@@ -42,6 +42,7 @@ The Python is formatted and linted with Ruff: `uvx ruff format scripts/character
 
 - `src/gfx/characters/models.ts` loads every GLB once with `GLTFLoader` and the meshopt decoder. The game (`src/main.ts`) and the Studio (`studio/main.ts`) await `loadCharacterModels()` before building any racer, so `createCharacter` stays synchronous.
 - `src/gfx/characters/skinned.ts` clones a model with `SkeletonUtils.clone`, gives the body the shared toon material (atlas as `map`, ambient occlusion as vertex colours, the rig's flash, rim and fade uniforms) and turns the `Outline` mesh into the inverted hull. Geometry, texture and clips stay shared between instances; `dispose` skips geometry marked `userData.shared`.
+- `driven` in `skinned.ts` gives a bone the game turns in code, such as a road wheel, a stand-in joint for `Build.wheels` or `Build.steer`.
 - `src/gfx/characters/racers/bahamut.ts` builds the `Build` the rest of the game expects: head bone, exhaust and contact anchors fixed to bones, and an `update` that drives an `AnimationMixer`. Hover and Fly blend by speed. Roar, Win and Lose follow the reaction's own clock so every viewer sees the same frame, and Blink plays on its own timer. The shared lean, stun spin and reaction poses from `index.ts` and `poses.ts` still apply on top.
 
 ## Budgets
@@ -54,8 +55,10 @@ Measured in the Studio with `createCharacter` (triangles of the body and of the 
 | Behemoth | 12,192 | 9,308 | 23 | none |
 | Chubby Chocobo | 14,768 | 10,024 | 35 | none |
 | Bahamut | 11,928 | 4,899 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Bahamut |
+| Behemoth | 12,220 | 4,224 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Behemoth |
 
 The Bahamut GLB is 469 KB with 36 bones and six clips.
+The Behemoth GLB is 407 KB with 37 bones and six clips; the code-built Behemoth it replaced had 12,192 and 9,308 triangles in 23 meshes.
 A new racer should stay near 12,000 body triangles and one atlas.
 
 ## Pitfalls
@@ -66,6 +69,17 @@ A new racer should stay near 12,000 body triangles and one atlas.
 - Spreading a hanging leg sideways is a rotation about Y in armature space, not about Z.
 - The Studio and the game must await `loadCharacterModels()` before building a racer, but after any hook that tests read on startup.
 - Compare against the PS1 in-game model, not the CG art: colours, head shape and pose differ.
+- Three's `AnimationMixer` only writes a bone when its clip value changed since the last frame. Code that adds to a mixer-driven bone (a head turn, a pose nod) must put the bone back to last frame's mixed value before `mixer.update`, or the addition piles up while the clip holds still (see `posed` in `racers/behemoth.ts`).
+- The game turns `head.rotation.y` and nods `head.rotation.x` in the bone's local axes. Point the head bone, and its parent, straight up, so those are yaw and pitch; a head bone pointing forward makes the turn a roll.
+
+## A racer with a vehicle
+
+Behemoth and his tank share one armature (`scripts/characters/behemoth/`).
+The rest pose is the driving pose, so his claws sit on the lever rods without help, and a clip that rocks a lever moves the arm by the same distance (`levers` in `clips.py`).
+Road wheels are bones that `racers/behemoth.ts` turns through `driven`, so the shared animator spins them like any racer's wheels.
+The track pads on the bottom run hang from one bone per track that slides back by the distance driven, wrapped to one pad spacing, so evenly spaced pads read as a moving belt.
+The clips never key these bones (`DRIVEN` in `clips.py`).
+Hard-surface boxes use `superellipse` rings; `flat` in Behemoth's `model.py` turns a loft's cone caps into flat ends with their own ring, so smooth shading does not round the corners.
 
 ## Adding the next racer
 
