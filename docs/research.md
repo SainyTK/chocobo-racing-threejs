@@ -43,9 +43,8 @@ Not implemented: Story, Relay, secret characters other than Bahamut, bonus cours
 ## Bahamut
 
 Bahamut follows the PS1 in-game model, checked side by side against footage of the original (a Bahamut race on Cid's Test Track and the Fantasia cutscenes), not the CG art.
-He has no vehicle and flies on his own wings: navy membranes on both sides, a blue head with a heavy brow, small eyes and short upswept horns, a green plated chest, blue thigh plates and upper arms, mint shins, feet and arm undersides, yellow claws and a tail that hangs between his legs.
+He has no vehicle and flies on his own wings: membranes navy on top, as the race view from behind shows, and maroon underneath, as the cutscene front view shows, a blue head with a heavy brow, small eyes and short upswept horns, a green plated chest, blue thigh plates and upper arms, mint shins, feet and arm undersides, yellow claws and a tail that hangs between his legs.
 The blue orb often seen under him in the original's race view is his held Magic Stone, which changes colour with the stone and is absent when he holds none; this remake trails held stones behind every racer instead.
-The plum wings in the Fantasia cutscene come from that scene's purple light.
 
 Deliberate deviations, kept for balance or because the remake lacks the original's modes:
 
