@@ -69,7 +69,7 @@ Measured in the Studio with `createCharacter` (triangles of the body and of the 
 
 The Bahamut GLB is 469 KB with 36 bones and six clips; the Cloud GLB is 329 KB with 24 bones and six clips; the Chubby Chocobo GLB is 301 KB with 20 bones and seven clips.
 The Behemoth GLB is 407 KB with 37 bones and six clips; the code-built Behemoth it replaced had 12,192 and 9,308 triangles in 23 meshes.
-The Golem GLB is 384 KB with 23 bones and six clips.
+The Golem GLB is 399 KB with 23 bones and six clips.
 A new racer should stay near 12,000 body triangles and one atlas.
 
 ## Pitfalls
@@ -204,5 +204,7 @@ Pitfalls met on Golem:
 - A tyre lofted along its axle closes each side in a cone; `flat` turns the cones into flat sidewalls, so a hub disc can sit on the outside.
 - From the raised chase camera, wheel arches over the rear tyres hide them behind blue blocks. The original shows the rear tyres whole with only a thin ledge on top.
 - The chase camera looks down on the back, so a big back rock hides a head that sits low between the shoulders. Keep the back rock low and the head standing well above the shoulders.
-- Rough stone is painted, not modelled: `stone` in `golem/paint.py` lays a Voronoi pattern of lighter and darker faces with thin cracks over blotches and speckles. Each skin passes how many times farther its loft runs around than along, or the faces stretch into stripes, and the detail fades out near the loft's poles, where it would swirl into a pinwheel.
+- Rough stone is painted, not modelled: `stone` in `golem/paint.py` lays a Voronoi pattern of lighter and darker faces with cracks over blotches, grain, speckles and dark hollows. The noise is sampled in 3D on the loft taken as a stretched sphere (`solid_noise`), so it stays round up to the poles; the faces and cracks are drawn in (u, v), so each skin passes how many times farther its loft runs around than along, and they fade out near the poles.
+- A loft's end cap is one fan of triangles that shows a single row of the texture. Close a boulder's rings down to a small cap (`rock` in `golem/model.py`), or the cap reads as radial streaks.
+- Keep grain and speckles a few atlas pixels wide, or they alias into streaks.
 - Painter noise must use whole waves around a loft's u, or a seam shows where u wraps, straight down the middle of the back from the chase camera.

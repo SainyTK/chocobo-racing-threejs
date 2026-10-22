@@ -33,7 +33,7 @@ J = {
     "chest": (0, 0.18, 2.1),
     "neck": (0, 0.06, 2.9),
     "head": (0, -0.02, 3.3),
-    "shoulder": (0.96, 0.12, 2.9),
+    "shoulder": (0.98, 0.12, 2.98),
     "elbow": (1.2, -0.3, 2.12),
     "wrist": (0.62, -0.86, 2.0),
     "hand_end": (0.38, -1.06, 1.92),
@@ -109,7 +109,9 @@ def rock(
     def profile(t: float, a: float) -> tuple[float, float]:
         end = (1 - abs(2 * t - 1) ** power) ** (1 / power)
         x, y = ring(t, a)
-        k = (0.35 + 0.65 * end) * bump(t, a)
+        # The rings close down to a small cap: a cap is one fan of triangles that shows a single row of the texture,
+        # which on a wide cap reads as streaks.
+        k = (0.12 + 0.88 * end) * bump(t, a)
         return x * k, y * k
 
     return loft(name, skin, points, profile, around, along_, up_hint)
@@ -146,7 +148,7 @@ def head_parts() -> list[Part]:
 def torso_parts() -> list[Part]:
     """A wide torso of stacked rocks: pelvis, the body block, chest rocks in front and a broad rock across the back."""
     pelvis = rock("pelvis", "rock", [(0, 0.3, 1.2), (0, 0.3, 1.72)], (0.66, 0.52), (0, -1, 0), 1, 3.0)
-    body = rock("torso", "torso", [(0, 0.24, 1.6), (0, 0.18, 2.2), (0, 0.12, 2.8)], (0.94, 0.6), (0, -1, 0), 2, 3.0, 0.04, 20, 12)
+    body = rock("torso", "torso", [(0, 0.24, 1.6), (0, 0.18, 2.16), (0, 0.12, 2.72)], (0.94, 0.6), (0, -1, 0), 2, 3.0, 0.04, 20, 12)
     along(body, [("hips", 0), ("chest", 0.35)], 0.1)
     # One broad rock across the upper back, under the head and between the shoulders: from the chase camera the
     # back reads as one smooth mass, which many small rocks would break into a grid of blotches.
@@ -156,7 +158,7 @@ def torso_parts() -> list[Part]:
     pec = rock("pec", "rock", [(0.04, -0.26, 2.46), (0.7, -0.26, 2.46)], (0.33, 0.3), (0, 0, 1), 4, 3.0, 0.05, 14, 8)
     left.append(rigid(pec, "chest"))
     # Round boulders whose tops sit level with the eyes, as in the select screen and the cutscenes.
-    shoulder = rock("shoulder", "shoulder", [(0.62, 0.12, 2.9), (1.5, 0.12, 2.86)], (0.54, 0.52), (0, 0, 1), 7, 2.0, 0.04, 18, 10)
+    shoulder = rock("shoulder", "shoulder", [(0.74, 0.12, 2.98), (1.4, 0.12, 2.96)], (0.58, 0.56), (0, 0, 1), 7, 2.0, 0.03, 18, 10)
     left.append(rigid(shoulder, "arm.L"))
     return parts + left + [mirror(p, p.name + ".R") for p in left]
 

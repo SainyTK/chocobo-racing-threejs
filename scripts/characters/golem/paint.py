@@ -15,11 +15,12 @@ import numpy as np
 
 from pipeline.atlas import Painter, band, fill, hex_rgb, mix
 
-SHOULDER, ARM, TORSO, HEAD, HEAD_BACK = "#bbaeaa", "#a5928d", "#98827c", "#a89c98", "#4d3d38"
+SHOULDER, ARM, TORSO, HEAD, HEAD_BACK = "#b9aeac", "#ab9e9c", "#a19391", "#8a7d7a", "#50413f"
+HEAD_TOP = "#76696a"
 """Grey-brown stone per region, set by measuring the PS1 frames under their lighting and ours under the game's: the
-shoulders are the lightest rocks, the arms and chest darker, the head darker still and the back of the head a dark
-brown block from the chase camera."""
-CRACK = "#312825"
+shoulders are the lightest rocks, the arms and chest darker, the head clearly darker than the shoulders from every
+side and the back of the head a dark brown block from the chase camera."""
+CRACK = "#28211f"
 FACE = "#0d0b0c"
 EYE, EYE_DARK = "#ffe23a", "#b88a10"
 RED, RED_DARK, RED_LIGHT = "#d62a24", "#7e1210", "#f2624a"
@@ -47,6 +48,25 @@ def value_noise(u: np.ndarray, v: np.ndarray, cells: int, seed: int, rows: int |
     top = grid[y0, x0] * (1 - fx) + grid[y0, x1] * fx
     bottom = grid[y0 + 1, x0] * (1 - fx) + grid[y0 + 1, x1] * fx
     return top * (1 - fy) + bottom * fy
+
+
+def solid_noise(u: np.ndarray, v: np.ndarray, aspect: float, cells: int, seed: int) -> np.ndarray:
+    """Smooth random values in 0..1 sampled in 3D on the loft's surface, taken as a stretched sphere, so features stay
+    round all the way to the poles instead of swirling into wedges. `cells` is the grid size across the sphere."""
+    grid = np.random.default_rng(seed).random((cells + 2,) * 3)
+    ring = np.sin(np.pi * v)
+    points = [np.cos(2 * np.pi * u) * ring, np.sin(2 * np.pi * u) * ring, np.cos(np.pi * v) * np.pi / aspect]
+    span = max(1.0, np.pi / aspect)
+    x, y, z = ((c / span + 1) / 2 * cells for c in points)
+    i, j, k = (np.clip(np.floor(c).astype(int), 0, cells) for c in (x, y, z))
+    fx, fy, fz = (c - np.floor(c) for c in (x, y, z))
+    fx, fy, fz = (f * f * (3 - 2 * f) for f in (fx, fy, fz))
+    out = np.zeros_like(u)
+    for di, wx in ((0, 1 - fx), (1, fx)):
+        for dj, wy in ((0, 1 - fy), (1, fy)):
+            for dk, wz in ((0, 1 - fz), (1, fz)):
+                out += grid[i + di, j + dj, k + dk] * wx * wy * wz
+    return out
 
 
 def facets(u: np.ndarray, v: np.ndarray, cells: int, rows: int, seed: int) -> tuple[np.ndarray, np.ndarray]:
@@ -79,15 +99,22 @@ def stone(base: str, seed: int, cells: int, aspect: float) -> Painter:
         colour = hex_rgb(base)
         rows = max(1, round(cells / aspect))
         shade, edge = facets(u, v, cells, rows, seed)
-        blotch = value_noise(u, v, cells * 2, seed + 1, rows * 2) - 0.5
-        speck = value_noise(u, v, cells * 10, seed + 2, rows * 10) - 0.5
-        # Every ring meets at a pole at each end of the loft, where faces and cracks would swirl into a pinwheel, so
-        # near the ends only the soft blotches remain.
-        detail = np.clip(np.minimum(v, 1 - v) * 9 - 0.3, 0, 1)
-        k = 1 + 0.4 * blotch + detail * (0.14 * shade + 0.5 * speck)
+        blotch = solid_noise(u, v, aspect, cells, seed + 1) - 0.5
+        # Grain and speckles no finer than a few atlas pixels, or they alias into streaks.
+        grain = solid_noise(u, v, aspect, cells * 3, seed + 2) - 0.5
+        fine = solid_noise(u, v, aspect, cells * 5, seed + 4)
+        # Every ring meets at a pole at each end of the loft, where the faces and cracks would swirl into a pinwheel,
+        # so near the ends only the noise, sampled in 3D, remains.
+        detail = np.clip(np.minimum(v, 1 - v) * 6 - 0.3, 0, 1)
+        k = 1 + 0.45 * blotch + 0.6 * grain + detail * 0.22 * shade
         img = np.clip(colour * k[..., None], 0, 1)
-        crack = np.clip(1 - edge / 0.06, 0, 1) * (value_noise(u, v, cells, seed + 3, rows) > 0.35) * detail
-        return mix(img, fill(CRACK, u), crack * 0.7)
+        # Dark speckles and pale grit, the pitted surface of the PS1 stone texture.
+        img = mix(img, fill(CRACK, u), np.clip((0.3 - fine) * 5, 0, 1) * 0.6)
+        img = mix(img, np.clip(colour * 1.25, 0, 1), np.clip((fine - 0.78) * 6, 0, 1) * 0.5)
+        # Crevices: dark hollows where the blotches sink, and a network of cracks between the faces.
+        img = mix(img, fill(CRACK, u), np.clip((-blotch - 0.22) * 4, 0, 1) * 0.55)
+        crack = np.clip(1 - edge / 0.08, 0, 1) * detail * (solid_noise(u, v, aspect, cells, seed + 3) > 0.3)
+        return mix(img, fill(CRACK, u), crack * 0.65)
 
     return painter
 
@@ -191,7 +218,7 @@ def lamp(u: np.ndarray, v: np.ndarray) -> np.ndarray:
 
 PAINTERS: dict[str, Painter] = {
     "head": head,
-    "slab": stone(HEAD, 30, 8, 2.4),
+    "slab": stone(HEAD_TOP, 30, 8, 2.4),
     "torso": torso,
     "rock": stone(TORSO, 32, 7, 2.5),
     "shoulder": stone(SHOULDER, 33, 9, 1.6),
