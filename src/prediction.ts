@@ -2,8 +2,9 @@ import type { Input, Race, Racer } from '../shared/game/index.ts';
 import { TICK } from '../shared/game/index.ts';
 import { integrateDriving, updateDriveMode } from '../shared/game/driving.ts';
 import { stepAir } from '../shared/game/air.ts';
-import { locate, trackLength } from '../shared/track/index.ts';
-import { angleDelta, mod } from '../shared/math.ts';
+import { followPlace } from '../shared/game/progress.ts';
+import { locate } from '../shared/track/index.ts';
+import { angleDelta } from '../shared/math.ts';
 type Command = { seq: number; dt: number; input: Input };
 /** Approximate acknowledged held-input replay, bounded to 250ms/120 commands.
  * Commands describe elapsed client frames, not authoritative server ticks.
@@ -22,8 +23,7 @@ export class Prediction {
       for (const k of ['boost','stun','flying','gripUp','mini'] as const) p[k] = Math.max(0,p[k]-dt);
       updateDriveMode(p,dt);
       integrateDriving(this.race.track,p,dt);
-      const place = locate(this.race.track,p.px,p.pz,p.route,p.routeS), len = trackLength(this.race.track);
-      p.s += mod(place.s-p.routeS+len/2,len)-len/2; p.routeS = place.s; p.x = place.x; p.route = place.route;
+      followPlace(this.race.track,p,locate(this.race.track,p.px,p.pz,p.route,p.routeS),dt);
       stepAir(this.race.track,p,dt);
     }
   }

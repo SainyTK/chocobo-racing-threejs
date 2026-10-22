@@ -13,6 +13,7 @@ import { aboveGround, crash, hit } from '../combat.ts';
 import { recover, useAbility, useItem } from '../actions.ts';
 import { event } from '../events.ts';
 import { stepFinished } from './finished.ts';
+import { followPlace } from '../progress.ts';
 import { random } from '../random.ts';
 import { stepAir } from '../air.ts';
 import { keepOnCourse } from './edges.ts';
@@ -44,10 +45,7 @@ export function stepRacer(r: Race, p: Racer, dt: number) {
   if (p.drift > HANDLING.overDrift) { crash(r, p, 1.4, 'Over-drift! Release, then accelerate for Spin Dash.'); p.spinDash = true; p.spinReleased = false; }
   integrateDriving(r.track, p, dt);
   const oldS = p.s, place = locate(r.track, p.px, p.pz, p.route, p.routeS);
-  const delta = mod(place.s - p.routeS + len / 2, len) - len / 2;
-  // Switching between the road and a shortcut is the one place a racer's lap distance may jump.
-  if (Math.abs(delta) < Math.max(8, p.speed * dt * 4) || place.route !== p.route) p.s += delta;
-  p.routeS = place.s; p.x = place.x; p.route = place.route;
+  followPlace(r.track, p, place, dt);
   const alignment = p.vx * Math.sin(place.yaw) + p.vz * Math.cos(place.yaw);
   p.wrongWay = alignment < -3;
   if (p.route === MAIN_ROUTE && Math.abs(p.x) < def.width - 1 && alignment > 3 && p.s < (p.gates + 1) * len / 12 + 4) p.lastSafeS = p.s;

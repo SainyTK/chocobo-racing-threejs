@@ -3,6 +3,7 @@ import { TRACK_IDS, TRACKS, courseLayout, courseObjects, hazardState, locate, po
 import { angleDelta } from '../shared/math.ts';
 import { createRace, makeRacer, neutralInput, placeRacer, stepRace, type Race } from '../shared/game/index.ts';
 import { decodeSnapshot, encodeSnapshot } from '../shared/wire.ts';
+import { DRIVEN_STEP } from '../shared/game/progress.ts';
 
 const tick = (r: Race, seconds: number) => { for (let i = 0; i < seconds * 60; i++) stepRace(r); };
 function solo(track: Parameters<typeof createRace>[0]) { const r = createRace(track, [makeRacer('you', 'Test')], 1, 42, 'time'); r.time = .1; r.phase = 'racing'; return r; }
@@ -13,6 +14,10 @@ function drive(r: Race, seconds: number, aim: () => { x: number; z: number }) {
 }
 
 describe('course layouts', () => {
+  for (const id of TRACK_IDS) it(`${id}: lap distance follows a racer along both road edges without skipping, so no bend folds the road`, () => {
+    const len = trackLength(id), w = TRACKS[id].width;
+    for (const side of [-1, 1]) { let s = 0; for (let d = .4; d <= len; d += .4) { const q = pointAt(id, d, side * (w - .3)), at = projectOnTrack(id, q.x, q.z, s).s; expect(Math.abs(angleDelta((at - s) / len * Math.PI * 2, 0)) / Math.PI / 2 * len).toBeLessThan(DRIVEN_STEP); s = at; } }
+  });
   for (const id of TRACK_IDS) it(`${id}: gimmicks sit on the course and shortcuts leave and rejoin the road`, () => {
     const L = courseLayout(id), len = trackLength(id), w = TRACKS[id].width;
     for (const p of [...L.pads, ...L.patches, ...L.ramps]) { expect(p.s).toBeGreaterThanOrEqual(0); expect(p.s).toBeLessThan(len); expect(Math.abs(p.x)).toBeLessThan(w); }
