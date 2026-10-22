@@ -195,8 +195,9 @@ export function pedestal(r: Rng, radius: number, crystal: string) {
   p.add(rock([radius, radius * .32, radius], [0, -radius * .2, 0], r() * 9), '#3d3f60', { flat: true, ao: false });
   p.add(xf(new THREE.ConeGeometry(radius * .85, radius * 2.2, 7), [0, -radius * 1.3, 0], [Math.PI, 0, 0]), grad('#151629', '#33355a', -radius * 2.4, -radius * .2), { flat: true, ao: false });
   for (let i = 0; i < 5; i++) {
-    const a = i / 5 * 6.28 + r() * .6, d = radius * r.range(.75, .95), h = radius * r.range(.25, .5);
-    p.add(prism(0, h * .22, h, 6, [Math.cos(a) * d, -radius * .1, Math.sin(a) * d], [r.range(-.3, .3), 0, r.range(-.3, .3)]), grad('#3b2c86', crystal, 0, h), { layer: 'glow', flat: true, ao: false });
+    // Rooted inside the slab's rim, so each crystal grows out of the rock.
+    const a = i / 5 * 6.28 + r() * .6, d = radius * r.range(.5, .65), h = radius * r.range(.25, .5);
+    p.add(prism(0, h * .22, h, 6, [Math.cos(a) * d, -radius * .22, Math.sin(a) * d], [r.range(-.3, .3), 0, r.range(-.3, .3)]), grad('#3b2c86', crystal, 0, h), { layer: 'glow', flat: true, ao: false });
   }
   return p;
 }

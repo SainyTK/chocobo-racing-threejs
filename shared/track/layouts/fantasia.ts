@@ -2,10 +2,10 @@ import type { CourseLayout } from '../types.ts';
 
 /**
  * Fantasia: pits on both sides, a railing on one side at most (on the outside of most bends, never at the far-left hairpin),
- * a railless, polished walkway that skips the far-left spike, a walled tunnel, and Ramuh's lightning striking the semicircle's edges.
+ * a railless walkway that skips the far-left spike, a walled tunnel, and Ramuh's lightning striking the semicircle's edges.
  */
 export const fantasia: CourseLayout = {
-  pads: [{ s: 480, x: 0 }, { s: 1452, x: 0 }],
+  pads: [{ s: 530, x: 0 }, { s: 1452, x: 0 }],
   patches: [],
   ramps: [],
   gaps: [],
@@ -22,7 +22,7 @@ export const fantasia: CourseLayout = {
     { s: 1716, length: 80, side: 1 }, { s: 1716, length: 80, side: -1 },
     { s: 1866, length: 46, side: 1 }, { s: 1994, length: 40, side: 1 }, { s: 2034, length: 72, side: -1 },
   ],
-  shortcuts: [{ from: 765, to: 975, side: 1, join: 50, width: 2.8, edge: 'fall', surface: 'slip' }],
+  shortcuts: [{ from: 765, to: 975, side: 1, join: 50, width: 2.8, edge: 'fall' }],
   hazards: [
     { kind: 'bolt', s: 1822, x: 5.5, length: 4.5, width: 4.5, period: 4.8, phase: 0, warn: 1.2, strike: .55, stun: 1.3, text: 'Struck by lightning!' },
     { kind: 'bolt', s: 1848, x: -5.5, length: 4.5, width: 4.5, period: 4.8, phase: 2.4, warn: 1.2, strike: .55, stun: 1.3, text: 'Struck by lightning!' },

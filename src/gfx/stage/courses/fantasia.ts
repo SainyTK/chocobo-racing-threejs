@@ -53,9 +53,9 @@ function lightShaft(kit: Kit, x: number, y: number, z: number, color: string, ra
     vertexShader: `varying vec3 vN; varying vec3 vV; varying float vY; void main(){ vY = uv.y; vec4 mv = modelViewMatrix * vec4(position, 1.); vN = normalize(normalMatrix * normal); vV = -mv.xyz; gl_Position = projectionMatrix * mv; }`,
     fragmentShader: `uniform vec3 uColor; uniform float uTime; varying vec3 vN; varying vec3 vV; varying float vY;
       void main(){ float core = pow(abs(dot(normalize(vN), normalize(vV))), 2.); float k = core * smoothstep(0., .25, vY) * smoothstep(1., .45, vY) * (.85 + .15 * sin(uTime * .9 + vY * 4.));
-        gl_FragColor = vec4(uColor * k * .22, 1.); }`,
+        gl_FragColor = vec4(uColor * k * .14, 1.); }`,
   }));
-  const m = new THREE.Mesh(new THREE.CylinderGeometry(radius * .45, radius, 46, 16, 1, true).translate(0, 23, 0), mat);
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(radius * .45, radius, 32, 16, 1, true).translate(0, 16, 0), mat);
   m.position.set(x, y - 1, z); m.renderOrder = 4; m.name = 'light shaft'; kit.add(m);
 }
 
@@ -72,9 +72,12 @@ function roadbed(kit: Kit) {
 /** Stone tunnel over the road, its walls stepping out past the shoulders so Carbuncles and Sylphs can sit in the niches. */
 function tunnel(kit: Kit, s0: number, s1: number) {
   const w = kit.w, a = new THREE.Color(C.rockDark), b = new THREE.Color(C.rock);
-  kit.extrude([[4.4, -.12], [4.8, 3], [4.2, 6.6], [1, 9.4], [-w * .5, 10.4], [-w, 10.6]], { s0, s1, mirror: true, step: 2, paint: (s, seg, _i, out) => out.copy(a).lerp(b, fbm2(s * .08, seg * 2.3, 2, 4) * .8) });
-  // Portal rims at both ends, a little proud of the tunnel.
-  for (const s of [s0, s1]) kit.extrude([[4, -.12], [5.6, 3.2], [5, 7.4], [1.2, 10.6], [-w * .5, 11.6], [-w, 11.8]], { s0: s - .8, s1: s + .8, mirror: true, step: .8, paint: C.rockLight });
+  // Profiles run from the floor up to the crown, so the faces look inward at the road.
+  const vault: [number, number][] = [[4.4, -.12], [4.8, 3], [4.2, 6.6], [1, 9.4], [-w * .5, 10.4], [-w, 10.6]];
+  kit.extrude(vault, { s0, s1, mirror: true, step: 2, paint: (s, seg, _i, out) => out.copy(a).lerp(b, fbm2(s * .08, seg * 2.3, 2, 4) * .8) });
+  // Portal rims at both ends, a little proud of the tunnel, seen from outside and from within.
+  const rim: [number, number][] = [[-w, 11.8], [-w * .5, 11.6], [1.2, 10.6], [5, 7.4], [5.6, 3.2], [4, -.12]];
+  for (const s of [s0, s1]) for (const profile of [rim, [...rim].reverse()]) kit.extrude(profile, { s0: s - .8, s1: s + .8, mirror: true, step: .8, paint: C.rockLight });
 }
 
 // ---- Placement -----------------------------------------------------------------------------------
@@ -187,6 +190,11 @@ export const fantasia: CourseArt = {
       kit.place(kit.prop('ledge', rr => pedestal(rr, 3, blue ? C.blue : C.violet), r.int(0, 3)), p.x, p.y - 1, p.z, { yaw: r() * 6 });
       kit.place(kit.prop(blue ? 'crystal blue' : 'crystal violet', rr => crystalCluster(rr, blue ? C.blue : C.violet, blue ? C.blueShell : C.violetShell, 1.3, C.rock), r.int(0, 4)), p.x, p.y - 1, p.z, { yaw: r() * 6, scale: r.range(.9, 1.7) });
     }
+    // Cavern walls: great rock masses rising from the void around the course, close enough to close in the view.
+    kit.scatter(90, w + 30, 90, (x, z, d) => {
+      const y = kit.road(x, z).y, size = Math.min(d - w - 10, 30) * r.range(.6, 1);
+      kit.place(kit.prop('cave wall', rr => new Parts().add(rock([1, 1, 1], [0, 0, 0], rr() * 9), (_x, yy, _z, out) => out.set(C.rockDark).lerp(new THREE.Color('#2c4a66'), Math.max(0, yy) * .6), { flat: true, ao: false }), r.int(0, 5)), x, y - 8, z, { yaw: r() * 6, scale: [size, r.range(30, 60), size] });
+    });
     kit.scatter(70, w + 50, 190, (x, z) => {
       const y = kit.road(x, z).y, h = r.range(50, 110);
       kit.place(kit.prop('spire', rr => new Parts().add(rock([1, 1, 1], [0, 0, 0], rr() * 9), grad(C.rockDeep, C.rockDark, -.8, .8), { flat: true, ao: false }), r.int(0, 4)), x, y - 30 + h * .3, z, { yaw: r() * 6, scale: [r.range(5, 11), h, r.range(5, 11)] });
