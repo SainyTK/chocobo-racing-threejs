@@ -55,7 +55,7 @@ def head(u: np.ndarray, v: np.ndarray) -> np.ndarray:
 def eye(u: np.ndarray, v: np.ndarray) -> np.ndarray:
     """White, a large mako-blue iris and a dark pupil, with a catch-light; v runs from the back to the front."""
     img = fill("#f7f9fc", u)
-    img = mix(img, fill("#2f7fc4", u), np.clip((v - 0.7) * 30, 0, 1))
+    img = mix(img, fill("#2a6aa8", u), np.clip((v - 0.66) * 30, 0, 1))
     img = mix(img, fill("#7cc8f2", u), np.clip((v - 0.78) * 30, 0, 1) * np.clip(-np.sin(angle(u)) + 0.3, 0, 1) * 0.7)
     img = mix(img, fill("#0b1a2e", u), np.clip((v - 0.88) * 30, 0, 1))
     d = np.hypot((u - 0.62) * 1.3, v - 0.9)

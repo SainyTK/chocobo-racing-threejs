@@ -24,12 +24,14 @@ FRONT_AXLE, FRONT_RADIUS = Vector((0, -1.42, 0.46)), 0.46
 REAR_AXLE, REAR_RADIUS = Vector((0, 1.24, 0.5)), 0.5
 STEER_TOP = Vector((0, -0.98, 1.5))
 """Top of the steering axis; the fork bone runs from here down to the front axle."""
-HEAD_CENTRE, HEAD_RADII = Vector((0, 0.1, 2.44)), (0.4, 0.41, 0.43)
+HEAD_CENTRE, HEAD_RADII = Vector((0, 0.1, 2.44)), (0.45, 0.41, 0.42)
 """Centre of the skull and its radii (side, front-back, up)."""
-SWORD_GUARD = Vector((-0.34, 0.6, 2.1))
-SWORD_DIR = Vector((0.6, 0.04, -0.8)).normalized()
+BACK_BULGE = 1.18
+"""How much deeper the back of the head is than the front: the hair mass."""
+SWORD_GUARD = Vector((-0.42, 0.6, 2.12))
+SWORD_DIR = Vector((0.76, 0.04, -0.64)).normalized()
 """The Buster Sword's guard sits behind the right shoulder; the blade runs down across the back to past the left hip."""
-BLADE = 1.55
+BLADE = 1.65
 
 J = {
     "hips": (0, 0.36, 1.26),
@@ -42,9 +44,9 @@ J = {
     "wrist": (0.54, -0.44, 1.64),
     "hand_end": (0.55, -0.6, 1.62),
     "hip": (0.17, 0.34, 1.22),
-    "knee": (0.46, -0.12, 1.12),
-    "ankle": (0.5, -0.06, 0.66),
-    "toe": (0.5, -0.4, 0.5),
+    "knee": (0.54, -0.12, 1.1),
+    "ankle": (0.58, -0.06, 0.66),
+    "toe": (0.58, -0.4, 0.5),
 }
 
 
@@ -88,7 +90,8 @@ def on_head(azimuth: float, elevation: float, inset: float = 0.0) -> Vector:
     """A point on the skull: azimuth in degrees from the front toward his left (+X), elevation up from the equator."""
     az, el = math.radians(azimuth), math.radians(elevation)
     sx, sy, sz = HEAD_RADII
-    d = Vector((sx * math.cos(el) * math.sin(az), -sy * math.cos(el) * math.cos(az), sz * math.sin(el)))
+    back = BACK_BULGE if math.cos(az) < 0 else 1.0
+    d = Vector((sx * math.cos(el) * math.sin(az), -sy * back * math.cos(el) * math.cos(az), sz * math.sin(el)))
     return HEAD_CENTRE + d * (1 - inset)
 
 
@@ -111,28 +114,26 @@ def skull() -> Part:
         return sy * shape(t) * curve([(0, 1.08), (0.3, 1.04), (0.6, 1.0), (1, 1.0)], t)
 
     def side(t: float) -> float:
-        return sx * shape(t) * curve([(0, 0.8), (0.35, 0.96), (0.6, 1.0), (1, 1.0)], t)
+        return sx * shape(t) * curve([(0, 0.8), (0.35, 0.96), (0.6, 1.06), (1, 1.06)], t)
 
-    head = loft("skull", "head", [bottom, top], ellipse(side, front, lambda t: sy * shape(t)), 26, 18, (0, -1, 0))
+    # The back of the head swells into the smooth hair mass the PS1 model shows from behind.
+    def back(t: float) -> float:
+        return sy * shape(t) * curve([(0, 0.95), (0.4, BACK_BULGE), (1, BACK_BULGE)], t)
+
+    head = loft("skull", "head", [bottom, top], ellipse(side, front, back), 32, 22, (0, -1, 0))
     return rigid(head, "head")
 
 
 SPIKES = [
-    # (azimuth, elevation, direction, length, base radius, curl). Crown and back: big spikes sweeping up and back.
-    (175, 68, (-0.25, 0.35, 1.0), 0.8, 0.21, (0, 1, 0.2)),
-    (20, 66, (0.12, -0.25, 1.0), 0.6, 0.19, (0, 1, 0)),
-    (-35, 62, (-0.35, -0.1, 1.0), 0.55, 0.18, (0, 1, 0)),
-    (70, 48, (0.85, 0.3, 0.75), 0.6, 0.19, (0, 0.3, 1)),
-    (-72, 46, (-0.85, 0.35, 0.7), 0.58, 0.19, (0, 0.3, 1)),
-    (100, 12, (1.0, 0.45, 0.2), 0.52, 0.17, (0, 0.2, 1)),
-    (-100, 12, (-1.0, 0.5, 0.15), 0.48, 0.17, (0, 0.2, 1)),
-    (135, 34, (0.9, 0.45, 0.6), 0.58, 0.19, (0, 0, 1)),
-    (-135, 34, (-0.9, 0.45, 0.65), 0.58, 0.19, (0, 0, 1)),
-    (180, 40, (0.1, 0.55, 1.0), 0.55, 0.2, (0, 0, 1)),
-    (165, 0, (0.55, 0.8, -0.1), 0.4, 0.17, (0, 0, -1)),
-    (-160, -4, (-0.6, 0.8, -0.15), 0.4, 0.16, (0, 0, -1)),
-    (120, -8, (0.9, 0.5, -0.25), 0.36, 0.14, (0, 0, -1)),
-    (-120, -8, (-0.9, 0.5, -0.25), 0.36, 0.14, (0, 0, -1)),
+    # (azimuth, elevation, direction, length, base radius, curl). From behind the PS1 model is a smooth dome with a tall
+    # crown spike leaning to his right, a few top spikes and side spikes at ear level, so the back stays smooth.
+    (180, 70, (-0.25, 0.3, 1.0), 0.72, 0.21, (0, 1, 0.2)),
+    (40, 62, (0.7, -0.05, 1.0), 0.55, 0.18, (0.3, 1, 0)),
+    (-40, 62, (-0.1, 0.05, 1.0), 0.5, 0.18, (0.5, 1, 0)),
+    (95, 20, (1.0, 0.25, 0.35), 0.5, 0.17, (0, 0.3, 1)),
+    (-95, 20, (-1.0, 0.25, 0.35), 0.5, 0.17, (0, 0.3, 1)),
+    (-120, 45, (-0.85, 0.3, 0.7), 0.45, 0.17, (0, 0.3, 1)),
+    (120, 45, (0.8, 0.3, 0.7), 0.4, 0.17, (0, 0.3, 1)),
     # Fringe: thick spikes hanging over the forehead, and side bangs framing the face.
     (0, 48, (0.0, -0.55, -1.0), 0.3, 0.13, (0, -1, 0)),
     (26, 50, (0.35, -0.5, -1.0), 0.28, 0.12, (0, -1, 0)),
@@ -140,8 +141,8 @@ SPIKES = [
     (56, 26, (0.3, -0.45, -1.0), 0.42, 0.12, (0.4, -1, 0)),
     (-56, 26, (-0.3, -0.45, -1.0), 0.44, 0.12, (-0.4, -1, 0)),
     # Front tufts lifting up and back over the forehead.
-    (10, 72, (0.15, -0.7, 0.75), 0.42, 0.15, (0, 1, 0.5)),
-    (-14, 74, (-0.2, -0.7, 0.7), 0.4, 0.14, (0, 1, 0.5)),
+    (10, 72, (0.15, -0.6, 0.8), 0.42, 0.15, (0, 1, 0.5)),
+    (-16, 70, (-0.25, -0.6, 0.75), 0.38, 0.14, (0, 1, 0.5)),
 ]
 
 
@@ -149,14 +150,14 @@ def hair() -> list[Part]:
     out = []
     for i, (az, el, d, length, radius, bend) in enumerate(SPIKES):
         base = on_head(az, el, 0.12)
-        spike = claw(f"spike{i}", "hair", base, d, length * 0.8 + 0.06, radius * 1.15, bend, around=7)
+        spike = claw(f"spike{i}", "hair", base, d, length * 0.68 + 0.06, radius * 1.15, bend, around=7)
         out.append(rigid(spike, "head"))
     return out
 
 
 def eyes() -> list[Part]:
     centre, look = eye()
-    ball = ellipsoid("eye", "eye", centre, (0.04, 0.072, 0.088), axis=look, around=12, along=6)
+    ball = ellipsoid("eye", "eye", centre, (0.035, 0.062, 0.07), axis=look, around=12, along=6)
     ball.outline = False
     left = rigid(ball, "eye.L")
     return [left, mirror(left, "eye.R")]
@@ -221,7 +222,7 @@ def legs() -> list[Part]:
     leg = loft(
         "leg",
         "trousers",
-        [J["hip"], (0.34, 0.1, 1.2), J["knee"], (0.5, -0.1, 0.9), J["ankle"]],
+        [J["hip"], (0.38, 0.1, 1.18), J["knee"], (0.57, -0.1, 0.9), J["ankle"]],
         ellipse(lambda t: curve([(0, 0.15), (0.45, 0.15), (0.6, 0.16), (1, 0.13)], t), lambda t: curve([(0, 0.15), (0.45, 0.15), (0.6, 0.16), (1, 0.13)], t)),
         12,
         14,
@@ -231,7 +232,7 @@ def legs() -> list[Part]:
     boot = loft(
         "boot",
         "boot",
-        [(0.5, -0.04, 0.8), (0.5, -0.06, 0.6), (0.5, -0.2, 0.48), (0.5, -0.42, 0.47)],
+        [(0.58, -0.04, 0.8), (0.58, -0.06, 0.6), (0.58, -0.2, 0.48), (0.58, -0.42, 0.47)],
         ellipse(lambda t: curve([(0, 0.15), (0.3, 0.135), (0.7, 0.12), (1, 0.1)], t), lambda t: curve([(0, 0.15), (0.3, 0.13), (0.7, 0.1), (1, 0.08)], t)),
         12,
         10,
@@ -246,19 +247,19 @@ def sword() -> list[Part]:
     g, d = SWORD_GUARD, SWORD_DIR
 
     def width(t: float) -> float:
-        return curve([(0, 0.18), (0.84, 0.175), (1, 0.06)], t)
+        return curve([(0, 0.21), (0.84, 0.205), (1, 0.07)], t)
 
     # The tip is cut on a slant: the rings narrow toward the back edge.
     blade = loft(
         "blade",
         "blade",
         [g + d * 0.04, g + d * BLADE],
-        superellipse(width, lambda t: 0.028, 6, lambda t: 0.18 - width(t)),
+        superellipse(width, lambda t: 0.028, 6, lambda t: 0.21 - width(t)),
         10,
         8,
         (0, 1, 0),
     )
-    guard = loft("guard", "hilt", [g - d * 0.02, g + d * 0.06], superellipse(lambda t: 0.22, lambda t: 0.06, 5), 10, 1, (0, 1, 0))
+    guard = loft("guard", "hilt", [g - d * 0.02, g + d * 0.06], superellipse(lambda t: 0.25, lambda t: 0.06, 5), 10, 1, (0, 1, 0))
     grip = loft("grip", "grip", [g - d * 0.02, g - d * 0.3], ellipse(lambda t: 0.042, lambda t: 0.042), 8, 6, (0, 1, 0))
     pommel = ellipsoid("pommel", "hilt", g - d * 0.33, (0.05, 0.06, 0.06), axis=-d, around=8, along=4)
     pommel.outline = False
@@ -319,7 +320,7 @@ def bike() -> list[Part]:
     cowl = loft(
         "cowl",
         "cowl",
-        [(0, -1.32, 1.06), (0, -1.19, 1.44), (0, -1.04, 1.8)],
+        [(0, -1.32, 1.06), (0, -1.2, 1.5), (0, -1.06, 1.94)],
         superellipse(lambda t: curve([(0, 0.2), (1, 0.26)], t), lambda t: curve([(0, 0.2), (0.5, 0.26), (1, 0.24)], t), 3.5),
         12,
         10,
@@ -355,9 +356,9 @@ def bike() -> list[Part]:
         tube("fork_leg", "chrome", [(0.16, -1.0, 1.42), (0.18, -1.42, 0.46)], 0.05, "fork", 8, 4, (0, -1, 0)),
         tube("swingarm", "metal", [(0.2, 0.2, 0.68), (0.28, 0.8, 0.58), (0.3, 1.24, 0.5)], 0.055, "bike", 8, 6),
         tube("exhaust", "metal", [(0.24, -0.5, 0.56), (0.32, 0.0, 0.5), (0.38, 0.6, 0.6), (0.39, 1.0, 0.68)], 0.06, "bike", 8, 10),
-        tube("muffler", "chrome", [(0.39, 0.95, 0.67), (0.41, 1.58, 0.76)], 0.1, "bike", 10, 4, (0, 0, 1)),
+        tube("muffler", "metal", [(0.39, 0.95, 0.67), (0.41, 1.58, 0.76)], 0.1, "bike", 10, 4, (0, 0, 1)),
         rigid(ellipsoid("side_cover", "panel", (0.34, 0.95, 0.92), (0.4, 0.13, 0.26), axis=(0, 1, 0.15), around=12, along=8), "bike"),
-        tube("peg", "metal", [(0.2, -0.08, 0.52), (0.44, -0.08, 0.52)], 0.04, "bike", 6, 2, (0, -1, 0)),
+        tube("peg", "metal", [(0.2, -0.08, 0.52), (0.52, -0.08, 0.52)], 0.04, "bike", 6, 2, (0, -1, 0)),
     ]
     return parts + left + [mirror(p, p.name + ".R") for p in left]
 
