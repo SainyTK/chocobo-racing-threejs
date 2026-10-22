@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { damp } from '../math.ts';
 import { POSE_SECONDS } from '../poses.ts';
 import { Rig } from '../rig.ts';
-import { anchor, driven, skinnedModel, type SkinnedModel } from '../skinned.ts';
+import { anchor, driven, overlay, skinnedModel, type SkinnedModel } from '../skinned.ts';
 import type { Build } from '../types.ts';
 
 /** Loops blend by speed; Charge, Win and Lose follow the reaction's own clock so every viewer sees the same frame. */
@@ -31,14 +31,14 @@ export function behemoth(): Build {
   const action = (name: string) => { const a = m.actions.get(name); if (!a) throw new Error(`Behemoth has no ${name} clip`); a.play(); a.weight = 0; return a; };
   const clips = Object.fromEntries([...LOOPS, ...POSED].map(n => [n, action(n)])) as Record<ClipName, ReturnType<typeof action>>, blink = action('Blink');
   for (const a of [...POSED.map(n => clips[n]), blink]) a.timeScale = 0;
-  const head = m.bone('head'), posed = head.quaternion.clone(), weights: Record<ClipName, number> = { Idle: 0, Drive: 0, Charge: 0, Win: 0, Lose: 0 };
+  const turn = overlay(m, 'head'), head = turn.j, weights: Record<ClipName, number> = { Idle: 0, Drive: 0, Charge: 0, Win: 0, Lose: 0 };
   const wheels = ['L', 'R'].flatMap(side => Array.from({ length: ROAD_WHEELS }, (_, i) => driven(m, `wheel${i + 1}.${side}`, [1, 0, 0], 'x')));
   const belts = [pads(m, 'pads.L'), pads(m, 'pads.R')];
   // Smoke and boost flames from the two exhausts at the back of the hull; drift sparks from the rear of the tracks.
   const exhausts = [anchor(m, 'tank', [.42, .76, -1.42]), anchor(m, 'tank', [-.42, .76, -1.42])];
   const contacts = [anchor(m, 'tank', [1.06, .04, -1.3]), anchor(m, 'tank', [-1.06, .04, -1.3])];
   let fresh = true;
-  return { r, head, height: 3.9, wheels: wheels.map(w => ({ j: w.j, r: WHEEL_RADIUS })), steer: [], exhausts, contacts, outline: m.outline, update(s, k) {
+  return { r, head, height: 3.9, wheels: wheels.map(w => ({ j: w.j, r: WHEEL_RADIUS })), steer: [], exhausts, contacts, outline: m.outline, sync: turn.sync, update(s, k) {
     const pose = s.pose, ended = pose?.kind === 'win' || pose?.kind === 'lose' ? pose : null;
     const charging = pose?.kind === 'cast' ? 1 : 0, cruise = ended ? 0 : 1 - charging, drive = s.menu ? 0 : Math.min(1, k * 3);
     const target: Record<ClipName, number> = { Idle: cruise * (1 - drive), Drive: cruise * drive, Charge: charging, Win: ended?.kind === 'win' ? 1 : 0, Lose: ended?.kind === 'lose' ? 1 : 0 };
@@ -48,12 +48,9 @@ export function behemoth(): Build {
     if (ended) { const c = clips[ended.kind === 'win' ? 'Win' : 'Lose']; c.time = ended.t % c.getClip().duration; }
     clips.Drive.timeScale = .7 + k * .8;
     const b = (s.t + 2.3) % BLINK.every; blink.weight = b < BLINK.seconds ? 1 : 0; blink.time = Math.min(b, BLINK.seconds);
-    // The mixer skips bones whose clip value did not change, so first take back last frame's turns and nods.
-    head.quaternion.copy(posed);
-    m.mixer.update(s.dt);
-    posed.copy(head.quaternion);
+    m.update(s.dt);
     for (const w of wheels) w.sync();
     for (const belt of belts) belt.sync(wheels[0].j.rotation.x * WHEEL_RADIUS);
-    head.rotation.y += s.menu ? Math.sin(s.t * .6) * .3 : s.steer * .25;
+    head.rotation.y = s.menu ? Math.sin(s.t * .6) * .3 : s.steer * .25;
   } };
 }
