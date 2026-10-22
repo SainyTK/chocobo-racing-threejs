@@ -47,6 +47,16 @@ function clearLane(r: Race, p: Racer, i: number, lane: number) {
   return { lane: free ?? lane, limit: !wait ? Infinity : struck(p.x, close, [...held, ...crossing]) ? 2 : 12 };
 }
 
+/** How often a CPU racer takes a shortcut it reaches. One with a drop at its edges is a risk, so easier classes take it far more rarely. */
+const shortcutChance = (r: Race, path: ShortcutPath) => DIFFICULTIES[r.difficulty].cpuShortcut ** (path.shortcut.edge === 'fall' ? 2 : 1);
+
+/** Speed a CPU racer slows to for the turn into a shortcut: 30 m/s for the usual 20 degree join, slower for a sharper one. */
+const entrySpeed = (join: number) => 30 * Math.sqrt(Math.min(1, 20 / join));
+/** Metres before a shortcut's mouth where a CPU racer turns in: 8 m for the usual 20 degree join, further out for a sharper one. */
+const turnIn = (join: number) => 8 + Math.max(0, join - 20) * .4;
+/** Where across the road a CPU racer lines up for a shortcut, as a share of the way to its edge: the near edge for a shallow join, the far side for a sharp one. */
+const lineUp = (join: number) => clamp((40 - join) / 20, -.6, 1);
+
 /** Lateral acceleration a CPU racer plans for along a shortcut's bends, in m/s², a little under every racer's grip. */
 const SHORTCUT_GRIP = 22;
 /** Fastest a CPU racer should take the next stretch of a shortcut, from how far its centre line turns over each 20 m. */
@@ -67,20 +77,29 @@ function shortcutSpeed(path: ShortcutPath, u: number) {
 export function courseLine(r: Race, p: Racer, lane: number, look: number): CourseLine {
   const len = trackLength(r.track), i = r.racers.indexOf(p), paths = shortcutPaths(r.track), layout = courseLayout(r.track);
   if (p.route !== MAIN_ROUTE) {
-    const path = paths[p.route], u = mod(p.routeS + look - path.shortcut.from, len) / path.skipped;
-    if (u < 1) return { target: shortcutPoint(path, u, 0), limit: shortcutSpeed(path, mod(p.routeS - path.shortcut.from, len) / path.skipped), shortcut: true };
+    const path = paths[p.route], sc = path.shortcut, u = mod(p.routeS + look - sc.from, len) / path.skipped;
+    // Off its centre line, after a wide turn in or a drop onto it, a racer slows to its entry speed until it has lined up again.
+    const wide = Math.abs(p.x) > sc.width * .4 ? entrySpeed(sc.join) : Infinity;
+    if (u < 1) return { target: shortcutPoint(path, u, 0), limit: Math.min(wide, shortcutSpeed(path, mod(p.routeS - sc.from, len) / path.skipped)), shortcut: true };
   }
   for (const [k, path] of paths.entries()) {
     const to = along(r.track, p.routeS, path.shortcut.from);
-    // Well past the mouth without having turned in, the chance is gone: chasing it would send the racer the wrong way.
+    // Well past the mouth without having turned in, the chance is gone: chasing it would send the racer the wrong way, or off the
+    // road edge beside a shortcut that turns away sharply, so the sharper its join the sooner a racer gives up.
     // A racer just rescued (perhaps from this very shortcut) keeps to the road for a while.
-    if (to > look + 60 || to < -path.skipped * .15 || r.time - p.lastRescue < 12 || coin(i, k + 7, p.lap) >= DIFFICULTIES[r.difficulty].cpuShortcut) continue;
+    // So does a racer that is boosting before the mouth, or too fast to slow for the turn in.
+    const entry = entrySpeed(path.shortcut.join), braking = (p.speed * p.speed - entry * entry) / 50;
+    if (to > look + 60 || to < -path.skipped * .15 * Math.min(1, 20 / path.shortcut.join) || r.time - p.lastRescue < 12 || to > 0 && p.boost > 0 || to > turnIn(path.shortcut.join) && braking > to - 6 || coin(i, k + 7, p.lap) >= shortcutChance(r, path)) continue;
     // Line up along that edge of the road first, then turn in at the mouth, so the turn is gentle enough to make at speed.
-    // It also eases off for the turn in, braking early enough to be down to 30 m/s at the mouth.
-    if (to > 8) return { target: routePoint(r.track, MAIN_ROUTE, p.routeS + look, path.shortcut.side * (TRACKS[r.track].width - 1.2)), limit: to < Math.max(18, (p.speed * p.speed - 900) / 50 + 10) ? 30 : Infinity, shortcut: false };
-    return { target: shortcutPoint(path, clamp((look - to) / path.skipped, .2, 1), 0), limit: 30, shortcut: false };
+    // It also eases off for the turn in, braking early enough to be down to its entry speed at the mouth.
+    // For a sharp join it lines up on the far side instead and starts the turn further out, so the turn is a wide arc across the road.
+    if (to > turnIn(path.shortcut.join)) return { target: routePoint(r.track, MAIN_ROUTE, p.routeS + look, path.shortcut.side * (TRACKS[r.track].width - 1.2) * lineUp(path.shortcut.join)), limit: to < Math.max(18, braking + 10) ? entry : Infinity, shortcut: false };
+    return { target: shortcutPoint(path, clamp((look - to) / path.skipped, .2, 1), 0), limit: entry, shortcut: false };
   }
+  // Past the mouth of a railless shortcut it is not taking, it keeps to the other half of the road: running wide there drops it off the edge.
+  const mouth = paths.find(path => path.shortcut.edge === 'fall' && along(r.track, p.routeS, path.shortcut.from) > -10 && along(r.track, p.routeS, path.shortcut.from) < 60);
+  const kept = mouth ? (mouth.shortcut.side > 0 ? Math.min(lane, 0) : Math.max(lane, 0)) : lane;
   const gapRamp = layout.ramps.find(ramp => gapBeyond(r.track, ramp) && along(r.track, p.routeS, ramp.s) > -2 && along(r.track, p.routeS, ramp.s) < 70);
-  const line = gapRamp ? { lane: gapRamp.x, limit: Infinity } : clearLane(r, p, i, lane);
+  const line = gapRamp ? { lane: gapRamp.x, limit: Infinity } : clearLane(r, p, i, kept);
   return { target: routePoint(r.track, MAIN_ROUTE, p.routeS + look, clamp(line.lane, -TRACKS[r.track].width + 1, TRACKS[r.track].width - 1)), limit: line.limit, shortcut: false };
 }

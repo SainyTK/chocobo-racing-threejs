@@ -34,7 +34,8 @@ function trace(start: number, turn: number, bend: number) {
 /**
  * Builds the centre line from its heading. It turns off the road edge `join` degrees towards its side, turns evenly to meet the road
  * edge again at the same angle, and `bend` is solved so the line lands exactly on its exit. The turning spreads along the whole
- * shortcut, so neither end tightens; racers make the turn at the join on the road. Height blends between the road heights at both ends.
+ * shortcut, so neither end tightens; racers make the turn at the join on the road. Height blends between the road heights at both ends,
+ * less any drop below the mouth.
  */
 function buildPath(id: TrackId, shortcut: Shortcut): ShortcutPath {
   const w = TRACKS[id].width, len = trackLength(id), a = pointAt(id, shortcut.from, shortcut.side * w), b = pointAt(id, shortcut.to, shortcut.side * w);
@@ -49,7 +50,9 @@ function buildPath(id: TrackId, shortcut: Shortcut): ShortcutPath {
   for (let n = 0; n < 12; n++) bend -= miss(bend) / ((miss(bend + 1e-4) - miss(bend)) / 1e-4);
   const unit = trace(start, turn, bend), length = chord / Math.hypot(unit.x[SAMPLES], unit.z[SAMPLES]);
   const x = unit.x.map(v => a.x + v * length), z = unit.z.map(v => a.z + v * length);
-  const y = new Float64Array(SAMPLES + 1).map((_, i) => a.y + (b.y - a.y) * smooth(i / SAMPLES)), d = new Float64Array(SAMPLES + 1).map((_, i) => i * length / SAMPLES);
+  // A dropped shortcut starts at the road edge's height, so a racer turning in is still on the road, and steps down just past it.
+  const drop = (i: number) => i === 0 ? 0 : (shortcut.drop ?? 0) * (1 - smooth(i / SAMPLES));
+  const y = new Float64Array(SAMPLES + 1).map((_, i) => a.y + (b.y - a.y) * smooth(i / SAMPLES) - drop(i)), d = new Float64Array(SAMPLES + 1).map((_, i) => i * length / SAMPLES);
   return { shortcut, x, y, z, d, length, skipped: mod(shortcut.to - shortcut.from, len), lead: OPENING / length };
 }
 

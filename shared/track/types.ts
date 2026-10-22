@@ -43,8 +43,9 @@ export type ShortcutEdge = 'wall' | 'fall' | 'rough';
  * turning evenly in between. `side` is the inside of the bend it cuts. It turns off the road edge, and back onto it, `join` degrees
  * towards `side`: a wider angle swings it further from the road. `width` is its half width, like the road's.
  * Progress along it counts as the main-road distance it skips, so a shortcut is shorter to drive but never skips a lap gate.
+ * With `drop`, it lies that many metres below the road edge at its mouth, so racers drop onto it, and it climbs back to the road by its exit.
  */
-export interface Shortcut { from: number; to: number; side: 1 | -1; join: number; width: number; edge: ShortcutEdge; surface?: PatchSurface }
+export interface Shortcut { from: number; to: number; side: 1 | -1; join: number; width: number; edge: ShortcutEdge; surface?: PatchSurface; drop?: number }
 /**
  * A timed hazard, deterministic from race time so the server, prediction and every client agree.
  * Each `period` seconds (shifted by `phase`), it warns for `warn` seconds and then strikes for `strike` seconds; with no period it is always live.
@@ -58,6 +59,6 @@ export interface Hazard {
   stun: number; text: string;
 }
 /** Which model a hazard draws with; each course's scenery supplies the model. */
-export type HazardKind = 'cart' | 'boulder' | 'geyser' | 'cage' | 'ghost' | 'door' | 'cutlery' | 'bolt';
+export type HazardKind = 'cart' | 'boulder' | 'geyser' | 'cage' | 'ghost' | 'door' | 'cutlery';
 /** Everything on a course that changes how it drives, apart from Magic Stones. */
 export interface CourseLayout { pads: Pad[]; patches: Patch[]; ramps: Ramp[]; gaps: Gap[]; rails: Rail[]; shortcuts: Shortcut[]; hazards: Hazard[] }

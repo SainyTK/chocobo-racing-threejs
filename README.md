@@ -156,12 +156,12 @@ Chocobo and Chubby Chocobo hoard stones, Golem, Goblin and Black Magician build 
 
 ### Courses
 
-Every course has its own boost pads, surface patches, jumps, shortcuts and timed hazards.
+Each course has its own mix of boost pads, surface patches, jumps, railings, shortcuts and timed hazards.
 Mud and goo slow you down, and ice, oil and icing make you slide.
 Timed hazards show a pulsing striped mark on the road before they strike, and a hit crashes you like a spell.
 Ramps throw racers into the air, and a racer more than 2.6 m up clears any hazard.
 Shortcuts leave the road at a shallow angle, turn evenly and rejoin at the same angle, and the road wall opens 12 m before each mouth.
-A clean line through one gains roughly 0.6 to 1.7 s; Fantasia's walkway gains 4 to 5 s, with no railings and a sharp turn in.
+A clean line through one gains roughly 0.6 to 1.7 s; Fantasia's walkway gains about 2 to 3 s, but you reach it by dropping off the road edge at a sharp angle and it has no railings.
 
 | Course | Gimmicks |
 | --- | --- |
@@ -173,7 +173,7 @@ A clean line through one gains roughly 0.6 to 1.7 s; Fantasia's walkway gains 4 
 | Floating Gardens | A ramp over a 13 m gap between islands, a railless sky-bridge shortcut, an ice slick on the hairpin |
 | Gingerbread Land | A slippery syrup shortcut after the first right turn with a lone "?" stone halfway along, a candy ramp, giant cutlery stuck in the road, an icing slick after the tunnel |
 | Vulcan-O Valley | Four falling boulders on the racing line with shadow warnings, three lava geysers at the edges of bends |
-| Fantasia | Pits on both sides with a railing on one side at most, switching sides through Leviathan's coils; a railless blue-lit walkway that skips the far-left spike; a walled tunnel; two of Ramuh's lightning bolts striking the edges of the semicircle; rolling hills before the last turns |
+| Fantasia | Pits on both sides with a railing on one side at most, switching sides through Leviathan's coils; a railless blue-lit walkway below the road edge that skips the far-left spike, reached by dropping off the edge; a walled tunnel; rolling hills before the last turns; Ramuh's lightning as scenery, as in the original |
 
 Leaving a cliff edge, a sky bridge or landing in a gap is a fall.
 On Fantasia, where the course hangs over the void, a railing stops you like a wall, and every edge without one is a drop.

@@ -3,11 +3,10 @@ import { Parts, type Kit } from '../kit.ts';
 import { STAGE, stageTime, type Layer } from '../materials.ts';
 import { fbm2, type Rng } from '../noise.ts';
 import { Shape } from '../../particles/particles.ts';
-import { crystalCluster, rock, tube, grad, xf, prism, disc } from '../props/common.ts';
+import { crystalCluster, rock, tube, grad, xf, prism } from '../props/common.ts';
 import { carbuncle, ifrit, leviathanCoil, leviathanHead, odin, pedestal, ramuh, shiva, sleepingTitan, sylph, unicorn } from '../props/espers.ts';
 import { shortcutSpots } from '../shortcuts.ts';
-import { layoutHazard } from '../hazards.ts';
-import { courseLayout, shortcutPaths, type Hazard } from '../../../../shared/track/index.ts';
+import { shortcutPaths } from '../../../../shared/track/index.ts';
 import type { CourseArt } from '../types.ts';
 
 const C = {
@@ -100,15 +99,39 @@ function enshrine(kit: Kit, key: string, figure: (r: Rng) => Parts, s: number, s
 
 // ---- Hazard art ----------------------------------------------------------------------------------
 
-/** Ramuh's thunderbolt: a jagged glowing column from the cavern roof to the road, with a burst ring where it lands. */
-function thunderbolt(h: Hazard) {
+/** Ramuh's thunderbolt: a jagged glowing column from the cavern roof down to the void beside the semicircle, with a burst at its foot. Scenery only. */
+function thunderbolt() {
   const p = new Parts(), pts: [number, number, number][] = [];
   for (let i = 0; i <= 10; i++) { const y = 30 - i * 3, j = i === 0 || i === 10 ? 0 : (i % 2 ? 1 : -1) * (.5 + (i * 7 % 5) * .25); pts.push([j, y, (i * 3 % 4 - 1.5) * .35]); }
   p.add(tube(pts, .32, 6), C.bolt, { layer: 'glow', ao: false });
   p.add(tube(pts.map(([x, y, z]) => [x * 1.6 + .4, y, z - .3] as [number, number, number]).slice(4), .14, 5), '#8fd4ff', { layer: 'glow', ao: false });
-  p.add(disc(h.width * .55, 18, [0, .12, 0]), '#bfe8ff', { layer: 'glow', ao: false });
-  for (let i = 0; i < 8; i++) { const a = i / 8 * 6.28; p.add(xf(new THREE.OctahedronGeometry(.35), [Math.cos(a) * h.width * .6, .5, Math.sin(a) * h.width * .6], [0, a, 0], [.5, 1.6, .5]), C.bolt, { layer: 'glow', ao: false, flat: true }); }
+  for (let i = 0; i < 8; i++) { const a = i / 8 * 6.28; p.add(xf(new THREE.OctahedronGeometry(.35), [Math.cos(a) * 2.5, .5, Math.sin(a) * 2.5], [0, a, 0], [.5, 1.6, .5]), C.bolt, { layer: 'glow', ao: false, flat: true }); }
   return p;
+}
+
+/** Meshes for a baked prop on the shared stage materials, for scenery that animates on its own. */
+function meshes(parts: Parts, name: string) {
+  const g = new THREE.Group(); g.name = name;
+  for (const [layer, [geo]] of parts.layers) g.add(new THREE.Mesh(geo, STAGE[layer.replace('+', '') as Layer]));
+  return g;
+}
+
+/**
+ * Ramuh's display over the semicircle, as in the original: bolts flash down into the void beside the road in turn, and sparks circle overhead.
+ * It is scenery: nothing here touches the road or the racers.
+ */
+function ramuhStorm(kit: Kit) {
+  const c = kit.at(ZONE.ramuh), bolt = kit.prop('thunderbolt', thunderbolt), spark = kit.prop('spark', () => new Parts().add(xf(new THREE.OctahedronGeometry(.5), [0, 0, 0], [0, 0, 0], [.5, 1.6, .5]), C.bolt, { layer: 'glow', ao: false, flat: true }));
+  const bolts = [-40, -14, 14, 40].flatMap(ds => [-1, 1].map(side => kit.at(ZONE.ramuh + ds, side * (kit.w + 14))))
+    .filter(p => kit.road(p.x, p.z).d > kit.w + 9).map((p, i) => { const m = meshes(bolt, 'ramuh bolt'); m.position.set(p.x, p.y - 8, p.z); m.rotation.y = i * 1.7; kit.add(m); return m; });
+  const sparks = new THREE.Group(); sparks.name = 'ramuh sparks';
+  for (let i = 0; i < 14; i++) sparks.add(meshes(spark, 'ramuh spark'));
+  sparks.position.set(c.x, c.y + 24, c.z); kit.add(sparks);
+  kit.onUpdate(t => {
+    // One bolt at a time, each lit for a quarter of a second with a flicker.
+    bolts.forEach((m, i) => { const u = (t * .9 + i / bolts.length) % 1; m.visible = u < .25 && Math.sin(t * 90 + i) > -.5; });
+    sparks.children.forEach((m, i) => { const a = t * .8 + i / 14 * 6.28; m.position.set(Math.cos(a) * 16, Math.sin(t * 2 + i) * 3, Math.sin(a) * 16); });
+  });
 }
 
 // ---- Course --------------------------------------------------------------------------------------
@@ -130,7 +153,6 @@ export const fantasia: CourseArt = {
   patches: { slow: 'tar', slip: 'ice' },
   rail: { top: C.railTop, rail: C.rail, post: C.post },
   shortcut: { wall: '#9fb4ff', cap: '#dfe8ff' },
-  hazards: { bolt: { mover: thunderbolt, warn: '#9fdcff' } },
   signs: { board: '#f6f3f8', arrow: '#e3342c', post: '#ecebf2' },
   ambient: [
     { color: '#a8fbe9', endColor: '#c48bff', rate: 12, size: .26, life: 3, glow: true, shape: Shape.Star, height: [1, 9], wander: .3, drift: [0, .2, 0], radius: 34, alpha: .9 },
@@ -140,7 +162,7 @@ export const fantasia: CourseArt = {
     'Leviathan coil': () => leviathanCoil(14, 19), 'Leviathan head': leviathanHead, Carbuncle: () => carbuncle(1.4), 'Sleeping Titan': sleepingTitan, Shiva: shiva,
     Sylph: sylph, Unicorn: unicorn, Ramuh: ramuh, Ifrit: ifrit, Odin: odin, Pedestal: r => pedestal(r, 6, C.violet),
     'Crystal (violet)': r => crystalCluster(r, C.violet, C.violetShell, 1.4, C.rock), 'Crystal (blue)': r => crystalCluster(r, C.blue, C.blueShell, 1.4, C.rock),
-    Thunderbolt: () => thunderbolt(layoutHazard('fantasia', 'bolt')),
+    Thunderbolt: thunderbolt,
   },
   build(kit) {
     const r = kit.r, w = kit.w, len = kit.len;
@@ -170,7 +192,7 @@ export const fantasia: CourseArt = {
       kit.onTrack(kit.prop('niche crystal', rr => crystalCluster(rr, C.teal, C.tealShell, .8, C.rock), i % 3), s + 7, side * (w + 3.6), { yaw: r() * 6 });
     }
     lightPool(kit, ZONE.tunnel[0], ZONE.tunnel[1], '#1fb8a8', .32);
-    // Ramuh stands inside the semicircle, calling down the bolts that strike its edges.
+    // Ramuh stands inside the semicircle, calling down lightning into the void around it.
     enshrine(kit, 'ramuh', ramuh, ZONE.ramuh, 1, { radius: 5, crystal: C.blue, light: '#cfeaff', scale: 1.3 }) || enshrine(kit, 'ramuh', ramuh, ZONE.ramuh, -1, { radius: 5, crystal: C.blue, light: '#cfeaff', scale: 1.3 });
     lightPool(kit, ZONE.ramuh - 40, ZONE.ramuh + 40, '#6fa8ff', .22);
     enshrine(kit, 'ifrit', ifrit, ZONE.ifrit, -1, { radius: 5, crystal: '#ff8a5a', light: '#ff5a3a', lift: 1 }) || enshrine(kit, 'ifrit', ifrit, ZONE.ifrit, 1, { radius: 5, crystal: '#ff8a5a', light: '#ff5a3a', lift: 1 });
@@ -205,14 +227,6 @@ export const fantasia: CourseArt = {
       kit.place(kit.prop('stalactite', () => new Parts().add(xf(new THREE.ConeGeometry(1, 1, 7), [0, -.5, 0], [Math.PI, 0, 0]), grad(C.rockLight, C.rockDark, -1, 0), { flat: true, ao: false })), x, y, z, { scale: [r.range(2.5, 6), r.range(14, 34), r.range(2.5, 6)], yaw: r() * 6 });
     });
     kit.scatter(360, 0, 300, (x, z) => kit.place(kit.prop('glint', () => new Parts().add(xf(new THREE.OctahedronGeometry(.6)), C.teal, { layer: 'glow', ao: false })), x, kit.road(x, z).y + r.range(40, 90), z, { yaw: r() * 6 }));
-    // Ramuh's fireworks: sparks circling above the semicircle, where the bolts strike.
-    const bolts = courseLayout(kit.id).hazards.filter(h => h.kind === 'bolt');
-    if (bolts.length) {
-      const c = kit.at(ZONE.ramuh), sparks = new THREE.Group(); sparks.name = 'ramuh sparks';
-      const spark = kit.prop('spark', () => new Parts().add(xf(new THREE.OctahedronGeometry(.5), [0, 0, 0], [0, 0, 0], [.5, 1.6, .5]), C.bolt, { layer: 'glow', ao: false, flat: true }));
-      for (const [layer, [g]] of spark.layers) for (let i = 0; i < 14; i++) sparks.add(new THREE.Mesh(g, STAGE[layer.replace('+', '') as Layer]));
-      sparks.position.set(c.x, c.y + 24, c.z); kit.add(sparks);
-      kit.onUpdate(t => sparks.children.forEach((m, i) => { const a = t * .8 + i / 14 * 6.28; m.position.set(Math.cos(a) * 16, Math.sin(t * 2 + i) * 3, Math.sin(a) * 16); }));
-    }
+    ramuhStorm(kit);
   },
 };

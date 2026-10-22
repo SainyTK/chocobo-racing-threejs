@@ -49,6 +49,16 @@ describe('course gimmicks in the simulation', () => {
     expect(used).toBe(true); expect(p.s).toBeGreaterThan(path.shortcut.from + path.skipped);
     expect(p.gates).toBe(Math.floor(p.s / (len / 12)));
   });
+  it('a racer turning into a dropped shortcut falls onto it and lands', () => {
+    const r = solo('fantasia'), p = r.racers[0], path = shortcutPaths('fantasia')[0], drop = path.shortcut.drop!;
+    placeRacer('fantasia', p, path.shortcut.from - 30, path.shortcut.side * (TRACKS.fantasia.width - 1.5));
+    let top = 0, landed = false, fellFirst = false;
+    drive(r, 4, () => {
+      top = Math.max(top, p.alt); fellFirst ||= !landed && p.falling > 0; landed ||= p.route === 0 && top > 0 && p.alt === 0 && p.falling <= 0;
+      return p.route === 0 ? shortcutPoint(path, Math.min(1, (p.s + 20 - path.shortcut.from) / path.skipped)) : shortcutPoint(path, .15);
+    });
+    expect(top).toBeGreaterThan(drop * .8); expect(landed).toBe(true); expect(fellFirst).toBe(false);
+  });
   it('a stone on a shortcut is collected from the shortcut only', () => {
     const r = createRace('gingerbread', [makeRacer('you', 'Test')], 1, 42, 'race'); r.time = .1; r.phase = 'racing';
     const p = r.racers[0], stone = courseObjects('gingerbread').stones.find(s => s.route === 0)!, path = shortcutPaths('gingerbread')[0];

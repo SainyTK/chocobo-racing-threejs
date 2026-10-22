@@ -23,7 +23,7 @@ The lap runs:
 4. A hard left, a diagonal past the sleeping Titan, and a tight right hairpin.
 5. The upper arm of the far-left spike, the sharpest hairpin of the course at its tip, and the descent under a blue light with two Shivas.
 6. The lower S past the Sylphs and the Unicorn.
-7. The climb to the bottom right, a walled tunnel with Carbuncles and Sylphs in its niches, and the semicircle where Ramuh calls down lightning.
+7. The climb to the bottom right, a walled tunnel with Carbuncles and Sylphs in its niches, and the semicircle where Ramuh calls down lightning into the void.
 8. Winding turns past Ifrit, two rolling crests (the original's "hills at the end"), Odin on a raised ledge, and the sharp turns back to the line.
 
 The remake's lap is 2,148 m, the longest in the game; three CPU laps take about 2:50 to 3:30, close to the original's 3:15 Story par.
@@ -34,12 +34,12 @@ All of them are simulation data in `shared/track/layouts/fantasia.ts`, shared by
 
 - Pits: Fantasia is a cliff course, so leaving the shoulder anywhere without a railing drops you into the void.
 - Railings: a new layout feature, `rails`. Each railing runs along one edge for a stretch of the lap and stops racers like a wall; the other edge stays a drop. Through Leviathan's coils the railing switches sides lobe by lobe, on the outside of each bend. The sharpest hairpin has none.
-- Walkway shortcut: a narrow, railless, blue-lit walkway from the spike's upper arm across to its lower arm, skipping the far-left hairpin. It matches the original's hidden shortcut "by the sharpest hairpin in the upper left", which players found by falling off. It gains 4 to 5 s.
+- Walkway shortcut: a narrow, railless, blue-lit walkway 1.8 m below the road edge, from the spike's upper arm across to its lower arm, skipping the far-left hairpin. You reach it by dropping off the road edge at a sharp 60 degree angle, as players found the original's hidden shortcut "by the sharpest hairpin in the upper left" by falling off. It climbs back to road level by its exit, where the far edge is railed. It gains about 2 to 3 s. Shortcuts can now have a `drop`: a racer leaving a ledge keeps its height and falls onto the lower surface.
 - Tunnel: railed on both sides.
-- Ramuh's lightning: two `bolt` hazards strike the semicircle's edges in turn, after a pulsing warning mark. The original shows Ramuh's lightning as scenery; making it strike the road is this remake's interpretation, in the spirit of the other courses' hazards.
+- Ramuh's lightning: scenery, as the sources describe it. Bolts flash down into the void beside the semicircle one at a time, and sparks circle overhead.
 - Hills: the new optional `hills` field on a course definition adds rolling crests to the road height.
 - Stones: every type, and Fantasia is the only course with Ultima stones on the road. In the story, Ultima stones were sealed in this realm.
-- Two boost pads, as on every remake course.
+- No boost pads: no source or footage shows any on Fantasia.
 
 ## Look
 
@@ -60,7 +60,6 @@ It was written after the music revision, so the Studio has no previous compositi
 ## Differences from the original
 
 - The original's three loops at the start cross over themselves. The remake's road never passes over itself (walls, the nearest-road field, terrain and projection all rely on that), so they are three linked lobes instead.
-- The original's walkway is reached by dropping off the road; here it turns off the road edge like every other shortcut.
-- Ramuh's lightning strikes the road here, and there are boost pads.
+- The walkway is a constant 3.2 m half width and climbs smoothly back to the road; the original's exact shape and height are not known.
 - The original uses large sprites for the Espers; the remake builds them as low-poly cel-shaded figures.
 - Bahamut himself does not appear as scenery.

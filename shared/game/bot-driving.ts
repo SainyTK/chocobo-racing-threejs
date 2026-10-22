@@ -1,5 +1,6 @@
 import { clamp, angleDelta } from '../math.ts';
 import { pointAt } from '../track/sampling.ts';
+import { MAIN_ROUTE } from '../track/route.ts';
 import { DIFFICULTIES } from './difficulty.ts';
 import { cornerGrip, HANDLING as H } from './handling.ts';
 import { RACERS } from './racers.ts';
@@ -24,8 +25,12 @@ export function cornerSpeed(r: Race, p: Racer, lateral: number, turn: number) {
   return v;
 }
 
-/** True when the racer could hold its boosted top speed, without braking or taps, through every bend it covers in `seconds` (up to 160 m). */
+/**
+ * True when the racer could hold its boosted top speed, without braking or taps, through every bend it covers in `seconds` (up to 160 m).
+ * It plans from the main road's bends, so a racer on a shortcut never boosts: a shortcut can turn harder than the road it skips.
+ */
 export function boostHolds(r: Race, p: Racer, seconds: number) {
+  if (p.route !== MAIN_ROUTE) return false;
   const top = RACERS[p.character].speed * p.pace * H.boostSpeed, lateral = cornerGrip(p) * DIFFICULTIES[r.difficulty].cpuCorner;
   for (let d = 0; d <= Math.min(160, top * seconds); d += PLAN_STEP) if (holdSpeed(bend(r, p, d), lateral, RACERS[p.character].steering) < top) return false;
   return true;

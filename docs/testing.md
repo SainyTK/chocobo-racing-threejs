@@ -178,18 +178,29 @@ Not covered: no real phone or iPad was used, character barks were measured for l
 ## Fantasia, the Bahamut stage (2026-10-22)
 
 Fantasia was added as the ninth course, as described in [docs/fantasia.md](fantasia.md).
+A second pass removed the remake-only gimmicks (Ramuh's lightning is scenery, no boost pads) and made the walkway a drop off the road edge.
 
-- `npx tsc --noEmit` passes, and `npx vitest run` passes 207 tests in 12 files, including the bend-fold, gimmick, shortcut, stage-budget and road-clearance checks for Fantasia.
+- `npx tsc --noEmit` passes, and `npx vitest run` passes 208 tests in 12 files, including the bend-fold, gimmick, shortcut, stage-budget and road-clearance checks for Fantasia and a test that a racer turning into the walkway falls onto it and lands.
 - The Studio music browser tests (`tests/studio-music.browser.ts`) and `tests/audio.e2e.ts` pass with Fantasia's score.
-- Headless all-CPU races on Fantasia, 6 seeds x 3 laps per class, finished every race with no stuck racers.
-  There were 0, 1 and 1 falls on Chocobo, Behemoth and Bahamut Class, all on the railless walkway shortcut, and no falls on the main road.
-  Mean finish times were 206 s, 191 s and 173 s.
-- The course was checked in the Studio with headless Chrome: aerial, start, six trackside sections, every gimmick view, the prop sheet, and a race-camera lap captured every 100 m by stepping the page clock frame by frame.
+- Headless all-CPU races on Fantasia, 6 seeds x 3 laps per class, finished every race with no falls and no stuck racers.
+  Mean finish times were 215 s, 199 s and 178 s on Chocobo, Behemoth and Bahamut Class.
+  CPUs took the walkway 0, 30 and 70 times out of 108 chances, and it saved them about 3.0 s on Behemoth and 2.3 s on Bahamut Class.
+- The same CPU run on the other eight courses, 4 seeds per class, still has no falls and no unfinished racers. Floating Gardens' railless sky bridge is now taken less often on the easier classes, by the rule that a shortcut with a drop at its edges is a risk.
+- The course was checked in the Studio with headless Chrome: aerial, start, six trackside sections, the shortcut view, the prop sheet, and race-camera frames captured by stepping the page clock frame by frame.
 - Course selection and a race start were checked in the game.
+
+CPU changes for shortcuts, all in `shared/game/bot-course.ts`, `bot-magic.ts` and `bot-driving.ts`:
+
+- A CPU racer slows to an entry speed that falls with a sharper join, lines up on the far side of the road for a sharp join, and gives up sooner once past its mouth.
+- It skips a shortcut while boosting before the mouth or when it is too fast to slow for the turn in, and never boosts on a shortcut or under a course speed limit.
+- Off a shortcut's centre line it slows to the entry speed until it lines up again.
+- Past the mouth of a railless shortcut it is not taking, it keeps to the other half of the road.
+- Easier classes take shortcuts with a drop at their edges far more rarely.
 
 Bugs found and fixed:
 
 - The checkered start line rendered solid white on every course: world geometry is painted one colour per part, so the per-square colours were overwritten. Light and dark squares are now separate parts.
 - The course selector read "COURSE n / 8" and its arrows wrapped at eight courses. Both now follow the course list.
+- A racer turning into a shortcut, still over the road before its mouth, read the shortcut's exit height. It now reads the road's.
 
 Not covered: no full keyboard play-through of Fantasia, and no real phone.

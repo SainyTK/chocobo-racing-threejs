@@ -2,6 +2,7 @@ import { mod } from '../math.ts';
 import type { Projection, TrackId } from './types.ts';
 import { TRACKS } from './tracks.ts';
 import { pointAt, projectOnTrack, trackLength } from './sampling.ts';
+import { along } from './surface.ts';
 import { projectOnShortcut, shortcutPaths, shortcutPoint, shortcutS, type ShortcutProjection } from './shortcuts.ts';
 
 /** The main road, as opposed to a shortcut's index. */
@@ -40,10 +41,10 @@ export function locate(id: TrackId, px: number, pz: number, route: number, route
   return { route: MAIN_ROUTE, s: main.s, x: main.offset, yaw: pointAt(id, main.s).yaw, main, shortcut: null };
 }
 
-/** Surface height under a racer on its route. */
+/** Surface height under a racer on its route. Turning in before a shortcut's mouth, a racer is still over the road. */
 export function routeHeight(id: TrackId, route: number, s: number) {
   const path = route >= 0 ? shortcutPaths(id)[route] : undefined;
-  return path ? shortcutPoint(path, mod(s - path.shortcut.from, trackLength(id)) / path.skipped).y : pointAt(id, s).y;
+  return path && along(id, path.shortcut.from, s) >= 0 ? shortcutPoint(path, mod(s - path.shortcut.from, trackLength(id)) / path.skipped).y : pointAt(id, s).y;
 }
 
 /** World point at lap distance `s`, `offset` metres left of the route's centre line. Bots aim with it. */

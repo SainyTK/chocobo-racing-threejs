@@ -72,7 +72,7 @@ function syncPanes() {
         <label class="music-volume">Volume<input type="range" min="0" max="100" value="100" aria-label="Music volume"></label>
         <progress class="music-progress" value="0" max="1" aria-label="Music loop progress"></progress>
         <p class="music-status"></p>
-        <p class="music-note">Revised compositions are used in the game. Previous compositions are available for comparison through the same updated instruments. Only the active pane plays audio. These are newly authored pieces, not the original recordings.</p>
+        <p class="music-note"></p>
         <a class="music-source" href="https://sqex.lnk.to/gzCQxWYWTP" target="_blank" rel="noopener noreferrer">Listen to the original Chocobo Racing album</a>
       </section>`;
     el.prepend(vp.canvas); paneHost.append(el); panes.push({ vp, el, own });
@@ -117,6 +117,10 @@ function syncPanes() {
       $('.music-info', p.el).textContent = `${variant.label} · ${score.bpm} BPM · ${score.beats / 4} bars · ${(score.beats * 60 / score.bpm).toFixed(1)} second loop`;
       $('.music-reference', p.el).textContent = e.musicReference ? `1999 reference: ${e.musicReference.title} · OST ${e.musicReference.track}` : '';
       $('.music-direction', p.el).textContent = want.variant === 'previous' ? 'Previous composition, kept for before/after review.' : e.musicReference?.direction ?? '';
+      // A score written after the revision has no previous composition to compare with.
+      $('.music-note', p.el).textContent = e.previousMusic
+        ? 'Revised compositions are used in the game. Previous compositions are available for comparison through the same updated instruments. Only the active pane plays audio. These are newly authored pieces, not the original recordings.'
+        : 'This composition is used in the game. It was written after the revision, so it has no previous version to compare. Only the active pane plays audio. It is a newly authored piece, not the original recording.';
     }
   });
 }
