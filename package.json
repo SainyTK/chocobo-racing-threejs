@@ -16,6 +16,7 @@
     "tunnel": "node scripts/tunnel.mjs",
     "start": "NODE_ENV=production tsx server/index.ts",
     "studio": "vite --config studio/vite.config.ts",
+    "character": "node scripts/characters/build.mjs",
     "build": "tsc --noEmit && vite build",
     "test": "vitest run",
     "test:e2e": "playwright test",
