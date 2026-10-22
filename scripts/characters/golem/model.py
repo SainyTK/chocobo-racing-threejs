@@ -146,11 +146,11 @@ def head_parts() -> list[Part]:
 def torso_parts() -> list[Part]:
     """A wide torso of stacked rocks: pelvis, the body block, chest rocks in front and a broad rock across the back."""
     pelvis = rock("pelvis", "rock", [(0, 0.3, 1.2), (0, 0.3, 1.72)], (0.66, 0.52), (0, -1, 0), 1, 3.0)
-    body = rock("torso", "torso", [(0, 0.24, 1.6), (0, 0.18, 2.24), (0, 0.1, 2.9)], (0.94, 0.6), (0, -1, 0), 2, 3.0, 0.04, 20, 12)
+    body = rock("torso", "torso", [(0, 0.24, 1.6), (0, 0.18, 2.2), (0, 0.12, 2.8)], (0.94, 0.6), (0, -1, 0), 2, 3.0, 0.04, 20, 12)
     along(body, [("hips", 0), ("chest", 0.35)], 0.1)
     # One broad rock across the upper back, under the head and between the shoulders: from the chase camera the
     # back reads as one smooth mass, which many small rocks would break into a grid of blotches.
-    back = rock("back", "rock", [(-0.6, 0.46, 2.36), (0.6, 0.46, 2.36)], (0.34, 0.3), (0, 0, 1), 5, 2.6, 0.03, 16, 10)
+    back = rock("back", "rock", [(-0.6, 0.46, 2.36), (0.6, 0.46, 2.36)], (0.34, 0.3), (0, 0, 1), 5, 2.2, 0.0, 16, 10)
     parts = [rigid(pelvis, "hips"), body, rigid(back, "chest")]
     left: list[Part] = []
     pec = rock("pec", "rock", [(0.04, -0.26, 2.46), (0.7, -0.26, 2.46)], (0.33, 0.3), (0, 0, 1), 4, 3.0, 0.05, 14, 8)

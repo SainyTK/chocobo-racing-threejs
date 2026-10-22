@@ -204,3 +204,4 @@ Pitfalls met on Golem:
 - A tyre lofted along its axle closes each side in a cone; `flat` turns the cones into flat sidewalls, so a hub disc can sit on the outside.
 - From the raised chase camera, wheel arches over the rear tyres hide them behind blue blocks. The original shows the rear tyres whole with only a thin ledge on top.
 - The chase camera looks down on the back, so a big back rock hides a head that sits low between the shoulders. Keep the back rock low and the head standing well above the shoulders.
+- Painter noise must use whole waves around a loft's u, or a seam shows where u wraps, straight down the middle of the back from the chase camera.

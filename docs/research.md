@@ -107,7 +107,7 @@ The Rockin' Roller V8 is a small blue 4WD jeep, as the manual says ("4WD jeep"),
 The front wheels steer on their own knuckles.
 Golem is built from separate rounded boulders in warm taupe stone: a tall block head under a thick brim that overhangs a black face with two angry yellow eyes, huge round shoulder boulders, long rocky arms and big fists on the steering wheel, with red wristbands studded with white spikes.
 His Win clip, one fist punched up and the other arm thrown out, is the pose he strikes on the podium and in the racer select screen.
-His stone colour was set by measuring the chase view: the original's lit stone samples at about hue 26 to 37 and 70% lightness, and the remake's at hue 28 to 29 and 66% to 68% once self-shadowing is left out.
+His stone colour was set by measuring the chase view: the original's lit stone samples at about hue 26 to 37 and 70% lightness, and the remake's at hue 28 to 31 and 64% to 65% with the shared self-shadow fix.
 His roster colour follows the model's stone.
 
 | Deviation | Original | Remake |

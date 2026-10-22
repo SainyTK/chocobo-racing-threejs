@@ -31,11 +31,12 @@ def angle(u: np.ndarray) -> np.ndarray:
 
 
 def noise(u: np.ndarray, v: np.ndarray, scale: float, seed: int) -> np.ndarray:
-    """Soft blotches from a few summed waves, deterministic per seed, in about -1..1."""
+    """Soft blotches from a few summed waves, deterministic per seed, in about -1..1. Whole waves around u, so a loft
+    shows no seam where u wraps."""
     rng = np.random.default_rng(seed)
     total = np.zeros_like(u)
     for _ in range(6):
-        fu, fv, pu, pv = rng.uniform(1.5, 4.0) * scale, rng.uniform(1.5, 4.0) * scale, rng.uniform(0, 6.3), rng.uniform(0, 6.3)
+        fu, fv, pu, pv = max(1, round(rng.uniform(1.5, 4.0) * scale)), rng.uniform(1.5, 4.0) * scale, rng.uniform(0, 6.3), rng.uniform(0, 6.3)
         total += np.sin(u * fu * 6.283 + pv * 0.4 * np.sin(v * 3)) * np.sin(v * fv * 6.283 + pu)
     return total / 3
 
@@ -61,9 +62,18 @@ def head(u: np.ndarray, v: np.ndarray) -> np.ndarray:
     a = angle(u)
     forward, side = np.sin(a), np.cos(a)
     img = stone(3)(u, v)
+    # The back of the head is darker weathered stone; from the chase camera it reads as the original's dark block.
+    img = mix(img, fill(CRACK, u), np.clip(-forward * 1.4, 0, 1) * 0.75)
     teeth = 0.36 + 0.05 * np.abs(np.mod(side * 3.2 + 0.5, 1) - 0.5) * 2
     face = np.clip((forward - 0.35) * 12, 0, 1) * np.clip((0.7 - np.abs(side)) * 14, 0, 1) * np.clip((v - teeth) * 40, 0, 1)
     return mix(img, fill(FACE, u), face)
+
+
+def torso(u: np.ndarray, v: np.ndarray) -> np.ndarray:
+    """The body block, darker and more weathered low down, where the original's chase view shows a dark mottled waist
+    under the lighter shoulders and upper back."""
+    img = stone(31, 1.3)(u, v)
+    return mix(img, fill(STONE_DARK, u), np.clip((0.55 - v) * 2.5, 0, 1) * 0.7)
 
 
 def eye(u: np.ndarray, v: np.ndarray) -> np.ndarray:
@@ -146,7 +156,7 @@ def lamp(u: np.ndarray, v: np.ndarray) -> np.ndarray:
 PAINTERS: dict[str, Painter] = {
     "head": head,
     "slab": stone(30, 1.2),
-    "torso": stone(31, 1.3),
+    "torso": torso,
     "rock": stone(32),
     "shoulder": stone(33),
     "arm": stone(34),
