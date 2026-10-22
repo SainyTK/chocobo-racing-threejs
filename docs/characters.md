@@ -257,5 +257,5 @@ Pitfalls met on Black Magician:
 - From the menu camera and the chase camera a wide brim hides the face. The hat sits tipped back a little, the face sits forward under it, and the idle clip holds the head up.
 - The shared win and lose poses pitch the head back and forward by about a third of a radian. Under a wide brim that shows the hat's underside or buries the face, so his Win and Lose clips turn the head the other way.
 - An outline round every puff reads as a pile of snowballs from behind. Only the cloud's body carries the ink outline, and the biggest puffs sit at the sides, where the original's chase view shows them.
-- A tall, narrow cone reads wrong from the chase camera: the original's hat is about as wide as the cape, with a broad cone that is about as tall as the brim is wide.
+- From the PS1 chase camera the hat is a wide, floppy straw mound that hides most of the cone. `brim` in `model.py` reshapes the lathe beyond the cone's base: wider than the cape, drooping at the sides and most at the back, shorter and turned up a little in front so the eyes still show, with a ragged rim. The straw is painted as coarse fibres and a plait, darker in tufts toward the rim.
 - The PS1 hat is bright orange on the Select Racer screen and a duller ochre in the chase view. Measure both and pick the paint between them, under the game's lighting.

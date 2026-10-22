@@ -19,9 +19,9 @@ from pipeline.atlas import Painter, fill, hex_rgb, mix, value_noise
 
 from .model import HAT_PROFILE
 
-HAT, HAT_LIGHT, HAT_UNDER = "#e09a32", "#f2bc62", "#8e5814"
-"""Between the select screen's orange (#ffa11b, hue 35) and the race view's ochre (#a2812a, hue 43); the brim's
-underside is in its own shadow."""
+HAT, HAT_LIGHT, HAT_UNDER = "#d49a3e", "#eabd68", "#82561a"
+"""Straw ochre, between the select screen's orange (#ffa11b, hue 35) and the race view's ochre (#a2812a, hue 43) and
+nearer the race view; the brim's underside is in its own shadow."""
 FACE, EYE, EYE_HOT = "#140f0d", "#ffd02a", "#fff3a0"
 ROBE, ROBE_LIGHT, ROBE_DARK, LINING = "#5236c0", "#7058de", "#30207a", "#25104e"
 """Purple measured at hue 257 to 259 in the select screen (#4921b1) and the race view (#4210a8)."""
@@ -45,29 +45,32 @@ def angle(u: np.ndarray) -> np.ndarray:
     return -np.pi / 2 + 2 * np.pi * u
 
 
-def hat_marks() -> tuple[float, float, float]:
-    """Where the brim's rim, the brim's top and the cone start along the hat's profile, as fractions of its length."""
+def hat_marks() -> tuple[float, float]:
+    """Where the brim's rim and the cone start along the hat's profile, as fractions of its length."""
     pts = [np.array(p) for p in HAT_PROFILE]
     lengths = np.cumsum([0.0] + [float(np.linalg.norm(b - a)) for a, b in zip(pts, pts[1:], strict=False)])
     total = lengths[-1]
-    return lengths[3] / total, lengths[5] / total, lengths[7] / total
+    return lengths[5] / total, lengths[10] / total
 
 
 def hat(u: np.ndarray, v: np.ndarray) -> np.ndarray:
-    """Woven straw: fine rings round the cone and the brim with a faint diagonal plait, darker under the brim and in a
-    crease where the cone meets it, and sun-bleached toward the top."""
-    rim, brim_top, cone = hat_marks()
-    weave = np.sin(v * 2 * math.pi * 70) * 0.5 + 0.5
-    plait = np.sin((u * 36 + v * 70) * 2 * math.pi) * 0.5 + 0.5
-    blotch = value_noise(u, v, 18, 41, 24) - 0.5
-    img = fill(HAT, u) * (1 + 0.07 * blotch[..., None] - 0.05 * weave[..., None] - 0.035 * plait[..., None])
-    img = mix(img, fill(HAT_LIGHT, u), np.clip((v - cone) / (1 - cone), 0, 1) * 0.35)
-    under = np.clip((rim + 0.01 - v) * 60, 0, 1)
-    img = mix(img, fill(HAT_UNDER, u) * (1 + 0.08 * blotch[..., None]), under * np.clip(1.15 - v / rim * 0.5, 0, 1))
-    crease = np.exp(-(((v - cone) / 0.012) ** 2))
-    img = mix(img, fill(HAT_UNDER, u), crease * 0.55)
-    edge = np.exp(-(((v - (rim + brim_top) / 2) / 0.012) ** 2))
-    return np.clip(mix(img, fill(LEATHER_DARK, u), edge * 0.35), 0, 1)
+    """Rough woven straw: coarse fibres running out across the brim and up the cone, a plait of rings, darker tufts
+    toward the ragged rim and under the brim, a crease where the cone meets the brim, and paler toward the tip."""
+    rim, cone = hat_marks()
+    fibre = value_noise(u, v, 160, 41, 8) - 0.5
+    coarse = value_noise(u, v, 40, 42, 16) - 0.5
+    rings = np.sin(v * 2 * math.pi * 60) * 0.5 + 0.5
+    plait = np.sin((u * 48 + v * 60) * 2 * math.pi) * 0.5 + 0.5
+    blotch = value_noise(u, v, 12, 43, 10) - 0.5
+    k = 1 + 0.16 * fibre + 0.1 * coarse + 0.08 * blotch - 0.08 * rings - 0.05 * plait
+    img = fill(HAT, u) * k[..., None]
+    img = mix(img, fill(HAT_LIGHT, u), np.clip((v - cone) / (1 - cone), 0, 1) * 0.3)
+    edge = np.exp(-(((v - rim) / 0.05) ** 2)) * np.clip(0.5 + coarse * 2.5, 0, 1)
+    img = mix(img, fill(HAT_UNDER, u), edge * 0.45)
+    under = np.clip((rim - v) * 40, 0, 1)
+    img = mix(img, fill(HAT_UNDER, u) * (1 + 0.15 * fibre[..., None]), under * np.clip(1.15 - v / rim * 0.5, 0, 1))
+    crease = np.exp(-(((v - cone) / 0.015) ** 2))
+    return np.clip(mix(img, fill(HAT_UNDER, u), crease * 0.55), 0, 1)
 
 
 def face(u: np.ndarray, v: np.ndarray) -> np.ndarray:

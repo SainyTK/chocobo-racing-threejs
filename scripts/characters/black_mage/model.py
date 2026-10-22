@@ -57,18 +57,20 @@ BARREL_DEPTH = 0.86
 HEAD_RADII = (0.42, 0.38, 0.36)
 """Half width, half depth and half height of the black head."""
 EYE = Vector((0.17, -0.36, 2.5))
-BRIM_RADIUS = 1.1
+BRIM_RADIUS, CONE_BASE = 1.28, 0.62
 HAT_PROFILE = (
     (2.74, 0.0),
-    (2.72, 0.6),
-    (2.64, 0.92),
-    (2.55, 1.07),
+    (2.72, CONE_BASE),
+    (2.66, 0.95),
+    (2.58, 1.2),
+    (2.55, 1.25),
     (2.57, BRIM_RADIUS),
-    (2.61, 1.06),
-    (2.7, 0.9),
-    (2.77, 0.72),
-    (2.86, 0.63),
-    (3.06, 0.55),
+    (2.61, 1.24),
+    (2.68, 1.1),
+    (2.75, 0.86),
+    (2.81, 0.7),
+    (2.9, CONE_BASE),
+    (3.08, 0.55),
     (3.3, 0.43),
     (3.53, 0.29),
     (3.7, 0.15),
@@ -76,8 +78,15 @@ HAT_PROFILE = (
     (3.81, 0.0),
 )
 """The hat's outline from the middle of the brim's underside out to the rim, back over the brim's top and up the cone
-to the tip, as (height, radius). The brim is about as wide as the cape and droops toward its rim, and the broad cone
-stands about as tall as the brim is wide, as on the select screen."""
+to the tip, as (height, radius), before the brim is shaped by `brim`. The broad cone stands about as tall as the brim is
+wide, as on the select screen."""
+BRIM_DROOP = (-0.1, 0.38)
+"""How far the brim's rim hangs down in front (negative turns it up) and at the back. From the PS1 chase camera the brim is a wide, floppy
+straw mound that droops all round, nearly to the top of the cape, and hides most of the cone."""
+BRIM_FRONT = 0.36
+"""How much shorter the brim is in front, so the eyes still show under it from the menu camera."""
+BRIM_RAGS = 0.035
+"""How ragged the straw rim is: its radius wavers by about this fraction."""
 HAT_TILT = -0.12
 """The hat sits tipped back a little, so the eyes show under the front of the brim."""
 TIP_BEND = (0.3, -0.1)
@@ -144,10 +153,11 @@ def head_parts() -> list[Part]:
     head = ellipsoid("head", "face", J["head"], (rz, rx, ry), axis=(0, 0, 1), around=20, along=12, up_hint=(0, -1, 0))
     eye = ellipsoid("eye", "eye", EYE, (0.05, 0.12, 0.13), axis=(0.3, -1, 0), around=12, along=6)
     eye.outline = False
-    hat = lathe("hat", "hat", (0, J["hat"][1], 0), (0, 0, 1), HAT_PROFILE, 36, along=34)
+    hat = lathe("hat", "hat", (0, J["hat"][1], 0), (0, 0, 1), HAT_PROFILE, 48, along=32)
     base, tip, pivot = 2.96, HAT_PROFILE[-1][0], Vector(J["hat"])
     tilt = Matrix.Rotation(HAT_TILT, 3, "X")
     for v in hat.verts:
+        brim(v, J["hat"][1])
         k = smoothstep(base, tip, v.z) ** 1.4
         v.y += TIP_BEND[0] * k
         v.x += TIP_BEND[1] * k
@@ -156,6 +166,22 @@ def head_parts() -> list[Part]:
     along(hat, [("hat", 0), ("hat_tip", 0.8)], 0.08)
     rigid(eye, "eyes")
     return [rigid(head, "head"), eye, mirror(eye, "eye.R"), hat]
+
+
+def brim(v: Vector, centre_y: float) -> None:
+    """Shapes the brim beyond the cone's base: shorter in front, drooping at the sides and most at the back, with a
+    ragged rim. The front turns up a little, so the eyes show under it."""
+    dx, dy = v.x, v.y - centre_y
+    r = math.hypot(dx, dy)
+    if r <= CONE_BASE:
+        return
+    k = min(1.0, (r - CONE_BASE) / (BRIM_RADIUS - CONE_BASE)) ** 1.6
+    back = ((dy / r + 1) / 2) ** 0.7
+    a = math.atan2(dy, dx)
+    rag = 1 + BRIM_RAGS * k * (0.6 * math.sin(13 * a) + 0.4 * math.sin(29 * a + 1.3))
+    reach = (CONE_BASE + (r - CONE_BASE) * (1 - BRIM_FRONT * (1 - back) ** 2)) * rag / r
+    v.x, v.y = dx * reach, centre_y + dy * reach
+    v.z -= k * (BRIM_DROOP[0] + (BRIM_DROOP[1] - BRIM_DROOP[0]) * back) + 0.03 * k * math.sin(17 * a + 0.7)
 
 
 def collar_parts() -> list[Part]:
