@@ -11,18 +11,20 @@ import { blackMage } from './racers/black-mage.ts';
 import { whiteMage } from './racers/white-mage.ts';
 import { chubby } from './racers/chubby.ts';
 import { behemoth } from './racers/behemoth.ts';
+import { bahamut } from './racers/bahamut.ts';
 
 export type { AnimState, Character } from './types.ts';
 export { POSE_SECONDS, type Pose } from './poses.ts';
+export { loadCharacterModels } from './models.ts';
 
-const BUILDERS: ((c: RacerProfile) => Build)[] = [chocobo, mog, golem, goblin, blackMage, whiteMage, chubby, behemoth];
+const BUILDERS: ((c: RacerProfile) => Build)[] = [chocobo, mog, golem, goblin, blackMage, whiteMage, chubby, behemoth, bahamut];
 
 export function createCharacter(index: number): Character {
   const c = RACERS[index], b = BUILDERS[index](c); b.r.finish(b.outline);
   b.r.root.traverse(o => { o.matrixAutoUpdate = true; });
   let lean = 0, spin = 0;
   return {
-    root: b.r.root, model: b.r.model, skin: b.r.skin, exhausts: b.exhausts, contacts: b.contacts, head: b.head, height: b.height,
+    root: b.r.root, model: b.r.model, skin: b.r.skin, exhausts: b.exhausts, smokes: b.smokes ?? true, contacts: b.contacts, head: b.head, height: b.height,
     animate(s) {
       const k = clamp(Math.abs(s.speed) / 38, 0, 1);
       lean = damp(lean, -s.steer * (s.drifting ? .16 : .07) * (s.menu ? 0 : 1), 8, s.dt); b.r.model.rotation.z = lean;
@@ -40,7 +42,7 @@ export function createCharacter(index: number): Character {
       if (s.pose) applyPose(b.r.model, b.head, s.pose);
     },
     dispose() {
-      b.r.root.traverse(o => { if (o instanceof THREE.Mesh) { o.geometry.dispose(); for (const m of Array.isArray(o.material) ? o.material : [o.material]) m.dispose(); } });
+      b.r.root.traverse(o => { if (o instanceof THREE.Mesh) { if (!o.geometry.userData.shared) o.geometry.dispose(); for (const m of Array.isArray(o.material) ? o.material : [o.material]) m.dispose(); } });
     },
   };
 }

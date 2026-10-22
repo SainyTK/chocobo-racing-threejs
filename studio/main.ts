@@ -7,6 +7,7 @@ import { CATEGORIES, type StudioElement } from './types.ts';
 import { Viewport, defaultView, type ViewState } from './viewport.ts';
 import { StudioMusicPlayer } from './music-player.ts';
 import { musicForVariant } from './music/review.ts';
+import { loadCharacterModels } from '../src/gfx/characters/index.ts';
 
 const LETTERS = 'ABCD';
 const $ = <T extends HTMLElement>(sel: string, root: ParentNode = document) => root.querySelector<T>(sel)!;
@@ -259,4 +260,6 @@ function frame(now: number) {
   if (captureNext) { captureNext = false; saveImage(); }
   requestAnimationFrame(frame);
 }
+// Racer models load before the first pane is built; the toolbar and the music status are live meanwhile.
+await loadCharacterModels();
 commit(); requestAnimationFrame(frame);

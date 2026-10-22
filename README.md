@@ -2,7 +2,7 @@
 
 A free, open-source racing game that aims to recreate the feel of old-school games like Chocobo Racing using modern web technologies. Built with TypeScript, Three.js, WebGL, Node.js and Socket.IO, it runs in the browser and supports local races and private online rooms.
 
-This playable, unofficial fan interpretation of the 1999 PlayStation racer has free driving, eight character/vehicle models and an original-style Magic Stone system.
+This playable, unofficial fan interpretation of the 1999 PlayStation racer has free driving, nine racers (the eight Story racers with their vehicles, plus Bahamut on his own wings) and an original-style Magic Stone system.
 
 [Repository](https://github.com/SainyTK/chocobo-racing-threejs) · [MIT license](LICENSE)
 
@@ -43,7 +43,9 @@ Open http://localhost:3000.
 - Versus: one-on-one racing against a selected CPU rival.
 - Online: private six-player rooms. Empty positions use CPU racers. Share the six-character code or invite link.
 
-Choose among eight racers and nine courses. Each racer starts with its own ability, and you can pick any other ability for yourself. CPU racers always use their own. Lap count is configurable from one to three. Grand Prix starts on your selected course and continues through the next three in course order.
+Choose among nine racers and nine courses.
+Bahamut, the original's secret final opponent, is unlocked from the start: he flies instead of driving, with Goblin's top speed, good acceleration and loose grip.
+Each racer starts with its own ability, and you can pick any other ability for yourself. CPU racers always use their own. Lap count is configurable from one to three. Grand Prix starts on your selected course and continues through the next three in course order.
 
 The CLASS setting sets the challenge for Quick Race, Grand Prix, Versus and online rooms.
 Chocobo Class has relaxed rivals who misread hazards and rarely take shortcuts.
@@ -126,7 +128,7 @@ Single-target spells pick their victim by race progress, so from first place the
 
 Mini also cuts top speed by the same share and stacks on a racer who is already small.
 Shrunken racers can be squashed by a bump.
-Black Magician's cloud, White Mage's carpet and anyone flying with Flap pass over ice sheets.
+Black Magician's cloud, White Mage's carpet, Bahamut and anyone flying with Flap pass over ice sheets.
 Doom puts a 10 s curse on the racer ahead, and bumping a rival passes it on.
 After a pass, both racers' contacts pause for 2 s, so the curse cannot bounce straight back.
 Reflect protects automatically while held, and a cast Reflect shields you for 5 s.
@@ -150,9 +152,12 @@ Every ability gauge starts empty and fills at a constant rate.
 | Barrier | White Mage | 16 s | Automatically raises a shield for 4 s or until it blocks one hit |
 | Receive | Chubby Chocobo | 18 s | Automatically catches the next spell that hits you as a stone of the same level, if there is room |
 | Charge | Behemoth | 14 s | A 1 s boost that spins out rivals you ram |
+| Megaflare | Bahamut | 80 s | Flare shots rain down for 1.5 s, then every rival is thrown into the air and crashes for 1.6 s. Barrier, Reflect and Receive cannot stop it; only the post-crash safe window does |
 
 CPU racers cast only when a spell has a valid target, and each character has its own habit.
-Chocobo and Chubby Chocobo hoard stones, Golem, Goblin and Black Magician build them up, Mog and White Mage cast quickly, and Behemoth specialises in Fire.
+Chocobo and Chubby Chocobo hoard stones, Golem, Goblin and Black Magician build them up, Mog and White Mage cast quickly, Behemoth specialises in Fire, and Bahamut builds Fire like Golem and Goblin.
+A CPU Bahamut fires Megaflare as soon as one rival can be hit.
+The original charges Megaflare in 45 s; here that won Bahamut 63% of all-CPU races, so it charges in 80 s and stalls for a normal crash's time.
 
 ### Courses
 
@@ -380,8 +385,8 @@ Reports are in `output/playwright-report/`; screenshots are in `output/testing/`
 - `server/index.ts`: authoritative room server, sessions and input validation.
 - `src/scene.ts`: course loading, pickups, shadows, bloom post-processing and 3D-rendered portraits.
 - `src/gfx/camera/`: the chase camera (`chase.ts`), its framing per screen shape (`framing.ts`) and the finish orbit and podium shots (`finish.ts`). `src/gfx/finish-stage.ts` and `src/gfx/podium.ts` stage those shots.
-- `src/gfx/characters/`: the eight rigged racers and vehicles, built in code with cel shading and outlines, with running, flapping, blinking and spring animations.
-  `index.ts` builds a racer by index, `rig.ts` batches parts into few draw calls, `poses.ts` holds the hit, cast, overtake, win and lose reactions, `parts/` holds shared pieces (bird body, eyes, wheels, carpet texture) and `racers/` has one file per racer.
+- `src/gfx/characters/`: the racers. Eight rigged racers and vehicles are built in code with cel shading and outlines, with running, flapping, blinking and spring animations. Bahamut is a skinned GLB made by the Blender pipeline in `scripts/characters/` (see `docs/characters.md`), drawn with the same toon and outline materials.
+  `index.ts` builds a racer by index, `models.ts` preloads the GLB racers, `skinned.ts` instances one with its mixer, `rig.ts` batches parts into few draw calls, `poses.ts` holds the hit, cast, overtake, win and lose reactions, `parts/` holds shared pieces (bird body, eyes, wheels, carpet texture) and `racers/` has one file per racer.
   `src/gfx/reactions.ts` picks a racer's reaction from race events.
 - `src/gfx/effects/`: spell and race effects: fireballs, ice traps, lightning, Ultima, Reflect bubbles, Doom runes, boost trails, drift sparks and status auras.
   `index.ts` holds the `Effects` controller; `spells.ts` draws each spell's cast and impact by level; `speed-lines.ts` draws the screen-space speed streaks; `bolt.ts`, `trail.ts`, `bursts.ts`, `status.ts` and `pickup.ts` each hold one effect component.
@@ -403,6 +408,8 @@ Reports are in `output/playwright-report/`; screenshots are in `output/testing/`
 - `src/sfx/`: synthesized sound recipes, character voices and engine profiles. `src/race-audio.ts` maps race events to them.
 - `src/music/`: separate original scores for all nine courses, menu music and shared score types.
 - `docs/research.md`: original-game research, sources, technology choices and fidelity limits.
+- `docs/characters.md`: the Blender pipeline for skinned racer models, its runtime side and the per-racer budgets.
+- `scripts/characters/`: `npm run character -- <name>` rebuilds `src/assets/characters/<name>.glb` in headless Blender.
 
 ## Contributing
 
@@ -414,6 +421,6 @@ This project's code and newly authored assets are released under the [MIT licens
 
 ## Limits
 
-This is a fan remake, not an emulator or an exact reproduction. Story, Relay, secret racers, the F.F.VIII Circuit bonus track, original cutscenes, custom stat editing, split-screen and the original soundtrack are not included. Course layouts and handling differ from the PlayStation game; Fantasia follows the original map most closely, but its opening loops do not cross over themselves. See [the Fantasia notes](docs/fantasia.md). Time Attack records live only in local storage and are grouped by course, laps and ability. Ghost saves require a race under five minutes and available browser storage.
+This is a fan remake, not an emulator or an exact reproduction. Story, Relay, secret racers other than Bahamut, the F.F.VIII Circuit bonus track, original cutscenes, custom stat editing, split-screen and the original soundtrack are not included. Course layouts and handling differ from the PlayStation game; Fantasia follows the original map most closely, but its opening loops do not cross over themselves. See [the Fantasia notes](docs/fantasia.md). Time Attack records live only in local storage and are grouped by course, laps and ability. Ghost saves require a race under five minutes and available browser storage.
 
 Online driving uses bounded local prediction and server reconciliation. Collisions, pickups, abilities and race results remain authoritative, so network delays can still cause visual corrections. Public matchmaking, accounts and durable online leaderboards are not implemented. Keyboard and emulated touch tests do not establish physical gamepad or real-phone compatibility; test your devices with the tunnel workflow above.

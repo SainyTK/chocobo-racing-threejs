@@ -4,7 +4,7 @@ export { RACERS, type RacerProfile } from './racers.ts';
 export { DIFFICULTIES, DIFFICULTY_IDS, DEFAULT_DIFFICULTY, type DifficultyId, type Difficulty } from './difficulty.ts';
 export { HANDLING } from './handling.ts';
 export { ITEMS, STONE_POWER, randomStoneChance, drawStone, spellName, type Item } from './items.ts';
-export { SAFE_WINDOW, STONE_RESPAWN, MINI_SHRINK, crashTier } from './spells.ts';
+export { SAFE_WINDOW, STONE_RESPAWN, MINI_SHRINK, MEGAFLARE, crashTier } from './spells.ts';
 export { miniScale } from './mini.ts';
 export { neutralInput, cleanInput, type Input } from './input.ts';
 export type { Racer, StoneStack, GameEvent, Trap, Projectile, RaceMode, Race } from './types.ts';

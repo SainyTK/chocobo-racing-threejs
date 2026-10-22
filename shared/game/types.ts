@@ -12,6 +12,8 @@ export interface Racer {
   /** -1 on the main road, else the index of the shortcut being driven. `alt` is height above the surface and `vy` vertical speed, for jumps. */
   route: number; alt: number; vy: number;
   drift: number; drifting: boolean; sharp: number; sharpTaps: number; lastBrake: boolean; boost: number; boosted: boolean; pace: number; shield: number; barrier: number; stun: number; invincible: number; flying: number; gripUp: number; charging: number;
+  /** Seconds until this racer's Megaflare strikes every rival. */
+  flare: number;
   mini: number; miniLevel: number; doom: number; doomOwner: string; falling: number; wrongWay: boolean;
   ability: number; stones: StoneStack[]; item: Item | null; itemLevel: number;
   finishTime: number | null; rank: number; lap: number; lapTimes: number[]; lapStart: number; gates: number; lastSafeS: number;
