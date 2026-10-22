@@ -227,7 +227,7 @@ export class Effects {
       c.exhausts.forEach(ex => {
         ex.getWorldPosition(v); if (!live) return;
         if (boosting) { for (let i = 0; i < 2; i++) this.glow.emit({ x: v.x, y: v.y, z: v.z, vx: -fwd.x * rand(6, 10) + rand() * .8, vy: rand(-.3, .8), vz: -fwd.z * rand(6, 10) + rand() * .8, life: rand(.12, .22), size: rand(.45, .7) * scale, endSize: .1, color: '#ffffff', endColor: '#' + s.boostColor.getHexString(), drag: 2, stretch: .03 }); }
-        else if (Math.abs(p.speed) > 4 && Math.random() < .12) this.smoke.emit({ x: v.x, y: v.y, z: v.z, vx: -fwd.x * 2, vy: rand(.4, 1), vz: -fwd.z * 2, life: rand(.4, .7), size: .18, endSize: .7, color: '#9a958e', alpha: .3, drag: 2, shape: Shape.Smoke });
+        else if (c.smokes && Math.abs(p.speed) > 4 && Math.random() < .12) this.smoke.emit({ x: v.x, y: v.y, z: v.z, vx: -fwd.x * 2, vy: rand(.4, 1), vz: -fwd.z * 2, life: rand(.4, .7), size: .18, endSize: .7, color: '#9a958e', alpha: .3, drag: 2, shape: Shape.Smoke });
       });
       s.trails.forEach((tr, i) => { const anchor = c.contacts[i] || c.contacts[0]; if (anchor) anchor.getWorldPosition(v); else v.copy(c.root.position); v.y = y + .5 * scale; tr.color.copy(s.boostColor); if (live) tr.update(dt, v, side, boosting && Math.abs(p.speed) > 6); });
       // Drift sparks colour-coded by spin-out risk, plus tyre smoke.

@@ -9,6 +9,8 @@ export interface Character {
   root: THREE.Group; model: THREE.Group; skin: SkinUniforms;
   /** Boost flames and exhaust smoke spawn from these points. */
   exhausts: THREE.Object3D[];
+  /** False for racers without an engine, whose exhausts only show boost flames. */
+  smokes: boolean;
   /** Ground contact points at the back, used for drift sparks and dust. */
   contacts: THREE.Object3D[];
   head: THREE.Object3D; height: number;
@@ -17,4 +19,4 @@ export interface Character {
 
 export interface Wheel { j: THREE.Object3D; r: number }
 
-export interface Build { r: Rig; head: THREE.Object3D; height: number; wheels: Wheel[]; steer: THREE.Object3D[]; exhausts: THREE.Object3D[]; contacts: THREE.Object3D[]; outline: string; update?: (s: AnimState, k: number) => void }
+export interface Build { r: Rig; head: THREE.Object3D; height: number; wheels: Wheel[]; steer: THREE.Object3D[]; exhausts: THREE.Object3D[]; smokes?: boolean; contacts: THREE.Object3D[]; outline: string; update?: (s: AnimState, k: number) => void }
