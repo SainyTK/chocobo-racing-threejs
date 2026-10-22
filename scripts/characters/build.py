@@ -36,7 +36,8 @@ def main(name: str, out: Path) -> None:
     colour = atlas.paint(paint.PAINTERS, rects, ATLAS, paint.BACKGROUND)
     body = scene.body(parts, rig)
     outline = scene.hull(parts, rig, OUTLINE_KEEP)
-    scene.bake_ao(body, AO_DISTANCE, AO_STRENGTH)
+    # A character can soften its ambient occlusion, for example a bright, flat-shaded body.
+    scene.bake_ao(body, AO_DISTANCE, getattr(paint, "AO_STRENGTH", AO_STRENGTH))
     texture = scene.image(f"{name}_atlas", colour)
     body.data.materials.append(scene.textured_material(name, texture))
     outline.data.materials.append(scene.plain_material("Outline", paint.OUTLINE))

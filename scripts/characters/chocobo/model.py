@@ -71,17 +71,14 @@ BIRD = Bird(
     beak=0.585,
     beak_size=(0.37, 0.33, 0.25),
     shoulder=0.2,
-    hip=(0.4, 0.07),
-    ankle=(0.58, 0.0, 0.66),
+    hip=(0.44, 0.07),
+    ankle=(0.72, 0.0, 0.66),
     crest=(
         Feather(0.98, -H, (0, 0.3, 1), 0.56, 0.22),
         Feather(0.94, -H - 0.8, (-0.35, 0.6, 0.8), 0.36, 0.17),
         Feather(0.94, -H + 0.8, (0.35, 0.6, 0.8), 0.36, 0.17),
     ),
-    tufts=(
-        Feather(0.87, 0.15, (0.7, 0.05, 1), 0.3, 0.16),
-        Feather(0.72, -0.5, (1, 0.5, 0.3), 0.3, 0.17),
-    ),
+    tufts=(Feather(0.87, 0.15, (0.7, 0.05, 1), 0.3, 0.16),),
     tail=(
         Feather(0.06, -H - 0.45, (-0.6, 1, 0.1), 0.36, 0.13),
         Feather(0.06, -H, (0, 1, 0.2), 0.42, 0.14),
@@ -96,27 +93,21 @@ BIRD = Bird(
     scarf=(0.35, 0.05, 0.43),
     # Feather clumps on the back of the head and the upper back, which give the original's race view its bumpy outline.
     clumps=(
-        Clump(0.9, -H, 0.4, 0.1),
-        Clump(0.83, -H + 0.8, 0.42, 0.15),
-        Clump(0.79, -0.4, 0.4, 0.15),
-        Clump(0.68, -H + 0.35, 0.42, 0.1),
-        Clump(0.64, -0.32, 0.42, 0.14),
-        Clump(0.56, -H, 0.44, 0.1),
-        Clump(0.52, -H + 0.75, 0.44, 0.1),
-        Clump(0.44, -0.34, 0.4, 0.1),
-        Clump(0.4, -H + 0.35, 0.44, 0.09),
-        Clump(0.28, -H + 0.8, 0.42, 0.07),
+        Clump(0.88, -H, 0.62, 0.16),
+        Clump(0.79, -0.55, 0.6, 0.22),
+        Clump(0.6, -0.25, 0.62, 0.2),
+        Clump(0.58, -H, 0.66, 0.11),
     ),
 )
 
-FOOT_X = 0.58
+FOOT_X = 0.72
 """Skate centre line, measured from the middle: the skates sit under the edges of the body, as in the race view."""
 FRONT_WHEEL = (Vector((FOOT_X, -0.46, 0.14)), 0.14, 0.17)
-REAR_WHEEL = (Vector((FOOT_X, 0.44, 0.31)), 0.31, 0.37)
+REAR_WHEEL = (Vector((FOOT_X, 0.44, 0.33)), 0.33, 0.52)
 """(centre, radius, width) of each skate's wheels. The big rear wheel is what the chase camera sees most."""
-POD = 0.07
-"""Half width of the red engine pods either side of the rear wheel."""
-MUFFLER = (Vector((FOOT_X + 0.3, 0.2, 0.46)), Vector((FOOT_X + 0.38, 0.4, 0.5)), Vector((FOOT_X + 0.4, 0.72, 0.62)))
+POD = 0.1
+"""Half width of the red engine block on the inner side of the rear wheel."""
+MUFFLER = (Vector((FOOT_X + 0.24, 0.12, 0.5)), Vector((FOOT_X + 0.34, 0.3, 0.56)), Vector((FOOT_X + 0.36, 0.66, 0.7)))
 """The exhaust's path along the outer side of the skate, from the engine to the tip."""
 
 
@@ -187,32 +178,29 @@ def skate_parts() -> list[Part]:
         (0, 0, 1),
     )
     fender = ellipsoid("fender", "metal", (x, -0.46, 0.23), (0.2, 0.15, 0.11), axis=(0, -1, 0.15), around=14, along=8)
-    # A red engine pod on each side of the rear wheel, so from behind the black tyre sits between red blocks under
-    # the blue boot.
+    # The red engine sits on the inner side of the rear wheel, so from behind the red blocks show between the two
+    # wide black tyres, under the blue boots.
     rear, r, w = REAR_WHEEL
-    pods = [
-        loft(
-            f"engine_pod{i}",
-            "engine",
-            [
-                (x + side * (w / 2 + POD), rear.y - 0.3, rear.z + 0.1),
-                (x + side * (w / 2 + POD), rear.y, rear.z + 0.06),
-                (x + side * (w / 2 + POD), rear.y + 0.22, rear.z),
-            ],
-            superellipse(lambda t: POD, lambda t: 0.15 - 0.04 * t),
-            12,
-            6,
-            (0, 0, 1),
-        )
-        for i, side in enumerate((-1, 1))
-    ]
+    pod = loft(
+        "engine_pod",
+        "engine",
+        [
+            (x - w / 2 - POD, rear.y - 0.2, rear.z + 0.06),
+            (x - w / 2 - POD, rear.y + 0.1, rear.z + 0.04),
+            (x - w / 2 - POD, rear.y + 0.34, rear.z),
+        ],
+        superellipse(lambda t: POD, lambda t: 0.18 - 0.04 * t),
+        12,
+        6,
+        (0, 0, 1),
+    )
     head = ellipsoid("engine_head", "metal", (x, rear.y - 0.16, rear.z + r + 0.02), (0.12, 0.1, 0.07), axis=(0, 1, 0), around=12, along=6)
     muffler = loft("muffler", "metal", MUFFLER, ellipse(lambda t: 0.05 + 0.035 * min(1.0, t * 2), lambda t: 0.05 + 0.035 * min(1.0, t * 2)), 10, 10, (0, -1, 0))
     d = (MUFFLER[2] - MUFFLER[1]).normalized()
     tip = loft(
         "muffler_tip", "tip", [MUFFLER[2] - d * 0.02, MUFFLER[2] + d * 0.08], ellipse(lambda t: 0.095 - 0.02 * t, lambda t: 0.095 - 0.02 * t), 12, 2, (0, -1, 0)
     )
-    left = [rigid(p, "foot.L") for p in (boot, cuff, sole, fender, *pods, head, muffler, tip)]
+    left = [rigid(p, "foot.L") for p in (boot, cuff, sole, fender, pod, head, muffler, tip)]
     left += wheel("wheel_front", *FRONT_WHEEL, "wheel_front.L") + wheel("wheel_rear", *REAR_WHEEL, "wheel_rear.L")
     return left + [mirror(p, p.name + ".R") for p in left]
 

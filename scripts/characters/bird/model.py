@@ -35,8 +35,8 @@ class Feather:
 class Clump:
     """A feather clump raised out of the body surface at (t, angle), `size` metres across and `height` metres proud.
 
-    Its lower edge is steeper than its upper one, so it reads as feathers lying down the body. Clumps off the middle
-    are mirrored to the right side.
+    It is a rounded puff whose lower edge is steeper than its upper one, so it reads as feathers lying down the body.
+    A few large clumps read better than many small ones. Clumps off the middle are mirrored to the right side.
     """
 
     t: float
@@ -107,7 +107,7 @@ def raise_by(bird: Bird, t: float, angle: float) -> float:
         dz *= 1.5 if dz < 0 else 0.8
         d = math.hypot(dz, math.remainder(angle - c.angle, math.tau) * r) / (c.size / 2)
         if d < 1:
-            best = max(best, c.height * (1 - d * d) ** 1.5)
+            best = max(best, c.height * (1 - d * d) ** 0.6)
     return best
 
 

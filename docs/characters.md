@@ -54,7 +54,7 @@ Measured in the Studio with `createCharacter` (triangles of the body and of the 
 
 | Racer | Triangles | Outline triangles | Meshes | Texture |
 | --- | --- | --- | --- | --- |
-| Chocobo | 12,548 | 4,958 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Chocobo (the procedural model had 12,708, 7,456 and 35) |
+| Chocobo | 11,956 | 4,705 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Chocobo (the procedural model had 12,708, 7,456 and 35) |
 | Behemoth | 12,192 | 9,308 | 23 | none |
 | Chubby Chocobo | 14,768 | 10,024 | 35 | none |
 | Bahamut | 11,928 | 4,899 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Bahamut |
@@ -91,7 +91,7 @@ A new racer should stay near 12,000 body triangles and one atlas.
 npm run character -- chocobo
 ```
 
-Chocobo on the Jet-Blades CR is one skinned GLB (341 KB, 21 bones, seven clips) for the bird and both rocket skates.
+Chocobo on the Jet-Blades CR is one skinned GLB (326 KB, 21 bones, seven clips) for the bird and both rocket skates.
 It is built from two packages:
 
 - `scripts/characters/bird/` is a reusable super-deformed bird. `model.py` takes a `Bird` (proportions as spline keys along one vertical loft for the head and body, feather `clumps` raised out of that surface, plus the eye, beak, crest, tufts, wings, tail, scarf and legs) and returns its skeleton and parts. `paint.py` makes painters from a palette, and `clips.py` has pose helpers (`wings`, `tail`, `flap`, `blink`).
@@ -113,7 +113,8 @@ Pitfalls met on Chocobo:
 - A big head pivoting at the neck puts the portrait camera, which frames `Build.head`, on the chest. Pivot the head bone inside the head.
 - Wings raised much above level vanish into a big head. Keep raised poses diagonal, and remember the shared poses already pitch the model and the head for cast and lose, so a clip adds only a little.
 - Clips that already raise the wings stack with the additive Flap on a win. Keep the Win wings level and let the overlay beat them.
-- From the chase camera a smooth egg reads wrong: the original's back is a bumpy mass of feather clumps. `Clump`s displace the body loft itself, so the outline is bumpy; keep them off the face and put the biggest ones where the outline is seen from behind (upper corners and the sides of the head).
+- From the chase camera a smooth egg reads wrong: the original's back has a few large rounded feather puffs. `Clump`s displace the body loft itself, so the outline is bumpy. Use a handful of big ones, each about a fifth of the body width, placed where the outline is seen from behind (crown, upper corners, sides of the head); many small ones read as toad skin.
+- A character package can set `AO_STRENGTH` in `paint.py` to soften the baked ambient occlusion. Chocobo uses 0.18 so his bright, flat yellow does not mottle between the puffs.
 - A feather fan pointing straight back is seen end-on from the chase camera as a row of dark triangles. Keep the tail small and low.
-- The race view is decided by the skates: big black rear wheels set under the edges of the body, slim red engine pods either side, the blue boots visible above. A red cowl over the wheel hides the boots.
+- The race view is decided by the skates: big black rear wheels about as wide as they are tall, poking out past the body's sides, the red engines between them and the blue boots visible above. A red cowl over the wheel hides the boots.
 

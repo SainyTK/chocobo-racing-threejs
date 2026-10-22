@@ -11,7 +11,7 @@ import numpy as np
 from bird import paint as bird
 from pipeline.atlas import Painter, band, fill, hex_rgb, mix
 
-YELLOW, YELLOW_LIGHT, YELLOW_SHADE, YELLOW_TIP = "#ffbd14", "#ffd84a", "#f39a0c", "#f7a90f"
+YELLOW, YELLOW_LIGHT, YELLOW_SHADE, YELLOW_TIP = "#ffcc33", "#ffe16a", "#fcb424", "#fdbf2a"
 ORANGE, ORANGE_LIGHT, ORANGE_DARK, MOUTH = "#f57d1c", "#ffa040", "#c95410", "#9c2a1c"
 NAVY, NAVY_RING, PUPIL, LID = "#1d2f8a", "#101a52", "#070a1c", "#b9c3dc"
 GREEN, GREEN_LIGHT, GREEN_DARK = "#20922e", "#4fc04a", "#0f5a1c"
@@ -22,6 +22,9 @@ RED, RED_DARK = "#d6281e", "#8a1410"
 TYRE, TYRE_LIGHT = "#202028", "#3a3a46"
 OUTLINE = "#3b2a12"
 """Ink colour of the outline hull: the dark brown the procedural Chocobo used."""
+AO_STRENGTH = 0.18
+"""Softer ambient occlusion than the default: the original is a bright, fairly flat yellow, and stronger AO mottles
+the feather clumps."""
 
 
 def boot(u: np.ndarray, v: np.ndarray) -> np.ndarray:
