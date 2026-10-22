@@ -16,7 +16,7 @@ const additive = new WeakMap<THREE.AnimationClip, THREE.AnimationClip>();
 
 /** Chocobo on the Jet-Blades CR: one skinned model for the bird and both rocket skates, with the wheels turned in code. */
 export function chocobo(): Build {
-  const r = new Rig(), m = skinnedModel(r, 'chocobo', { selfShadow: false });
+  const r = new Rig(), m = skinnedModel(r, 'chocobo');
   const action = (name: string) => { const a = m.actions.get(name); if (!a) throw new Error(`Chocobo has no ${name} clip`); a.play(); a.weight = 0; return a; };
   const clips = Object.fromEntries([...LOOPS, ...POSED].map(n => [n, action(n)])) as Record<ClipName, ReturnType<typeof action>>, blink = action('Blink');
   for (const a of [...POSED.map(n => clips[n]), blink]) a.timeScale = 0;

@@ -19,8 +19,6 @@ const additive = new WeakMap<THREE.AnimationClip, THREE.AnimationClip>();
 /** Chubby Chocobo on the Phat-Burner Plus: one skinned model for the bird and his trike, with fork and wheels turned in code. */
 export function chubby(): Build {
   const r = new Rig(), m = skinnedModel(r, 'chubby');
-  // His big smooth back turns away from the sun, where the shadow map's soft edge leaves dark patches; he still casts a shadow.
-  m.root.traverse(o => { if (o instanceof THREE.SkinnedMesh) o.receiveShadow = false; });
   const action = (name: string) => { const a = m.actions.get(name); if (!a) throw new Error(`Chubby Chocobo has no ${name} clip`); a.play(); a.weight = 0; return a; };
   const clips = Object.fromEntries([...LOOPS, ...POSED].map(n => [n, action(n)])) as Record<ClipName, ReturnType<typeof action>>, blink = action('Blink');
   for (const a of [...POSED.map(n => clips[n]), blink]) a.timeScale = 0;
