@@ -16,7 +16,7 @@ import math
 
 from mathutils import Vector
 
-from pipeline.geometry import Part, claw, curve, ellipse, ellipsoid, line, loft, mirror, patch, superellipse
+from pipeline.geometry import Part, box, claw, curve, ellipse, ellipsoid, flat, line, loft, mirror, patch, superellipse
 from pipeline.scene import BoneSpec
 from pipeline.weights import along, rigid
 
@@ -291,29 +291,6 @@ def leg_parts() -> list[Part]:
 
 
 # The Behemo-Buggy 99.
-
-
-Vec3 = tuple[float, float, float]
-
-
-def flat(part: Part, around: int) -> Part:
-    """Turns a capped loft's ends into flat faces with hard edges: each pole moves back into its end ring, and the cap
-    gets its own copy of the ring so smooth shading does not bend the sides' normals round the corner."""
-    count = len(part.verts) - 2
-    for cap, (pole, start) in enumerate(((count, 0), (count + 1, count - around))):
-        part.verts[pole] = sum(part.verts[start : start + around], Vector((0, 0, 0))) / around
-        first = len(part.verts)
-        part.verts += [part.verts[start + j].copy() for j in range(around)]
-        part.params += [part.params[start + j] for j in range(around)]
-        faces = range(len(part.faces) - 2 * around + cap * around, len(part.faces) - 2 * around + (cap + 1) * around)
-        for f in faces:
-            part.faces[f] = tuple(i if i == pole else first + i - start for i in part.faces[f])
-    return part
-
-
-def box(name: str, skin: str, start: Vec3, end: Vec3, half_width: float, half_height: float, power: float = 6.0, around: int = 12, along: int = 1) -> Part:
-    """A flat-ended rounded box from `start` to `end`, the width across and the height up."""
-    return flat(loft(name, skin, [start, end], superellipse(lambda t: half_width, lambda t: half_height, power), around, along, (0, 0, 1)), around)
 
 
 def track_point(a: float) -> Vector:

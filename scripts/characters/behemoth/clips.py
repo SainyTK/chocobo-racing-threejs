@@ -10,9 +10,9 @@ from __future__ import annotations
 
 import math
 
-from mathutils import Quaternion, Vector
+from mathutils import Vector
 
-from pipeline.anim import V3, Clip, Pose, mirrored
+from pipeline.anim import Clip, Pose, aim, mirrored
 
 from .model import LEVER_BASE, ROAD_WHEELS, J
 
@@ -29,15 +29,6 @@ def levers(left: float, right: float) -> Pose:
         pose[f"lever.{side}"] = ((a, 0, 0), (0, 0, 0))
         pose[f"arm.{side}"] = ((0, 0, 0), (0, dy, dz))
     return pose
-
-
-def aim(rest: Vector, target: Vector, parent: Quaternion | None = None) -> tuple[V3, Quaternion]:
-    """The armature-space rotation that turns a bone from its rest direction to point at `target`, for a bone whose
-    parent is already turned by `parent`. Also returns the bone's resulting turn, for its own children."""
-    local = (parent.inverted() @ target) if parent else target
-    turn = rest.rotation_difference(local)
-    e = turn.to_euler("XYZ")
-    return (e.x, e.y, e.z), (parent @ turn) if parent else turn
 
 
 def bone_dir(a: str, b: str) -> Vector:
