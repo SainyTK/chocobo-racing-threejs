@@ -53,12 +53,24 @@ describe.skipIf(process.platform === 'win32')('one-command tunnel supervisor', (
     for (const stream of [runner.stdout, runner.stderr]) stream!.on('data', chunk => { output += chunk; });
     exited = new Promise(resolve => runner!.once('exit', resolve));
   }
+  // Resolves once the supervisor has printed `text`, or fails with its output if it exits first. Startup time depends on load
+  // (tsx compiles the real server), so readiness is awaited as an event, bounded by the test timeout, not polled for a second.
+  function printed(text: string) {
+    return new Promise<void>((resolve, reject) => {
+      const check = () => { if (output.includes(text)) { done(); resolve(); } };
+      const quit = (code: number | null) => { done(); reject(new Error(`Supervisor exited (${code}) before printing ${text}:\n${output}`)); };
+      const done = () => { for (const stream of [runner!.stdout, runner!.stderr]) stream!.off('data', check); runner!.off('exit', quit); };
+      for (const stream of [runner!.stdout, runner!.stderr]) stream!.on('data', check);
+      runner!.once('exit', quit);
+      check();
+    });
+  }
   const gone = (pid: number) => {
     try { process.kill(pid, 0); return false; } catch { return true; }
   };
   it('starts the server, accepts same-origin multiplayer, and stops both processes on Ctrl+C', async () => {
     start({ ALLOWED_ORIGINS: 'https://stale.example' });
-    await expect.poll(() => output).toContain('TUNNEL_READY=');
+    await printed('TUNNEL_READY=');
     const pid = Number(output.match(/TUNNEL_READY=(\d+)/)![1]);
     expect((await fetch(`http://localhost:${port}/health`)).ok).toBe(true);
     const socketUrl = `http://localhost:${port}/socket.io/?EIO=4&transport=polling`;
@@ -89,7 +101,7 @@ describe.skipIf(process.platform === 'win32')('one-command tunnel supervisor', (
   });
   it('cancels the build and its descendants', async () => {
     start({ SLOW_BUILD: '1' });
-    await expect.poll(() => output).toContain('BUILD_CHILD=');
+    await printed('BUILD_CHILD=');
     const pid = Number(output.match(/BUILD_CHILD=(\d+)/)![1]);
     runner!.kill('SIGINT');
     expect(await exited).toBe(130);
