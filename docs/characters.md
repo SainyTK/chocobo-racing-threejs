@@ -53,10 +53,19 @@ Measured in the Studio with `createCharacter` (triangles of the body and of the 
 | Chocobo | 12,708 | 7,456 | 35 | none |
 | Behemoth | 12,192 | 9,308 | 23 | none |
 | Chubby Chocobo | 14,768 | 10,024 | 35 | none |
-| Bahamut | 11,848 | 4,851 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Bahamut |
+| Bahamut | 11,928 | 4,899 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Bahamut |
 
 The Bahamut GLB is 469 KB with 36 bones and six clips.
 A new racer should stay near 12,000 body triangles and one atlas.
+
+## Pitfalls
+
+- Baking ambient occlusion into the atlas fails when parts share a skin: every mirrored or repeated part bakes into the same pixels and the result is blotchy. Bake into vertex colours and smooth them (`scene.bake_ao`).
+- Blender's exporter keeps every keyed bone in a clip. An overlay clip such as Blink must key only its bones (`only=`), and the loops must leave those bones out (`skip=`); otherwise the mixer averages the overlay with the loop's rest pose and the blink only half closes.
+- Loft frames follow `up_hint`. A part whose path runs along the hint (a thigh hanging down with the default up of +Z) gets an arbitrary seam and painter orientation; give it an `up_hint` across the path.
+- Spreading a hanging leg sideways is a rotation about Y in armature space, not about Z.
+- The Studio and the game must await `loadCharacterModels()` before building a racer, but after any hook that tests read on startup.
+- Compare against the PS1 in-game model, not the CG art: colours, head shape and pose differ.
 
 ## Adding the next racer
 

@@ -40,6 +40,23 @@ These describe this repository's behavior, not a claim of exact original code.
 
 Not implemented: Story, Relay, secret characters other than Bahamut, bonus courses, custom stat editing, original cutscenes, original soundtrack, exact maps, split-screen, public matchmaking or ranked online leaderboards. The in-game About screen states these limits.
 
+## Bahamut
+
+Bahamut follows the PS1 in-game model, checked side by side against footage of the original (a Bahamut race on Cid's Test Track and the Fantasia cutscenes), not the CG art.
+He has no vehicle and flies on his own wings: navy membranes on both sides, a blue head with a heavy brow, small eyes and short upswept horns, a green plated chest, blue thigh plates and upper arms, mint shins, feet and arm undersides, yellow claws and a tail that hangs between his legs.
+The blue orb often seen under him in the original's race view is his held Magic Stone, which changes colour with the stone and is absent when he holds none; this remake trails held stones behind every racer instead.
+The plum wings in the Fantasia cutscene come from that scene's purple light.
+
+Deliberate deviations, kept for balance or because the remake lacks the original's modes:
+
+| Original | Remake | Reason |
+| --- | --- | --- |
+| Megaflare charges in about 45 s | 80 s | In all-CPU races, 45 s won Bahamut 63% of races; at 80 s he wins 34%, level with Chubby Chocobo |
+| Megaflare is a hard crash | Every rival is thrown into the air with the heavy-crash reaction but stalls for the 1.6 s crash time, not the 2.4 s heavy crash | Same balance runs: the heavy crash kept him above a third of wins even with a 100 s charge |
+| The first flare shots always miss | A fixed 1.5 s of falling warning shots before the strike | Gives the same warning without random misses in the deterministic simulation |
+| Unlocked by finishing Story Mode | Available from the start | This remake has no Story Mode |
+| Held stones float under him | Held stones trail behind him like every racer | The remake's shared stone-stealing rule depends on stones trailing |
+
 ## Technology choice
 
 | Option | Decision |

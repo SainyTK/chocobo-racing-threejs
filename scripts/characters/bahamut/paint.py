@@ -1,7 +1,8 @@
 """Bahamut's palette and one painter per skin, from the in-game Chocobo Racing look.
 
-Royal blue head, back, horns and wing bones; emerald chest, belly and throat; mint limbs, thighs and feet; yellow
-claws; dark violet wing membranes that turn plum underneath; big white eyes with green irises.
+Royal blue head, back, thigh plates, upper arms, horns and wing bones; emerald chest, belly and throat; mint
+shins, feet and arm undersides; yellow claws; navy wing membranes on both sides (the plum seen in the Fantasia cutscene is its purple light);
+white eyes with green irises.
 
 Each painter gets u (around the part) and v (along it) in [0, 1] and returns RGB. For lofts, u = 0 is the seam and
 the ring angle is a = 2 pi u - pi / 2 unless the part moved its seam.
@@ -13,12 +14,12 @@ import numpy as np
 
 from pipeline.atlas import Painter, band, fill, hex_rgb, mix
 
-BLUE, BLUE_DARK, BLUE_LIGHT = "#3d56dc", "#28359e", "#7f93ff"
+BLUE, BLUE_DARK, BLUE_LIGHT = "#3a50cc", "#263294", "#7b8ef5"
 GREEN, GREEN_LIGHT, GREEN_DARK = "#36c98a", "#8ef0c2", "#1d8a62"
-MINT, MINT_DARK = "#7fe3bd", "#3fae8c"
+MINT, MINT_DARK = "#8debc6", "#4bb894"
 YELLOW, YELLOW_LIGHT = "#f2cf2c", "#fff4a8"
-MEMBRANE_TOP, MEMBRANE_TOP_EDGE = "#3f4bb8", "#262c78"
-MEMBRANE_BOTTOM, MEMBRANE_BOTTOM_EDGE = "#8a3488", "#55205a"
+MEMBRANE_TOP, MEMBRANE_TOP_EDGE = "#3b4290", "#232858"
+MEMBRANE_BOTTOM, MEMBRANE_BOTTOM_EDGE = "#3a3586", "#221f52"
 OUTLINE = "#140f3a"
 """Ink colour of the outline hull, a deep blue-violet like the other racers' dark outlines."""
 
@@ -75,15 +76,22 @@ def tail(u: np.ndarray, v: np.ndarray) -> np.ndarray:
 
 
 def thigh(u: np.ndarray, v: np.ndarray) -> np.ndarray:
-    img = mix(fill(MINT, u), fill(MINT_DARK, u), np.clip((v - 0.55) * 2, 0, 1) * 0.7)
-    # An armour rim round the top of the thigh plate.
-    img = mix(img, fill(BLUE, u), np.clip((0.2 - v) * 8, 0, 1))
-    return mix(img, fill("#d9fff0", u), band(v, 0.24, 0.03, 0.015) * 0.6)
+    """Blue armour plate in front, as in the cutscene, and mint behind, as in the race view. The loft's up is forward."""
+    front = np.sin(angle(u))
+    img = mix(fill(MINT, u), fill(BLUE, u), np.clip(front * 3 + 0.5, 0, 1))
+    img = mix(img, fill("#a9b6ff", u), band(front, -0.15, 0.08, 0.04) * 0.6)
+    return mix(img, fill(MINT, u), np.clip((v - 0.85) * 6, 0, 1))
 
 
 def limb(u: np.ndarray, v: np.ndarray) -> np.ndarray:
     up = np.sin(angle(u))
     return mix(fill(MINT, u), fill(MINT_DARK, u), np.clip(-up, 0, 1) * 0.5)
+
+
+def arm(u: np.ndarray, v: np.ndarray) -> np.ndarray:
+    """Blue on top like the body, mint underneath, the way the arms show beside the head in the race view."""
+    up = np.sin(angle(u))
+    return mix(fill(MINT, u), fill(BLUE, u), np.clip(up * 2.5 + 0.3, 0, 1))
 
 
 def foot(u: np.ndarray, v: np.ndarray) -> np.ndarray:
@@ -142,6 +150,7 @@ PAINTERS: dict[str, Painter] = {
     "tail": tail,
     "thigh": thigh,
     "limb": limb,
+    "arm": arm,
     "foot": foot,
     "plate": plate,
     "claw": claw,
@@ -149,7 +158,7 @@ PAINTERS: dict[str, Painter] = {
     "crest": horn,
     "wing_bone": wing_bone,
     "membrane_top": membrane(MEMBRANE_TOP, MEMBRANE_TOP_EDGE, "#5a52c0"),
-    "membrane_bottom": membrane(MEMBRANE_BOTTOM, MEMBRANE_BOTTOM_EDGE, "#b25aae"),
+    "membrane_bottom": membrane(MEMBRANE_BOTTOM, MEMBRANE_BOTTOM_EDGE, "#5b56c4"),
     "eye": eye,
 }
 
@@ -162,6 +171,7 @@ SIZES: dict[str, tuple[int, int]] = {
     "wing_bone": (96, 384),
     "thigh": (192, 192),
     "limb": (160, 160),
+    "arm": (128, 128),
     "jaw": (160, 96),
     "foot": (128, 96),
     "horn": (96, 160),

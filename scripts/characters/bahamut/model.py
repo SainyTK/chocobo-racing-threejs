@@ -28,9 +28,9 @@ J = {
     "jaw_end": (0, -0.82, 2.46),
     "tail": [(0, 0.34, 1.2), (0, 0.62, 1.02), (0, 0.86, 0.8), (0, 1.04, 0.58), (0, 1.16, 0.38), (0, 1.22, 0.2), (0, 1.24, 0.04)],
     "thigh": (0.34, -0.02, 1.2),
-    "knee": (0.42, -0.2, 0.9),
-    "ankle": (0.42, 0.02, 0.66),
-    "toe": (0.42, -0.3, 0.55),
+    "knee": (0.44, -0.16, 0.92),
+    "ankle": (0.46, 0.04, 0.42),
+    "toe": (0.46, -0.42, 0.29),
     "shoulder": (0.5, -0.1, 2.02),
     "elbow": (0.7, -0.24, 1.78),
     "wrist": (0.62, -0.56, 1.7),
@@ -150,8 +150,8 @@ def head_parts() -> list[Part]:
     crest = loft(
         "crest",
         "crest",
-        [(0, -0.12, 3.1), (0, 0.06, 3.38), (0, 0.32, 3.62), (0, 0.62, 3.78)],
-        ellipse(lambda t: 0.1 * (1 - t) ** 0.8 + 0.008, lambda t: 0.24 * (1 - t) ** 0.9 + 0.008),
+        [(0, -0.2, 3.08), (0, 0.04, 3.24), (0, 0.34, 3.36), (0, 0.7, 3.42)],
+        ellipse(lambda t: 0.09 * (1 - t) ** 0.8 + 0.008, lambda t: 0.17 * (1 - t) ** 0.9 + 0.008),
         10,
         10,
         (0, -1, 0.4),
@@ -171,7 +171,7 @@ def head_parts() -> list[Part]:
     main = loft(
         "horn",
         "horn",
-        [(0.3, -0.06, 3.02), (0.52, 0.16, 3.16), (0.74, 0.5, 3.28), (0.86, 0.86, 3.26)],
+        [(0.3, -0.06, 3.02), (0.46, 0.06, 3.2), (0.6, 0.22, 3.4), (0.68, 0.42, 3.54)],
         ellipse(lambda t: 0.1 * (1 - t) ** 0.8 + 0.008, lambda t: 0.08 * (1 - t) ** 0.8 + 0.008),
         10,
         10,
@@ -187,14 +187,14 @@ def head_parts() -> list[Part]:
         (0, 0, 1),
     )
     centre, look = eye()
-    ball = ellipsoid("eye", "eye", centre, (0.1, 0.2, 0.24), axis=look, around=14, along=7)
+    ball = ellipsoid("eye", "eye", centre, (0.07, 0.14, 0.12), axis=look, around=14, along=7)
     ball.outline = False
     side = Vector((0, 0, 1)).cross(look).normalized()
     brow = loft(
         "brow",
         "crest",
-        [centre + look * 0.03 + Vector((0, 0, 0.2 - abs(s) * 0.25)) + side * s for s in (0.24, 0.1, -0.06, -0.22)],
-        ellipse(lambda t: 0.045 * math.sin(math.pi * (0.15 + 0.7 * t)) + 0.01, lambda t: 0.035 * math.sin(math.pi * (0.15 + 0.7 * t)) + 0.01),
+        [centre + look * 0.05 + Vector((0, 0, 0.155 - abs(s) * 0.12)) + side * s for s in (0.26, 0.1, -0.06, -0.24)],
+        ellipse(lambda t: 0.07 * math.sin(math.pi * (0.15 + 0.7 * t)) + 0.015, lambda t: 0.06 * math.sin(math.pi * (0.15 + 0.7 * t)) + 0.015),
         8,
         10,
         (0, 0, 1),
@@ -240,26 +240,27 @@ def tail_parts() -> list[Part]:
 
 
 def leg_parts() -> list[Part]:
-    thigh = ellipsoid("thigh", "thigh", (0.42, -0.06, 1.12), (0.38, 0.36, 0.42), axis=(0.25, -0.3, -0.9), around=16, along=10)
+    thigh = ellipsoid("thigh", "thigh", (0.42, -0.06, 1.12), (0.34, 0.32, 0.37), axis=(0.25, -0.3, -0.9), around=16, along=10, up_hint=(0, -1, 0))
     rigid(thigh, "thigh.L")
     knee_pad = ellipsoid("knee_pad", "plate", (0.5, -0.32, 1.0), (0.08, 0.2, 0.2), axis=(0.2, -1, 0.1), around=10, along=5)
     rigid(knee_pad, "thigh.L")
-    shin = loft("shin", "limb", [J["knee"], (0.43, -0.1, 0.78), J["ankle"]], ellipse(lambda t: 0.16 - t * 0.04, lambda t: 0.16 - t * 0.04), 10, 6, (0, -1, 0))
+    # Long mint shins and paddle feet: from behind, in the race view, they are what shows under the wings.
+    shin = loft("shin", "limb", [J["knee"], (0.45, -0.08, 0.68), J["ankle"]], ellipse(lambda t: 0.2 - t * 0.05, lambda t: 0.2 - t * 0.05), 10, 8, (0, -1, 0))
     along(shin, [("thigh.L", 0), ("shin.L", 0.25)], 0.12)
     foot = loft(
         "foot",
         "foot",
-        [(0.42, 0.12, 0.66), (0.42, -0.02, 0.6), (0.42, -0.2, 0.56), (0.42, -0.34, 0.54)],
-        ellipse(lambda t: curve([(0, 0.12), (0.5, 0.2), (1, 0.16)], t), lambda t: curve([(0, 0.13), (0.5, 0.11), (1, 0.07)], t), lambda t: 0.06),
+        [(0.46, 0.18, 0.42), (0.46, 0.0, 0.36), (0.46, -0.24, 0.31), (0.46, -0.44, 0.29)],
+        ellipse(lambda t: curve([(0, 0.13), (0.5, 0.23), (1, 0.2)], t), lambda t: curve([(0, 0.13), (0.5, 0.11), (1, 0.07)], t), lambda t: 0.06),
         12,
         8,
     )
     along(foot, [("shin.L", 0), ("foot.L", 0.3)], 0.12)
     parts = [thigh, knee_pad, shin, foot]
     for i, x in enumerate((-0.13, 0.0, 0.13)):
-        c = claw(f"toe_claw{i}", "claw", (0.42 + x, -0.38, 0.55), (x * 0.8, -1, -0.25), 0.2, 0.065, (0, 0, -1))
+        c = claw(f"toe_claw{i}", "claw", (0.46 + x * 1.2, -0.48, 0.3), (x * 0.8, -1, -0.25), 0.2, 0.065, (0, 0, -1))
         parts.append(rigid(c, "foot.L"))
-    heel = claw("heel_claw", "claw", (0.42, 0.14, 0.58), (0, 1, -0.6), 0.14, 0.05, (0, 0, -1))
+    heel = claw("heel_claw", "claw", (0.46, 0.2, 0.38), (0, 1, -0.6), 0.14, 0.05, (0, 0, -1))
     parts.append(rigid(heel, "foot.L"))
     return parts + [mirror(p, p.name + ".R") for p in parts]
 
@@ -267,7 +268,7 @@ def leg_parts() -> list[Part]:
 def arm_parts() -> list[Part]:
     pad = ellipsoid("shoulder_pad", "plate", (0.52, -0.06, 2.06), (0.2, 0.22, 0.2), axis=(1, 0, 0.2), around=12, along=7)
     rigid(pad, "arm.L")
-    arm = loft("arm", "limb", [J["shoulder"], J["elbow"], J["wrist"]], ellipse(lambda t: 0.13 - t * 0.03, lambda t: 0.13 - t * 0.03), 10, 10, (0, 0, 1))
+    arm = loft("arm", "arm", [J["shoulder"], J["elbow"], J["wrist"]], ellipse(lambda t: 0.13 - t * 0.03, lambda t: 0.13 - t * 0.03), 10, 10, (0, 0, 1))
     along(arm, [("arm.L", 0), ("forearm.L", 0.45), ("hand.L", 0.95)], 0.1)
     hand = ellipsoid("hand", "limb", (0.61, -0.62, 1.69), (0.12, 0.11, 0.1), axis=(0, -1, -0.1), around=10, along=6)
     rigid(hand, "hand.L")
