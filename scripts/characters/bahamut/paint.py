@@ -1,7 +1,7 @@
 """Bahamut's palette and one painter per skin, from the in-game Chocobo Racing look.
 
 Royal blue head, back, thigh plates, upper arms, horns and wing bones; emerald chest, belly and throat; mint
-shins, feet and arm undersides; yellow claws; navy wing membranes on both sides (the plum seen in the Fantasia cutscene is its purple light);
+shins, feet and arm undersides; yellow claws; two-tone wing membranes, navy on top (the race view from behind) and maroon underneath (the cutscene front view);
 white eyes with green irises.
 
 Each painter gets u (around the part) and v (along it) in [0, 1] and returns RGB. For lofts, u = 0 is the seam and
@@ -19,7 +19,7 @@ GREEN, GREEN_LIGHT, GREEN_DARK = "#36c98a", "#8ef0c2", "#1d8a62"
 MINT, MINT_DARK = "#8debc6", "#4bb894"
 YELLOW, YELLOW_LIGHT = "#f2cf2c", "#fff4a8"
 MEMBRANE_TOP, MEMBRANE_TOP_EDGE = "#3b4290", "#232858"
-MEMBRANE_BOTTOM, MEMBRANE_BOTTOM_EDGE = "#3a3586", "#221f52"
+MEMBRANE_BOTTOM, MEMBRANE_BOTTOM_EDGE = "#7a2650", "#4a1630"
 OUTLINE = "#140f3a"
 """Ink colour of the outline hull, a deep blue-violet like the other racers' dark outlines."""
 
@@ -158,7 +158,7 @@ PAINTERS: dict[str, Painter] = {
     "crest": horn,
     "wing_bone": wing_bone,
     "membrane_top": membrane(MEMBRANE_TOP, MEMBRANE_TOP_EDGE, "#5a52c0"),
-    "membrane_bottom": membrane(MEMBRANE_BOTTOM, MEMBRANE_BOTTOM_EDGE, "#5b56c4"),
+    "membrane_bottom": membrane(MEMBRANE_BOTTOM, MEMBRANE_BOTTOM_EDGE, "#a0406e"),
     "eye": eye,
 }
 

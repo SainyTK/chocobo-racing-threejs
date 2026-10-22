@@ -106,8 +106,9 @@ def surface(skull: Part, t: float, angle: float) -> tuple[Vector, Vector]:
 def skull() -> Part:
     """Skull and snout in one loft from the back of the head to the nose. The snout dips and ends in a blunt beak."""
     path = [(0, 0.2, 2.82), (0, -0.05, 2.86), (0, -0.32, 2.8), (0, -0.6, 2.7), (0, -0.9, 2.62)]
-    rx = [(0, 0.2), (0.1, 0.42), (0.3, 0.5), (0.5, 0.42), (0.7, 0.26), (0.88, 0.17), (1, 0.05)]
-    up = [(0, 0.2), (0.1, 0.42), (0.3, 0.46), (0.5, 0.33), (0.7, 0.2), (0.88, 0.13), (1, 0.04)]
+    # Wide and flat, like the PS1 model's helmet-shaped head.
+    rx = [(0, 0.22), (0.1, 0.47), (0.3, 0.56), (0.5, 0.47), (0.7, 0.28), (0.88, 0.17), (1, 0.05)]
+    up = [(0, 0.18), (0.1, 0.36), (0.3, 0.39), (0.5, 0.29), (0.7, 0.19), (0.88, 0.12), (1, 0.04)]
     down = [(0, 0.2), (0.1, 0.38), (0.3, 0.36), (0.5, 0.2), (0.7, 0.1), (0.88, 0.07), (1, 0.03)]
     return loft(
         "skull",
@@ -150,7 +151,7 @@ def head_parts() -> list[Part]:
     crest = loft(
         "crest",
         "crest",
-        [(0, -0.2, 3.08), (0, 0.04, 3.24), (0, 0.34, 3.36), (0, 0.7, 3.42)],
+        [(0, -0.08, 3.06), (0, 0.12, 3.2), (0, 0.4, 3.3), (0, 0.74, 3.36)],
         ellipse(lambda t: 0.09 * (1 - t) ** 0.8 + 0.008, lambda t: 0.17 * (1 - t) ** 0.9 + 0.008),
         10,
         10,
@@ -160,7 +161,7 @@ def head_parts() -> list[Part]:
     nose_ridge = loft(
         "ridge",
         "crest",
-        [(0, -0.2, 3.17), (0, -0.48, 3.0), (0, -0.74, 2.8)],
+        [(0, -0.22, 3.08), (0, -0.48, 2.95), (0, -0.74, 2.78)],
         ellipse(lambda t: 0.06 * (1 - t) + 0.01, lambda t: 0.05 * (1 - t) + 0.01),
         8,
         8,
@@ -187,14 +188,14 @@ def head_parts() -> list[Part]:
         (0, 0, 1),
     )
     centre, look = eye()
-    ball = ellipsoid("eye", "eye", centre, (0.07, 0.14, 0.12), axis=look, around=14, along=7)
+    ball = ellipsoid("eye", "eye", centre, (0.06, 0.13, 0.1), axis=look, around=14, along=7)
     ball.outline = False
     side = Vector((0, 0, 1)).cross(look).normalized()
     brow = loft(
         "brow",
         "crest",
-        [centre + look * 0.05 + Vector((0, 0, 0.155 - abs(s) * 0.12)) + side * s for s in (0.26, 0.1, -0.06, -0.24)],
-        ellipse(lambda t: 0.07 * math.sin(math.pi * (0.15 + 0.7 * t)) + 0.015, lambda t: 0.06 * math.sin(math.pi * (0.15 + 0.7 * t)) + 0.015),
+        [centre + look * 0.05 + Vector((0, 0, 0.13 - abs(s) * 0.1)) + side * s for s in (0.26, 0.1, -0.06, -0.24)],
+        ellipse(lambda t: 0.095 * math.sin(math.pi * (0.15 + 0.7 * t)) + 0.02, lambda t: 0.055 * math.sin(math.pi * (0.15 + 0.7 * t)) + 0.015),
         8,
         10,
         (0, 0, 1),
