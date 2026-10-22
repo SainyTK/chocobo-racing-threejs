@@ -1,7 +1,7 @@
 import type { EngineVoice } from './types.ts';
 
 /** Vehicle hum per racer, in RACERS order: Jet-Blades, Mog-Mobile, roller V8, go-cart, cloud, carpet, burner, buggy and
- * Bahamut's wingbeats: a breathy low rush pulsed by the flaps. */
+ * Bahamut's wingbeats: a breathy low rush pulsed by the flaps, and the Hardy-Daytona's deep, lumpy V-twin. */
 export const ENGINE_VOICES: EngineVoice[] = [
   { wave: 'sawtooth', idle: 70, top: 240, sub: .5, cutoff: 900, noise: .25, wobble: 0 },
   { wave: 'square', idle: 55, top: 170, sub: .5, cutoff: 700, noise: .1, wobble: 9 },
@@ -12,4 +12,5 @@ export const ENGINE_VOICES: EngineVoice[] = [
   { wave: 'sawtooth', idle: 50, top: 150, sub: .5, cutoff: 650, noise: .5, wobble: 4 },
   { wave: 'sawtooth', idle: 42, top: 130, sub: .5, cutoff: 600, noise: .2, wobble: 14 },
   { wave: 'triangle', idle: 48, top: 120, sub: .5, cutoff: 450, noise: .75, wobble: 10 },
+  { wave: 'sawtooth', idle: 46, top: 175, sub: .5, cutoff: 780, noise: .3, wobble: 16 },
 ];

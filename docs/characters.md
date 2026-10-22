@@ -1,13 +1,15 @@
 # Racer models
 
 Most racers are built in code from primitives in `src/gfx/characters/racers/*.ts`: rigid parts on a joint hierarchy, baked into vertex-coloured toon meshes by `Rig`.
-Bahamut is the first racer authored as a skinned, textured GLB, by a Blender script in this repository.
+Chocobo, Bahamut and Cloud are authored as skinned, textured GLBs, by Blender scripts in this repository.
 This page describes that pipeline so the next racer can reuse it.
 
 ## Pipeline
 
 ```sh
 npm run character -- bahamut
+npm run character -- cloud
+npm run character -- chocobo
 ```
 
 `scripts/characters/build.mjs` runs Blender headless (`/Applications/Blender.app/Contents/MacOS/Blender`, or the `BLENDER` environment variable) on `scripts/characters/build.py`, which writes `src/assets/characters/<name>.glb`.
@@ -18,7 +20,7 @@ The shared pipeline lives in `scripts/characters/pipeline/`:
 
 | Module | Job |
 | --- | --- |
-| `geometry.py` | Smooth paths, lofted tubes (`loft`, `ellipsoid`, `claw`), Coons patches for membranes, thickening and mirroring. Every part carries its own (u, v) parameters. |
+| `geometry.py` | Smooth paths, lofted tubes (`loft`, `ellipsoid`, `claw`), round (`ellipse`) and rounded-box (`superellipse`) rings, Coons patches for membranes, thickening and mirroring. Every part carries its own (u, v) parameters. |
 | `weights.py` | Skin weights without painting: `rigid`, `along` (blend down a loft between consecutive bones) and `nearest` (inverse distance to bone segments). At most four influences per vertex. |
 | `atlas.py` | Packs one rectangle per skin into a 1024 x 1024 atlas, maps part UVs into it with padding, and paints each skin with numpy. |
 | `scene.py` | Armature, joined body mesh, the outline hull (welded and decimated), the ambient-occlusion bake into vertex colours, materials and the GLB export with meshopt compression and WebP textures. |
@@ -42,6 +44,7 @@ The Python is formatted and linted with Ruff: `uvx ruff format scripts/character
 
 - `src/gfx/characters/models.ts` loads every GLB once with `GLTFLoader` and the meshopt decoder. The game (`src/main.ts`) and the Studio (`studio/main.ts`) await `loadCharacterModels()` before building any racer, so `createCharacter` stays synchronous.
 - `src/gfx/characters/skinned.ts` clones a model with `SkeletonUtils.clone`, gives the body the shared toon material (atlas as `map`, ambient occlusion as vertex colours, the rig's flash, rim and fade uniforms) and turns the `Outline` mesh into the inverted hull. Geometry, texture and clips stay shared between instances; `dispose` skips geometry marked `userData.shared`.
+- `src/gfx/characters/racers/cloud.ts` is a rider on a vehicle: one armature holds Cloud and the Hardy-Daytona. The wheels and the fork have their own bones that no clip keys; `driven()` in `skinned.ts` gives each one a stand-in joint, which the shared animator spins (`Build.wheels`) and steers (`Build.steer`) like a code-built racer's joint, and turns the bone about an axis given in model space after the mixer update. Idle and Ride blend by speed; Cast, Win and Lose follow the reaction's clock.
 - `src/gfx/characters/racers/bahamut.ts` builds the `Build` the rest of the game expects: head bone, exhaust and contact anchors fixed to bones, and an `update` that drives an `AnimationMixer`. Hover and Fly blend by speed. Roar, Win and Lose follow the reaction's own clock so every viewer sees the same frame, and Blink plays on its own timer. The shared lean, stun spin and reaction poses from `index.ts` and `poses.ts` still apply on top.
 
 ## Budgets
@@ -54,8 +57,9 @@ Measured in the Studio with `createCharacter` (triangles of the body and of the 
 | Behemoth | 12,192 | 9,308 | 23 | none |
 | Chubby Chocobo | 14,768 | 10,024 | 35 | none |
 | Bahamut | 11,928 | 4,899 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Bahamut |
+| Cloud | 11,032 | 4,570 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Cloud |
 
-The Bahamut GLB is 469 KB with 36 bones and six clips.
+The Bahamut GLB is 469 KB with 36 bones and six clips; the Cloud GLB is 329 KB with 24 bones and six clips.
 A new racer should stay near 12,000 body triangles and one atlas.
 
 ## Pitfalls
@@ -66,6 +70,11 @@ A new racer should stay near 12,000 body triangles and one atlas.
 - Spreading a hanging leg sideways is a rotation about Y in armature space, not about Z.
 - The Studio and the game must await `loadCharacterModels()` before building a racer, but after any hook that tests read on startup.
 - Compare against the PS1 in-game model, not the CG art: colours, head shape and pose differ.
+- Bones the game turns in code (wheels, a fork) must be left out of every clip with `skip=`, or the mixer overwrites the code's rotation each frame.
+- A crouched rider can be modelled upright and pitched forward about the hips in the build script (`crouched()` in `cloud/model.py`); keep the head bone and its parent upright, because the shared animator zeroes the head's x rotation every frame and a tilted parent turns that into a large head flip.
+- Model a rider in the riding pose, so the hands rest on the grips with no clip; clips then only add motion. A clip that lifts the torso also lifts the hands off the bars, so keep such offsets small.
+- Hair for a toon character is a few solid, blunt, slightly flattened locks on a skull whose back swells into the hair mass. An even ring of spikes reads as a sunflower or a sea urchin; the PS1 Cloud's hair is a swept mass with one dominant lock.
+- A flat part such as a sword blade lying on the back is seen edge-on from the side. Turn its flat a little toward the side camera and give it real thickness, or it reads as a pole.
 
 ## Adding the next racer
 

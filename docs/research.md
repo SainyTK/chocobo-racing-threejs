@@ -26,7 +26,7 @@ These describe this repository's behavior, not a claim of exact original code.
 | --- | --- | --- |
 | Driving | World position, heading, velocity, a lateral grip limit of about 4 g per racer, brake-tap sharp turns, short drifts with a 1.9 s over-drift spin, boost kicks that bleed off, wall hits that cost speed by impact, mass-based bumps, falls and recovery | Hand-tuned arcade solver, no bit-for-bit physics match |
 | Race validation | Twelve sequential gates per lap, reverse-crossing rejection, split times, finish ordering | Newly authored track layouts and gate locations |
-| Racers | Eight distinct handmade low-poly character/vehicle models and a skinned, textured Bahamut who flies on his own wings, with driving stats balanced against the original's top speeds (84 to 88 MPH), and hit, cast, overtake, win and lose reactions | No ripped meshes, original animations or textures; simplified silhouettes |
+| Racers | Eight distinct handmade low-poly character/vehicle models a skinned, textured Bahamut who flies on his own wings and a skinned Cloud on the Hardy-Daytona, with driving stats balanced against the original's top speeds (84 to 88 MPH), and hit, cast, overtake, win and lose reactions | No ripped meshes, original animations or textures; simplified silhouettes |
 | Inventory | Three stones trailing behind the racer, LIFO use, matching stones merged into one stack up to level three with every stone still taking a place, theft by driving into a trailing stack | Numeric timing and some defensive interactions are interpretations |
 | Magic | All eight main spell families, per-course stone sets from the original's Story chapters in fixed-colour lanes, position-weighted "?" stones, targeting by race progress, the original's three hit tiers with a 2.5 s safe window, single-target Mini in 25% steps, Doom transfer, and CPU casting habits per character | Cid's Test Track has Moogle Forest's stones, where the original's first course had none. Durations are hand-tuned; no original effect assets |
 | Abilities | Dash, Flap, Grip-Up, Mug, Magic Plus, Barrier, Receive and Charge with the original's recharge times; each racer defaults to its own, and the player can choose another | Magic Plus recharges in 20 s and Charge in 14 s, both measured in all-CPU races. Dash lasts 2 s and Charge 1 s, shorter than the original, because boosts are worth more with this grip model. Barrier is a timed 4 s shield |
@@ -38,7 +38,7 @@ These describe this repository's behavior, not a claim of exact original code.
 | Online | Six-player private rooms with AI fill, authoritative simulation, recovery and rematches | Browser addition, not emulation of the original multiplayer |
 | Presentation | Gold title, blue beveled menus, animated portrait order, MPH, stone slots, ability gauge, minimap, one callout at a time, a finish sequence with slow motion, orbit and podium, and synthesized engines, spell sounds and character barks | Newly authored interface, fonts, synthesized music, sounds and scenery |
 
-Not implemented: Story, Relay, secret characters other than Bahamut, the F.F.VIII Circuit bonus course, custom stat editing, original cutscenes, original soundtrack, exact maps, split-screen, public matchmaking or ranked online leaderboards. The in-game About screen states these limits.
+Not implemented: Story, Relay, secret characters other than Bahamut and Cloud, the F.F.VIII Circuit bonus course, custom stat editing, original cutscenes, original soundtrack, exact maps, split-screen, public matchmaking or ranked online leaderboards. The in-game About screen states these limits.
 
 ## Bahamut
 
@@ -56,7 +56,26 @@ Deliberate deviations, kept for balance or because the remake lacks the original
 | Unlocked by finishing Story Mode | Available from the start | This remake has no Story Mode |
 | Held stones float under him | Held stones trail behind him like every racer | The remake's shared stone-stealing rule depends on stones trailing |
 
-## Technology choice
+## Cloud
+
+Cloud follows the PS1 in-game model, checked side by side against footage of the original (a longplay of every course with Cloud: the chase camera from behind, the orbit after the finish and the course intro sweep), not FFVII art.
+He is super-deformed, with a head about as wide as his shoulders: bright yellow hair that is a swept mass of a few blunt locks, one dominant lock rising to his right as seen from behind and the whole mass sweeping back toward the bike's tail from the side, with bangs falling over the forehead in front; he rides crouched low and forward over the tank; small blue eyes; a navy sleeveless top; one round light blue-grey pauldron on his left shoulder; bare upper arms and brown gauntlets; navy trousers and brown boots.
+The Buster Sword rides on his back from above his right shoulder down past his left hip, the largest light shape in the race view.
+He rides the Hardy-Daytona as the original draws it: a long, low, dark olive and black machine about one and a half times his height in length with fat wheels, a tall ribbed front cowl that reaches his chin, a ribbed rear fender and a red taillight under the sword.
+
+Deliberate deviations:
+
+| Original | Remake | Reason |
+| --- | --- | --- |
+| No ability of his own: like the other secret racers he picks a shared one on the Select Ability screen | Dash by default, the shared ability the longplay gives him; the player can pick any other | Every racer here needs a default; Dash is what the footage shows |
+| Unlocked by the 5th Story clear, hidden behind Squall's slot (hold R1) | His own slot, available from the start | This remake has no Story Mode or Squall |
+| No portrait: a black "?" icon in the HUD and results, Squall's portrait on the ability screen | A rendered portrait like every racer | The roster and HUD are built from 3D portraits |
+| 90 MPH and "very bad" cornering, the same as Goblin; acceleration not stated | Goblin's driving stats (top speed, acceleration, loose grip, steering); no other tuning | The original gives him Goblin's numbers. In 540 all-CPU races with Dash he won 15.1% with a mean place of 3.56, where an even share is about 16.7% and 3.5 |
+| No victory pose; he keeps riding after the finish | On a podium finish he sits up and rests the Buster Sword on his right shoulder; otherwise he slumps over the bars | Every racer here acts out win and lose reactions on the podium and after the finish, so his stay calm |
+| No voice lines found | Short synthesized grunts | Every racer here has barks |
+| The long bike's collision is unknown | The model is about 1.5 times his height long, as in the original, but the physics body stays the standard contact circle for size 1.05 (about 1.2 m radius) | Bumps and the start grid stay fair against shorter karts. In a nose-to-tail bump his front wheel or tail can overlap the other racer by up to about 1 m before they part; side bumps line up |
+
+
 
 | Option | Decision |
 | --- | --- |
