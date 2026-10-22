@@ -1,15 +1,16 @@
 import type * as THREE from 'three';
+import { ABILITY_SECONDS } from '../../../shared/game/index.ts';
 
 /**
  * A reaction the racer is acting out, `t` seconds after it started.
- * Hits play by crash tier: 1 spins out, 2 is flattened, 3 tumbles through the air.
+ * Hits play by crash tier: 1 spins out, 2 is flattened, 3 tumbles through the air. `slash` is a Braver sword swing.
  */
 export type Pose =
   | { kind: 'hit'; t: number; tier: 1 | 2 | 3 }
-  | { kind: 'cast' | 'overtake' | 'win' | 'lose'; t: number };
+  | { kind: 'cast' | 'slash' | 'overtake' | 'win' | 'lose'; t: number };
 
 /** Seconds each one-shot reaction lasts. `win` and `lose` loop until the race view ends. */
-export const POSE_SECONDS = { cast: .55, overtake: .8, hit: 1.2 } as const;
+export const POSE_SECONDS = { cast: .55, slash: ABILITY_SECONDS.braver, overtake: .8, hit: 1.2 } as const;
 
 const TAU = Math.PI * 2, ease = (x: number) => 1 - (1 - Math.min(1, Math.max(0, x))) ** 3;
 
@@ -18,6 +19,8 @@ export function applyPose(model: THREE.Object3D, head: THREE.Object3D, pose: Pos
   const t = pose.t;
   switch (pose.kind) {
     case 'cast': { const k = Math.sin(Math.min(1, t / POSE_SECONDS.cast) * Math.PI); model.rotation.x -= k * .35; model.position.y += k * .3; head.rotation.x -= k * .4; return; }
+    // The whole racer winds up to its left and swings round to its right with the blade.
+    case 'slash': { const k = Math.min(1, t / POSE_SECONDS.slash); model.rotation.y += Math.sin(k * Math.PI * 2) * -.35 * (1 - k); model.position.y += Math.sin(k * Math.PI) * .15; return; }
     case 'overtake': { const k = Math.sin(Math.min(1, t / POSE_SECONDS.overtake) * Math.PI); model.position.y += Math.abs(Math.sin(t * 9)) * .35 * k; model.rotation.z += Math.sin(t * 14) * .12 * k; head.rotation.y += Math.sin(t * 7) * .5 * k; return; }
     case 'win': { const hop = Math.abs(Math.sin(t * 5.2)); model.position.y += hop * .55; model.rotation.x -= .15 + hop * .12; model.rotation.y += ease(t / .8) * TAU; head.rotation.x -= .3; model.scale.y *= 1 + hop * .06; return; }
     case 'lose': { const k = ease(t / .6); model.rotation.x += .28 * k; model.rotation.z += Math.sin(t * 1.6) * .06 * k; head.rotation.x += .35 * k; model.scale.y *= 1 - .06 * k; return; }

@@ -5,7 +5,7 @@ import { POSE_SECONDS, type Pose } from './characters/index.ts';
 interface Active { pose: Pose; start: number; until: number }
 
 /**
- * Decides which reaction each racer is acting out: a hit by crash tier, casting, overtaking, and winning or losing once
+ * Decides which reaction each racer is acting out: a hit by crash tier, casting, a Braver swing, overtaking, and winning or losing once
  * finished. Reactions follow race events and places, so they look the same for every viewer of a race.
  */
 export class Reactions {
@@ -16,6 +16,7 @@ export class Reactions {
       if (e.id <= this.eventId) continue;
       if (e.type === 'crash') { const { tier } = crashInfo(e); this.start(e.player, { kind: 'hit', t: 0, tier }, clock, POSE_SECONDS.hit); }
       else if (castInfo(e) && this.active.get(e.player)?.pose.kind !== 'hit') this.start(e.player, { kind: 'cast', t: 0 }, clock, POSE_SECONDS.cast);
+      else if (e.type === 'ability' && race.racers.find(p => p.id === e.player)?.abilityId === 'braver') this.start(e.player, { kind: 'slash', t: 0 }, clock, POSE_SECONDS.slash);
     }
     this.eventId = race.eventId;
     for (const p of race.racers) {

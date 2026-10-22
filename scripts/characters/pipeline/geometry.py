@@ -101,6 +101,17 @@ def ellipse(rx: Callable[[float], float], ry: Callable[[float], float], down: Ca
     return profile
 
 
+def superellipse(rx: Callable[[float], float], ry: Callable[[float], float], power: float = 4.0, shift: Callable[[float], float] | None = None) -> Profile:
+    """Rounded-box rings for hard-surface parts. Higher `power` gives squarer corners; `shift` moves rings sideways."""
+
+    def profile(t: float, a: float) -> tuple[float, float]:
+        c, s = math.cos(a), math.sin(a)
+        x = math.copysign(abs(c) ** (2 / power), c) * rx(t)
+        return x + (shift(t) if shift else 0.0), math.copysign(abs(s) ** (2 / power), s) * ry(t)
+
+    return profile
+
+
 def loft(
     name: str,
     skin: str,

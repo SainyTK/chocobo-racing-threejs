@@ -10,6 +10,7 @@ const skillPaths: Record<AbilityId, string> = {
   barrier: 'M24 5 40 12v13q-3 12-16 18Q11 37 8 25V12ZM16 24l6 6 12-14',
   receive: 'M8 29v12h32V29M24 5v27M14 22l10 10 10-10',
   charge: 'm6 10 16 14L6 38M24 10l16 14-16 14',
+  braver: 'M12 36 38 10v6l-20 20M38 10h-6M10 28l10 10M6 42l6-6',
   megaflare: 'M24 4v8M24 36v8M4 24h8M36 24h8M10 10l6 6M32 32l6 6M38 10l-6 6M16 32l-6 6M24 16a8 8 0 1 0 0 16 8 8 0 1 0 0-16',
 };
 const controlPaths = {

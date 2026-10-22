@@ -3,13 +3,13 @@ import { TRACKS } from '../../track/tracks.ts';
 import { trackLength } from '../../track/sampling.ts';
 import { locate, MAIN_ROUTE } from '../../track/route.ts';
 import { courseObjects } from '../../track/objects.ts';
-import { ABILITIES } from '../abilities.ts';
+import { ABILITIES, ABILITY_SECONDS } from '../abilities.ts';
 import { integrateDriving, updateDriveMode } from '../driving.ts';
 import { HANDLING } from '../handling.ts';
 import { ITEMS, drawStone, inBackHalf } from '../items.ts';
 import { addStone, canAddStone, levelUpLatest } from '../inventory.ts';
-import { BARRIER_SECONDS, DOOM, STONE_RESPAWN } from '../spells.ts';
-import { aboveGround, crash, hit, megaflare } from '../combat.ts';
+import { BARRIER_SECONDS, BRAVER, DOOM, STONE_RESPAWN } from '../spells.ts';
+import { aboveGround, braver, crash, hit, megaflare } from '../combat.ts';
 import { recover, useAbility, useItem } from '../actions.ts';
 import { event } from '../events.ts';
 import { stepFinished } from './finished.ts';
@@ -28,6 +28,8 @@ export function stepRacer(r: Race, p: Racer, dt: number) {
   for (const key of ['boost', 'shield', 'barrier', 'stun', 'invincible', 'flying', 'gripUp', 'charging', 'mini', 'contactCooldown', 'wallCooldown', 'pickupCooldown'] as const) p[key] = Math.max(0, p[key] - dt);
   if (p.doom > 0) { p.doom = Math.max(0, p.doom - dt); if (p.doom <= 0) crash(r, p, DOOM.stun, 'Doom!'); }
   if (p.flare > 0) { p.flare = Math.max(0, p.flare - dt); if (p.flare <= 0) megaflare(r, p); }
+  // A crash knocks the sword swing out of Cloud's hands; otherwise the blade strikes once, partway through the swing.
+  if (p.slash > 0) { const swing = ABILITY_SECONDS.braver - p.slash; p.slash = p.stun > 0 ? 0 : Math.max(0, p.slash - dt); if (swing < BRAVER.strike && ABILITY_SECONDS.braver - p.slash >= BRAVER.strike) braver(r, p); }
   p.ability = Math.min(100, p.ability + dt * 100 / ABILITIES[p.abilityId].recharge);
   if (p.abilityId === 'magic' && p.ability >= 100 && levelUpLatest(p)) { p.ability = 0; event(r, p, 'ability', 'Magic Plus!'); }
   if (p.abilityId === 'barrier' && p.ability >= 100) { p.ability = 0; p.barrier = BARRIER_SECONDS; event(r, p, 'ability', 'Barrier!'); }

@@ -41,7 +41,7 @@ async function finish(page: Page, timeout = 160000) { await expect(page.getByRol
 test('nine distinct racers, eight courses, independent abilities, options and honest help', async ({ page }) => {
   const errors: string[] = []; page.on('pageerror', e => errors.push(e.message)); await ready(page);
   await page.screenshot({ path: 'output/testing/v2-home-desktop.png' });
-  for (const name of ['Mog', 'Golem', 'Goblin', 'Black Magician', 'White Mage', 'Chubby Chocobo', 'Behemoth', 'Bahamut', 'Chocobo']) { await page.getByRole('button', { name: `Choose ${name}`, exact: true }).click(); await expect(page.locator('.vehicle-label h1')).toHaveText(name); if (name === 'Black Magician') await page.screenshot({ path: 'output/testing/v2-black-magician.png' }); }
+  for (const name of ['Mog', 'Golem', 'Goblin', 'Black Magician', 'White Mage', 'Chubby Chocobo', 'Behemoth', 'Bahamut', 'Cloud', 'Chocobo']) { await page.getByRole('button', { name: `Choose ${name}`, exact: true }).click(); await expect(page.locator('.vehicle-label h1')).toHaveText(name); if (name === 'Black Magician') await page.screenshot({ path: 'output/testing/v2-black-magician.png' }); }
   await page.getByRole('combobox', { name: 'Ability', exact: true }).selectOption('barrier'); expect((await debug(page)).settings.abilityId).toBe('barrier');
   for (let i = 0; i < 8; i++) { await page.getByRole('button', { name: 'Next course' }).click(); if (i === 5) await page.screenshot({ path: 'output/testing/v2-candy-menu.png' }); }
   await page.getByRole('button', { name: 'Controls', exact: true }).click(); await expect(page.getByRole('dialog')).toContainText('There is no release turbo'); await page.keyboard.press('Escape');
