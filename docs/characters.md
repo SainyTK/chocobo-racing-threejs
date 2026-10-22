@@ -1,7 +1,7 @@
 # Racer models
 
 Most racers are built in code from primitives in `src/gfx/characters/racers/*.ts`: rigid parts on a joint hierarchy, baked into vertex-coloured toon meshes by `Rig`.
-Chocobo, Mog, Chubby Chocobo, Bahamut, Cloud and Behemoth are authored as skinned, textured GLBs, by Blender scripts in this repository.
+Chocobo, Mog, Golem, Chubby Chocobo, Bahamut, Cloud and Behemoth are authored as skinned, textured GLBs, by Blender scripts in this repository.
 This page describes that pipeline so the next racer can reuse it.
 
 ## Pipeline
@@ -10,6 +10,7 @@ This page describes that pipeline so the next racer can reuse it.
 npm run character -- bahamut
 npm run character -- cloud
 npm run character -- chocobo
+npm run character -- golem
 npm run character -- chubby
 npm run character -- mog
 ```
@@ -22,11 +23,11 @@ The shared pipeline lives in `scripts/characters/pipeline/`:
 
 | Module | Job |
 | --- | --- |
-| `geometry.py` | Smooth paths, lofted tubes (`loft`, `ellipsoid`, `claw`), round (`ellipse`) and rounded-box (`superellipse`) rings, Coons patches for membranes, thickening and mirroring. Every part carries its own (u, v) parameters. |
+| `geometry.py` | Smooth paths, lofted tubes (`loft`, `ellipsoid`, `claw`), round (`ellipse`) and rounded-box (`superellipse`) rings, flat-ended boxes (`box`, `flat`), Coons patches for membranes, thickening and mirroring. Every part carries its own (u, v) parameters. |
 | `weights.py` | Skin weights without painting: `rigid`, `along` (blend down a loft between consecutive bones) and `nearest` (inverse distance to bone segments). At most four influences per vertex. |
 | `atlas.py` | Packs one rectangle per skin into a 1024 x 1024 atlas, maps part UVs into it with padding, and paints each skin with numpy. |
 | `scene.py` | Armature, joined body mesh, the outline hull (welded and decimated), the ambient-occlusion bake into vertex colours, materials and the GLB export with meshopt compression and WebP textures. |
-| `anim.py` | Clips written as functions of time in armature-space angles, keyed into Blender actions. `mirrored` adds the right side from the left. |
+| `anim.py` | Clips written as functions of time in armature-space angles, keyed into Blender actions. `mirrored` adds the right side from the left, and `aim` gives the rotation that points a bone in a direction. |
 
 A character is a package `scripts/characters/<name>/` with three modules:
 
@@ -64,9 +65,11 @@ Measured in the Studio with `createCharacter` (triangles of the body and of the 
 | Bahamut | 11,928 | 4,899 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Bahamut |
 | Cloud | 11,032 | 4,570 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Cloud |
 | Behemoth | 12,220 | 4,224 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Behemoth |
+| Golem | 11,680 | 4,754 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Golem (the procedural model had 5,588, 5,220 and 18) |
 
 The Bahamut GLB is 469 KB with 36 bones and six clips; the Cloud GLB is 329 KB with 24 bones and six clips; the Chubby Chocobo GLB is 301 KB with 20 bones and seven clips.
 The Behemoth GLB is 407 KB with 37 bones and six clips; the code-built Behemoth it replaced had 12,192 and 9,308 triangles in 23 meshes.
+The Golem GLB is 384 KB with 23 bones and six clips.
 A new racer should stay near 12,000 body triangles and one atlas.
 
 ## Pitfalls
@@ -105,6 +108,7 @@ Hard-surface boxes use `superellipse` rings; `flat` in Behemoth's `model.py` tur
 
 ```sh
 npm run character -- chocobo
+npm run character -- golem
 ```
 
 Chocobo on the Jet-Blades CR is one skinned GLB (326 KB, 21 bones, seven clips) for the bird and both rocket skates.
@@ -183,3 +187,22 @@ Pitfalls met on Chubby Chocobo:
 - A tyre lofted with end caps has a domed face that bulges out past the rim; a hub disc must stand proud of it or it disappears inside the tyre.
 - A belly that bulges forward swallows the fork and the middle of the handlebars. Move the steering head forward with the belly.
 - Wings that reach the grips as long arms with spread feather fingers read as human hands from the front. Keep each wing one short, plump paddle against his side with a single rounded tip and no separate feathers, and push the elbow out so it still shows as a paddle from behind.
+
+## Golem and the Rockin' Roller V8
+
+```sh
+npm run character -- golem
+```
+
+Golem and his jeep share one armature (`scripts/characters/golem/`), with the driving pose as the rest pose so his fists sit on the steering wheel's rim.
+He is built from separate boulders (`rock` in `model.py`: rounded-box rings that ease to rounded ends, with a little deterministic bumpiness), each skinned rigidly to one bone, so the skinning is as simple as the stone figure it shows.
+The front wheels hang on `steer.L` and `steer.R` knuckle bones; `racers/golem.ts` turns the knuckles through `driven` as `Build.steer` and spins the wheels, children of the knuckles, as `Build.wheels`, syncing each knuckle before its wheel.
+
+Pitfalls met on Golem:
+
+- A Coons patch faces one way only. A flat decal such as the grille or the tailgate must be wound to face out of the body, or back-face culling hides it.
+- A tyre lofted along its axle closes each side in a cone; `flat` turns the cones into flat sidewalls, so a hub disc can sit on the outside.
+- From the raised chase camera, wheel arches over the rear tyres hide them behind blue blocks. The original shows the rear tyres whole with only a thin ledge on top.
+- The chase camera looks down on the back, so a big back rock hides a head that sits low between the shoulders. Keep the back rock low and the head standing well above the shoulders.
+- Rough stone is painted, not modelled: `stone` in `golem/paint.py` lays a Voronoi pattern of lighter and darker faces with thin cracks over blotches and speckles. Each skin passes how many times farther its loft runs around than along, or the faces stretch into stripes, and the detail fades out near the loft's poles, where it would swirl into a pinwheel.
+- Painter noise must use whole waves around a loft's u, or a seam shows where u wraps, straight down the middle of the back from the chase camera.

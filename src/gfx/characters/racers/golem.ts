@@ -1,41 +1,43 @@
-import * as THREE from 'three';
-import type { RacerProfile } from '../../../../shared/game/index.ts';
-import { ellipsoid, rbox, cyl, torus } from '../../geometry/primitives.ts';
-import { rock } from '../../geometry/rock.ts';
-import { xf } from '../../geometry/transform.ts';
+import { damp } from '../math.ts';
+import { POSE_SECONDS } from '../poses.ts';
 import { Rig } from '../rig.ts';
-import type { Build, Wheel } from '../types.ts';
-import { wheel } from '../parts/wheel.ts';
+import { anchor, driven, overlay, skinnedModel } from '../skinned.ts';
+import type { Build } from '../types.ts';
 
-export function golem(c: RacerProfile): Build {
-  const r = new Rig(), stone = r.t(c.color, { flat: true }), pale = r.t(c.light, { flat: true }), moss = r.t('#6c9a4a', { flat: true }), iron = r.t('#5d6169'), olive = r.t('#87926b'), chrome = r.t('#c4c9d2'), wheels: Wheel[] = [], exhausts: THREE.Object3D[] = [], contacts: THREE.Object3D[] = [];
-  const car = r.joint(r.model);
-  r.add(car, olive, rbox(2.2, .55, 2.5, .18, [0, .78, -.1]), rbox(2.0, .5, .6, .15, [0, .95, .95]));
-  r.add(car, r.t('#f2c842'), rbox(2.25, .1, .1, .03, [0, 1.06, -.1]), rbox(2.25, .1, .1, .03, [0, .72, 1.27]));
-  r.add(car, iron, rbox(2.3, .18, .32, .05, [0, .55, -1.35]));
-  const drum = r.joint(car, [0, .55, 1.55]); r.add(drum, iron, cyl(.55, .55, 2.0, [0, 0, 0], [0, 0, Math.PI / 2], 24)); for (const x of [-.7, -.25, .25, .7]) r.add(drum, r.t('#7a7f88'), torus(.56, .05, [x, 0, 0], [0, Math.PI / 2, 0]));
-  r.add(car, olive, rbox(.14, .5, .9, .05, [-1.05, .75, 1.35]), rbox(.14, .5, .9, .05, [1.05, .75, 1.35]));
-  wheels.push({ j: drum, r: .55 });
-  for (const s of [-1, 1]) { wheels.push(wheel(r, car, [s * 1.22, .62, -.8], .62, .46, '#b7a46e', true)); contacts.push(r.joint(car, [s * 1.22, .04, -.9])); }
-  // V8 block with eight stacks.
-  r.add(car, chrome, rbox(1.1, .45, .75, .12, [0, 1.3, -1.0]), rbox(.6, .2, .6, .08, [0, 1.6, -1.0]));
-  for (const s of [-1, 1]) for (let i = 0; i < 4; i++) { const z = -1.3 + i * .2; r.add(car, chrome, cyl(.06, .07, .55, [s * .48, 1.62, z], [0, 0, s * .25], 10)); if (i % 2) exhausts.push(r.joint(car, [s * .55, 1.92, z])); }
-  const body = r.joint(r.model, [0, 2.05, -.1]);
-  r.add(body, stone, rock([.95, .85, .75], [0, 0, 0], 1), rock([.55, .45, .5], [0, -.55, .05], 2));
-  r.add(body, pale, rock([.38, .3, .2], [0, .05, .62], 3));
-  r.add(body, r.g('#ffd84a', 2.6), xf(new THREE.OctahedronGeometry(.13), [0, .08, .8]));
-  const arms: THREE.Object3D[] = [];
-  for (const s of [-1, 1]) {
-    r.add(body, stone, rock([.48, .44, .46], [s * 1.0, .42, 0], 4 + s)); r.add(body, moss, rock([.32, .12, .3], [s * 1.0, .82, 0], 7 + s));
-    const arm = r.joint(body, [s * 1.0, .2, .1]); arms.push(arm);
-    r.add(arm, stone, rock([.3, .4, .3], [s * .1, -.35, .15], 9 + s), rock([.26, .26, .45], [s * .02, -.6, .55], 11 + s), rock([.26, .22, .24], [-s * .1, -.62, .95], 13 + s));
-  }
-  const head = r.joint(body, [0, .95, .1]);
-  r.add(head, stone, rock([.52, .46, .48], [0, 0, 0], 20)); r.add(head, pale, rock([.5, .14, .2], [0, .2, .38], 21)); r.add(head, moss, rock([.4, .14, .38], [0, .42, -.05], 22));
-  const blink = r.joint(head, [0, .02, .42]); for (const s of [-1, 1]) r.add(blink, r.g('#ffe066', 3.2), ellipsoid([.1, .065, .05], [s * .2, 0, 0], [0, 0, s * -.2], .6));
-  return { r, head, height: 3.9, wheels, steer: [], exhausts, contacts, outline: '#2a241c', update(s, k) {
-    body.position.y = 2.05 + Math.sin(s.t * 18) * .02 * k + Math.sin(s.t * 1.5) * .02;
-    arms.forEach((a, i) => { a.rotation.x = Math.sin(s.t * 1.5 + i) * .03; a.rotation.z = (i ? -1 : 1) * s.steer * .1; });
-    head.rotation.y = s.menu ? Math.sin(s.t * .5) * .3 : s.steer * .2; blink.scale.y = (s.t * .5) % 4 < .12 ? .15 : 1;
+/** Loops blend by speed; Cast, Win and Lose follow the reaction's own clock so every viewer sees the same frame. */
+const LOOPS = ['Idle', 'Drive'] as const, POSED = ['Cast', 'Win', 'Lose'] as const;
+type ClipName = typeof LOOPS[number] | typeof POSED[number];
+/** Seconds between blinks, and how long one lasts. */
+const BLINK = { every: 4.4, seconds: .18 };
+/** The tyres' radius, as built in scripts/characters/golem. */
+const WHEEL_RADIUS = .56;
+
+/** Golem in the Rockin' Roller V8: one skinned model for the rock giant and his jeep, with wheels and steering turned in code. */
+export function golem(): Build {
+  const r = new Rig(), m = skinnedModel(r, 'golem');
+  const action = (name: string) => { const a = m.actions.get(name); if (!a) throw new Error(`Golem has no ${name} clip`); a.play(); a.weight = 0; return a; };
+  const clips = Object.fromEntries([...LOOPS, ...POSED].map(n => [n, action(n)])) as Record<ClipName, ReturnType<typeof action>>, blink = action('Blink');
+  for (const a of [...POSED.map(n => clips[n]), blink]) a.timeScale = 0;
+  const turn = overlay(m, 'head'), head = turn.j, weights: Record<ClipName, number> = { Idle: 0, Drive: 0, Cast: 0, Win: 0, Lose: 0 };
+  // The front wheels hang on steering knuckles; each knuckle steers before its wheel spins.
+  const knuckles = ['L', 'R'].map(side => driven(m, `steer.${side}`, [0, 1, 0], 'y'));
+  const wheels = ['L', 'R'].flatMap(side => [driven(m, `wheel_front.${side}`, [1, 0, 0], 'x'), driven(m, `wheel_rear.${side}`, [1, 0, 0], 'x')]);
+  // Smoke and boost flames from the two exhaust stacks at the back; drift sparks from under the rear tyres.
+  const exhausts = [anchor(m, 'jeep', [.66, 1.56, -1.36]), anchor(m, 'jeep', [-.66, 1.56, -1.36])];
+  const contacts = [anchor(m, 'jeep', [1.08, .04, -.92]), anchor(m, 'jeep', [-1.08, .04, -.92])];
+  let fresh = true;
+  return { r, head, height: 3.9, wheels: wheels.map(w => ({ j: w.j, r: WHEEL_RADIUS })), steer: knuckles.map(k => k.j), exhausts, contacts, outline: m.outline, sync: turn.sync, update(s, k) {
+    const pose = s.pose, ended = pose?.kind === 'win' || pose?.kind === 'lose' ? pose : null;
+    const casting = pose?.kind === 'cast' ? 1 : 0, cruise = ended ? 0 : 1 - casting, drive = s.menu ? 0 : Math.min(1, k * 3);
+    const target: Record<ClipName, number> = { Idle: cruise * (1 - drive), Drive: cruise * drive, Cast: casting, Win: ended?.kind === 'win' ? 1 : 0, Lose: ended?.kind === 'lose' ? 1 : 0 };
+    for (const n of [...LOOPS, ...POSED]) { weights[n] = fresh ? target[n] : damp(weights[n], target[n], 12, s.dt); clips[n].weight = weights[n]; }
+    fresh = false;
+    if (pose?.kind === 'cast') clips.Cast.time = Math.min(1, pose.t / POSE_SECONDS.cast) * clips.Cast.getClip().duration;
+    if (ended) { const c = clips[ended.kind === 'win' ? 'Win' : 'Lose']; c.time = ended.t % c.getClip().duration; }
+    clips.Drive.timeScale = .7 + k * .8;
+    const b = (s.t + 3.1) % BLINK.every; blink.weight = b < BLINK.seconds ? 1 : 0; blink.time = Math.min(b, BLINK.seconds);
+    m.update(s.dt);
+    for (const d of [...knuckles, ...wheels]) d.sync();
+    head.rotation.y = s.menu ? Math.sin(s.t * .5) * .3 : s.steer * .2;
   } };
 }

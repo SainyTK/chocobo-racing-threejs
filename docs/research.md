@@ -100,6 +100,22 @@ Deliberate deviations:
 | No win or lose animation is seen in a race | On the podium he waves both paws and calls out with little hops; otherwise he lets go of the bars and droops | Every racer here acts out win and lose reactions |
 | The scooter's motor is unknown | No exhaust smoke; boost flames leave the foot of the batteries | A battery scooter has no engine smoke |
 
+## Golem
+
+Golem follows the PS1 in-game model, checked side by side against a Grand Prix played as him (chase view, racer select turn, podium) and the Story Mode Chapter 3 cutscenes, not the CG art.
+The Rockin' Roller V8 is a small blue 4WD jeep, as the manual says ("4WD jeep"), even though its name suggests a road roller: a blue tub, a teal front face with round yellow headlights and five grille slots, a silver bumper, blue arches over the front wheels, four big black knobbly tyres, a light grey seat back, orange tail lights and two exhaust stacks at the back.
+The front wheels steer on their own knuckles.
+Golem is built from separate rounded boulders of rough grey-brown stone: a tall block head under a thick brim that overhangs a black face with two angry yellow eyes, huge round shoulder boulders whose tops sit level with his eyes, long rocky arms and big fists on the steering wheel, with red wristbands studded with white spikes.
+His Win clip, one fist punched up and the other arm thrown out, is the pose he strikes on the podium and in the racer select screen.
+His stone was matched region by region, by measuring the PS1 frames and the remake's under the game's lighting. In the chase view the original's shoulders are the lightest stone (about 53% lightness), the back is darker (23% to 32%) and the back of the head is a dark brown block (16% to 19%); in the racer select screen the shoulders read 47%, the forearms 40%, the chest 37% and the head darker than the shoulders. The remake measures 52%, 34%, 17%, and in the menu 52%, 42% and 41% for the shoulders, forearms and head.
+The stone is painted rough: lighter and darker faces split by thin dark cracks, with blotches and speckles, and no extra geometry.
+His roster colour follows the model's stone.
+
+| Deviation | Original | Remake |
+| --- | --- | --- |
+| Rear of the jeep | The low-resolution chase view shows a dark tailgate framed in blue, a pale bar on top and two orange shapes with copper pipes at its corners | A dark tailgate with a pale plate, a light grey seat back, orange tail lights and two exhaust stacks with copper tips, which also carry the boost flames |
+| Wheel hubs | Grey in the game, orange in the CG ending | Grey |
+
 ## Magic Stones
 
 The stones follow footage of the original on six courses (Moogle Forest, Floating Gardens, Gingerbread Land, Vulcan-O Valley, The Black Manor and Fantasia), read frame by frame where stones are passed and picked up.
