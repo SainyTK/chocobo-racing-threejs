@@ -7,7 +7,8 @@ import { manor } from './manor.ts';
 import { gardens } from './gardens.ts';
 import { gingerbread } from './gingerbread.ts';
 import { volcano } from './volcano.ts';
+import { fantasia } from './fantasia.ts';
 
 /** Authored gimmicks for every course, keyed by track id. Each course lives in its own file. */
-const LAYOUTS: Record<TrackId, CourseLayout> = { test, forest, gate, mines, manor, gardens, gingerbread, volcano };
+const LAYOUTS: Record<TrackId, CourseLayout> = { test, forest, gate, mines, manor, gardens, gingerbread, volcano, fantasia };
 export const courseLayout = (id: TrackId) => LAYOUTS[id];

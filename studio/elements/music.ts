@@ -13,14 +13,18 @@ const references = {
   gardens: { track: 22, title: 'Mysidian Floating Gardens', direction: 'Lyrical synth lead and an airy, brisk racing beat.' },
   gingerbread: { track: 23, title: 'Gingerbread Land', direction: 'Swung jazz phrases, walking bass and offbeat piano chords.' },
   volcano: { track: 24, title: 'Vulcan-O Valley', direction: 'Urgent minor-key riffs, driving drums and guitar/synth answers.' },
+  fantasia: { track: 25, title: 'Fantasia', direction: 'Final-battle drama: a brass line over organ stabs and a galloping minor-key bass.' },
 };
 
-function entry(id: string, name: string, score: StageMusic, previous: StageMusic,
+/** A score with a first pass offers both for comparison; one written after the revision has only its own. */
+function entry(id: string, name: string, score: StageMusic, previous: StageMusic | undefined,
   reference: NonNullable<StudioElement['musicReference']>): StudioElement {
   return {
     id, name, category: 'Music', music: score, previousMusic: previous, musicReference: reference,
     tags: ['soundtrack', 'bgm', score.title, reference.title],
-    variants: [{ id: 'score', label: 'Revised composition', inGame: true }, { id: 'previous', label: 'Previous composition' }],
+    variants: previous
+      ? [{ id: 'score', label: 'Revised composition', inGame: true }, { id: 'previous', label: 'Previous composition' }]
+      : [{ id: 'score', label: 'Composition', inGame: true }],
     create: () => ({}),
   };
 }

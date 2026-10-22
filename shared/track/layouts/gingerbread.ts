@@ -6,6 +6,7 @@ export const gingerbread: CourseLayout = {
   patches: [{ s: 1410, length: 40, x: 0, width: 24, surface: 'slip' }],
   ramps: [{ s: 1215, x: 0, width: 10, length: 9, height: 1.2, lift: .3 }],
   gaps: [],
+  rails: [],
   shortcuts: [{ from: 615, to: 775, side: 1, join: 20, width: 3.2, edge: 'rough', surface: 'slip' }],
   hazards: [
     { kind: 'cutlery', s: 990, x: 6, length: 1.6, width: 2.6, stun: .9, text: 'Bonk!' },

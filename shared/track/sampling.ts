@@ -1,5 +1,5 @@
 import { clamp, mod, angleDelta } from '../math.ts';
-import type { TrackId, TrackPoint, Projection } from './types.ts';
+import type { Hills, TrackId, TrackPoint, Projection } from './types.ts';
 import { TRACKS } from './tracks.ts';
 
 export interface Sample { x: number; y: number; z: number; d: number }
@@ -9,7 +9,13 @@ function raw(id: TrackId, t: number) {
   const course = TRACKS[id], pts = course.points, a = mod(t, 1) * pts.length, i = Math.floor(a), f = a - i;
   const p0 = pts[mod(i - 1, pts.length)], p1 = pts[i % pts.length], p2 = pts[(i + 1) % pts.length], p3 = pts[(i + 2) % pts.length];
   const cat = (k: number) => .5 * ((2 * p1[k]) + (-p0[k] + p2[k]) * f + (2 * p0[k] - 5 * p1[k] + 4 * p2[k] - p3[k]) * f * f + (-p0[k] + 3 * p1[k] - 3 * p2[k] + p3[k]) * f * f * f);
-  return { x: cat(0), z: cat(1), y: 8 + Math.sin(t * Math.PI * 4) * course.elevation + Math.sin(t * Math.PI * 6) * course.elevation * .3 };
+  return { x: cat(0), z: cat(1), y: 8 + Math.sin(t * Math.PI * 4) * course.elevation + Math.sin(t * Math.PI * 6) * course.elevation * .3 + crest(course.hills, mod(t, 1)) };
+}
+/** Height of a course's rolling crests at share `t` of the lap: each hump rises and falls with zero slope at its ends. */
+function crest(hills: Hills | undefined, t: number) {
+  if (!hills) return 0;
+  const u = mod(t - hills.at, 1) / hills.length;
+  return u < 1 ? hills.height * Math.sin(Math.PI * hills.count * u) ** 2 : 0;
 }
 /** Radius of the circle through three points. */
 function radius(a: { x: number; z: number }, b: { x: number; z: number }, c: { x: number; z: number }) {

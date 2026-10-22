@@ -8,6 +8,7 @@ import { manor } from './manor.ts';
 import { gardens } from './gardens.ts';
 import { gingerbread } from './gingerbread.ts';
 import { volcano } from './volcano.ts';
+import { fantasia } from './fantasia.ts';
 
 /** Art for every course, keyed by track id. Each course lives in its own file. */
-export const COURSE_ART: Record<TrackId, CourseArt> = { test, forest, gate, mines, manor, gardens, gingerbread, volcano };
+export const COURSE_ART: Record<TrackId, CourseArt> = { test, forest, gate, mines, manor, gardens, gingerbread, volcano, fantasia };

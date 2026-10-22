@@ -1,7 +1,7 @@
 import type { TrackId } from '../../shared/track/types.ts';
 import type { MusicEvent, MusicVoice, StageMusic } from './types.ts';
 
-type LateTrackId = Extract<TrackId, 'manor' | 'gardens' | 'gingerbread' | 'volcano'>;
+type LateTrackId = Extract<TrackId, 'manor' | 'gardens' | 'gingerbread' | 'volcano' | 'fantasia'>;
 type Note = readonly [offset: number, duration: number, pitch: number];
 type Harmony = readonly [bass: number, ...tones: number[]];
 type AddEvent = (
@@ -277,9 +277,62 @@ const volcano = score('volcano', 'Under the caldera', 180, (bar, add) => {
   }
 });
 
+// D-minor final-trial theme: organ and string stabs answer a brass line over a galloping bass, after the
+// Final Fantasy III last-battle arrangement Racing used for Fantasia. The B phrase climbs through F and C to an A-major half cadence.
+const FANTASIA_HARMONY: readonly Harmony[] = [
+  [38, 62, 65, 69], [34, 62, 65, 70], [36, 60, 64, 67], [33, 61, 64, 69],
+  [38, 62, 65, 69], [34, 62, 65, 70], [31, 62, 67, 70], [33, 61, 64, 67],
+  [41, 60, 65, 69], [36, 60, 64, 67], [38, 62, 65, 69], [34, 62, 65, 70],
+  [31, 62, 67, 70], [39, 63, 67, 70], [33, 61, 64, 69], [33, 61, 64, 67],
+];
+const FANTASIA_MELODY: readonly (readonly Note[])[] = [
+  [[0, .7, 74], [1, .3, 77], [1.5, .3, 76], [2, 1.4, 74]],
+  [[0, .3, 70], [.5, .3, 72], [1, .7, 74], [2, .7, 77], [3, .7, 79]],
+  [[0, 1.4, 79], [1.5, .3, 77], [2, .3, 76], [2.5, 1.2, 72]],
+  [[0, .7, 73], [1, .3, 76], [1.5, .3, 79], [2, 1.7, 81]],
+  [[0, .7, 81], [1, .3, 77], [1.5, .3, 74], [2, .7, 77], [3, .7, 74]],
+  [[0, .3, 70], [.5, .3, 74], [1, .7, 77], [2, .7, 82], [3, .7, 81]],
+  [[0, .7, 79], [1, .3, 74], [1.5, .3, 77], [2, .7, 79], [3, .7, 82]],
+  [[0, 2.4, 81], [3, .3, 79], [3.5, .3, 76]],
+  [[0, .7, 77], [1, .7, 81], [2, .3, 84], [2.5, .3, 81], [3, .7, 77]],
+  [[0, .7, 76], [1, .7, 79], [2, .3, 84], [2.5, .3, 79], [3, .7, 76]],
+  [[0, .3, 74], [.5, .3, 77], [1, .7, 81], [2, 1.4, 86]],
+  [[0, .7, 86], [1, .3, 84], [1.5, .3, 82], [2, 1.4, 77]],
+  [[0, .7, 79], [1, .3, 82], [1.5, .3, 86], [2, .7, 84], [3, .7, 82]],
+  [[0, .7, 82], [1, .3, 79], [1.5, .3, 75], [2, .7, 79], [3, .7, 82]],
+  [[0, .3, 81], [.5, .3, 79], [1, .3, 77], [1.5, .3, 76], [2, 1.4, 73]],
+  [[0, 1.4, 76], [1.5, .3, 73], [2, .3, 76], [2.5, .3, 79], [3, .7, 81]],
+];
+const FANTASIA_BREAK: readonly Note[] = [[0, .25, 69], [.25, .25, 70], [.5, .25, 73], [.75, .25, 76], [1, .25, 79], [1.25, .25, 81], [1.5, .25, 82], [1.75, .25, 85], [2, 1.7, 86]];
+const FANTASIA_RETURN: readonly Note[] = [[0, .7, 85], [1, .3, 81], [1.5, .3, 79], [2, .3, 76], [2.5, .3, 73], [3, .3, 69], [3.5, .3, 73]];
+
+const fantasia = score('fantasia', 'The last trial of Fantasia', 168, (bar, add) => {
+  const phrase = bar % 16;
+  const [root, ...chord] = FANTASIA_HARMONY[phrase]!;
+  const build = (bar % 8) / 7;
+  const notes = bar === 23 ? FANTASIA_BREAK : bar === 31 ? FANTASIA_RETURN : FANTASIA_MELODY[phrase]!;
+  melody(add, bar, notes, 'brass', .24 + build * .04, -.12);
+  // The second time through, strings double the line an octave down.
+  if (bar >= 16) melody(add, bar, notes.map(([o, d, p]) => [o, d, p - 12] as const), 'strings', .12, .2);
+  // Organ and string stabs on the offbeats, leaving the downbeats to the lead.
+  chordHits(add, bar, [.5, 2.5], chord, 'organ', .3, .07, .28);
+  chordHits(add, bar, [1.75, 3.75], [chord[0]! + 12, chord[2]! + 12], 'strings', .2, .055, -.3);
+  // Galloping bass: root on the beat, octave and fifth pickups, a chromatic step into the next bar.
+  const next = FANTASIA_HARMONY[(phrase + 1) % 16]![0];
+  for (let step = 0; step < 8; step++) {
+    const pitch = step === 7 ? next + (next > root ? -1 : 1) : step % 4 === 2 ? root + 12 : step % 4 === 3 ? root + 7 : root;
+    add(bar, step / 2, .3, pitch, 'bass', step % 2 ? .19 : .26);
+  }
+  for (let step = 0; step < 8; step++) add(bar, step / 2, .055, 42, 'hat', step % 2 ? .075 : .055, .35);
+  for (const offset of bar % 8 === 7 ? [0, .75, 1.5, 2, 2.5] : [0, 1.5, 2]) add(bar, offset, .13, 36, 'kick', .2 + build * .03);
+  for (const offset of [1, 3]) add(bar, offset, .14, 38, 'snare', .19, -.15);
+  if (bar % 4 === 3) for (const offset of [3.25, 3.5, 3.75]) add(bar, offset, .085, 38, 'snare', .08 + (offset - 3) * .14, -.15);
+});
+
 export const LATE_STAGE_MUSIC = {
   manor,
   gardens,
   gingerbread,
   volcano,
+  fantasia,
 } satisfies Record<LateTrackId, StageMusic>;

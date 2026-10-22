@@ -1,10 +1,13 @@
-export type TrackId = 'test' | 'forest' | 'gate' | 'mines' | 'manor' | 'gardens' | 'gingerbread' | 'volcano';
+export type TrackId = 'test' | 'forest' | 'gate' | 'mines' | 'manor' | 'gardens' | 'gingerbread' | 'volcano' | 'fantasia';
 export type Surface = 'asphalt' | 'grass' | 'stone' | 'wood' | 'candy';
 export interface TrackDefinition {
   name: string; difficulty: number; width: number; wall: boolean; cliff: boolean; sky: string; fog: string;
   ground: string; road: string; edge: string; accent: string; surface: Surface; elevation: number;
   description: string; points: [number, number][];
+  /** Rolling crests added to the road height: `count` even humps `height` metres tall over `length` of the lap from `at` (both shares of the lap). */
+  hills?: Hills;
 }
+export interface Hills { at: number; length: number; height: number; count: number }
 
 export interface TrackPoint { x: number; y: number; z: number; nx: number; nz: number; yaw: number; curve: number }
 
@@ -29,6 +32,8 @@ export type PatchSurface = 'slow' | 'slip';
 export interface Patch { s: number; length: number; x: number; width: number; surface: PatchSurface }
 /** A jump: a wedge rising over `length` metres to a lip `height` tall at `s`, `width` wide around `x`. Leaving the lip throws a racer upward at `lift` times its forward speed. */
 export interface Ramp { s: number; x: number; width: number; length: number; height: number; lift: number }
+/** A railing along one edge of a cliff course, on `side` (+1 left, -1 right) from `s` for `length` metres. It stops racers like a wall; the other edge stays a drop. */
+export interface Rail { s: number; length: number; side: 1 | -1 }
 /** A chasm across the whole course from `s` for `length` metres. A racer that comes down inside it falls. */
 export interface Gap { s: number; length: number }
 /** What happens beyond a shortcut's edge: a wall, a drop, or rough ground that slows like grass. */
@@ -53,6 +58,6 @@ export interface Hazard {
   stun: number; text: string;
 }
 /** Which model a hazard draws with; each course's scenery supplies the model. */
-export type HazardKind = 'cart' | 'boulder' | 'geyser' | 'cage' | 'ghost' | 'door' | 'cutlery';
+export type HazardKind = 'cart' | 'boulder' | 'geyser' | 'cage' | 'ghost' | 'door' | 'cutlery' | 'bolt';
 /** Everything on a course that changes how it drives, apart from Magic Stones. */
-export interface CourseLayout { pads: Pad[]; patches: Patch[]; ramps: Ramp[]; gaps: Gap[]; shortcuts: Shortcut[]; hazards: Hazard[] }
+export interface CourseLayout { pads: Pad[]; patches: Patch[]; ramps: Ramp[]; gaps: Gap[]; rails: Rail[]; shortcuts: Shortcut[]; hazards: Hazard[] }

@@ -8,10 +8,10 @@ const voices: MusicVoice[] = ['flute', 'brass', 'strings', 'bell', 'organ', 'plu
 const percussion = new Set<MusicVoice>(['kick', 'snare', 'hat']);
 
 describe('original stage scores', () => {
-  it('covers exactly the eight playable stages with separate compositions', () => {
+  it('covers exactly the playable stages with separate compositions', () => {
     expect(Object.keys(STAGE_MUSIC).sort()).toEqual([...TRACK_IDS].sort());
-    expect(new Set(Object.values(STAGE_MUSIC).map(score => score.title)).size).toBe(8);
-    expect(new Set(Object.values(STAGE_MUSIC).map(score => JSON.stringify(score.events))).size).toBe(8);
+    expect(new Set(Object.values(STAGE_MUSIC).map(score => score.title)).size).toBe(TRACK_IDS.length);
+    expect(new Set(Object.values(STAGE_MUSIC).map(score => JSON.stringify(score.events))).size).toBe(TRACK_IDS.length);
   });
 
   for (const id of TRACK_IDS) {
@@ -49,19 +49,22 @@ describe('original stage scores', () => {
     });
   }
 
-  it('changes the writing of every score, not just its title or tempo', () => {
+  it('changes the writing of every score that had a first pass, not just its title or tempo', () => {
+    expect(Object.keys(PREVIOUS_STAGES)).not.toContain('fantasia');
     for (const id of TRACK_IDS) {
-      expect(STAGE_MUSIC[id].title).toBe(PREVIOUS_STAGES[id].title);
-      expect(STAGE_MUSIC[id].events).not.toEqual(PREVIOUS_STAGES[id].events);
+      const previous = PREVIOUS_STAGES[id];
+      if (!previous) continue;
+      expect(STAGE_MUSIC[id].title).toBe(previous.title);
+      expect(STAGE_MUSIC[id].events).not.toEqual(previous.events);
       const pitched = (events: readonly MusicEvent[]) => events
         .filter(event => !percussion.has(event.voice) && event.voice !== 'bass')
         .map(event => [event.beat, event.duration, event.note, event.voice]);
-      expect(pitched(STAGE_MUSIC[id].events)).not.toEqual(pitched(PREVIOUS_STAGES[id].events));
+      expect(pitched(STAGE_MUSIC[id].events)).not.toEqual(pitched(previous.events));
     }
     expect(MENU_MUSIC.events).not.toEqual(PREVIOUS_MENU.events);
     expect(MENU_MUSIC.bpm).toBeGreaterThan(PREVIOUS_MENU.bpm);
-    expect(STAGE_MUSIC.forest.bpm).toBeGreaterThan(PREVIOUS_STAGES.forest.bpm);
-    expect(STAGE_MUSIC.mines.bpm).toBeGreaterThan(PREVIOUS_STAGES.mines.bpm);
+    expect(STAGE_MUSIC.forest.bpm).toBeGreaterThan(PREVIOUS_STAGES.forest!.bpm);
+    expect(STAGE_MUSIC.mines.bpm).toBeGreaterThan(PREVIOUS_STAGES.mines!.bpm);
   });
 
   it('uses the distinct instrument roles requested for the revision', () => {
@@ -70,6 +73,8 @@ describe('original stage scores', () => {
     expect(STAGE_MUSIC.manor.events.some(event => event.voice === 'ghost')).toBe(true);
     expect(STAGE_MUSIC.gingerbread.events.some(event => event.voice === 'piano')).toBe(true);
     expect(STAGE_MUSIC.volcano.events.some(event => event.voice === 'guitar')).toBe(true);
+    expect(STAGE_MUSIC.fantasia.events.some(event => event.voice === 'brass')).toBe(true);
+    expect(STAGE_MUSIC.fantasia.events.some(event => event.voice === 'organ')).toBe(true);
     expect(MENU_MUSIC.events.some(event => percussion.has(event.voice))).toBe(true);
   });
 

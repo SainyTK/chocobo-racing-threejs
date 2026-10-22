@@ -6,6 +6,7 @@ export const volcano: CourseLayout = {
   patches: [],
   ramps: [],
   gaps: [],
+  rails: [],
   shortcuts: [],
   hazards: [
     { kind: 'boulder', s: 525, x: 3, length: 4, width: 4, period: 5.5, phase: 0, warn: 1.6, strike: .7, stun: 1.8, text: 'Flattened by a boulder!' },

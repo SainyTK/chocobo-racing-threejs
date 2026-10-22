@@ -14,7 +14,7 @@ function setup() {
 }
 
 describe('studio music', () => {
-  it('registers the menu and every course with game scores and studio-only previous versions', () => {
+  it('registers the menu and every course with game scores and any studio-only previous versions', () => {
     expect(music.map(e => e.id)).toEqual(['music.menu', ...TRACK_IDS.map(id => `music.${id}`)]);
     expect(music[0].music).toBe(MENU_MUSIC); expect(music[0].previousMusic).toBe(PREVIOUS_MENU);
     for (const id of TRACK_IDS) {
@@ -25,7 +25,8 @@ describe('studio music', () => {
       expect(entry.category).toBe('Music');
       expect(entry.variants.filter(v => v.inGame).map(v => v.id)).toEqual(['score']);
       expect(musicForVariant(entry, 'score')).toBe(entry.music);
-      expect(musicForVariant(entry, 'previous')).toBe(entry.previousMusic);
+      expect(musicForVariant(entry, 'previous')).toBe(entry.previousMusic ?? null);
+      expect(entry.variants.some(v => v.id === 'previous')).toBe(entry.previousMusic !== undefined);
       expect(entry.musicReference?.track).toBeGreaterThan(0);
     }
   });
@@ -57,12 +58,12 @@ describe('studio music', () => {
   });
 
   it('switches between old and revised scores with the same course ID', () => {
-    const { audio, player } = setup();
-    player.select(STAGE_MUSIC.forest); player.toggle(); player.select(PREVIOUS_STAGES.forest);
-    expect(audio.update).toHaveBeenLastCalledWith(true, 'forest', false, PREVIOUS_STAGES.forest);
-    expect(player.status.selectedBpm).toBe(PREVIOUS_STAGES.forest.bpm);
+    const { audio, player } = setup(), previous = PREVIOUS_STAGES.forest!;
+    player.select(STAGE_MUSIC.forest); player.toggle(); player.select(previous);
+    expect(audio.update).toHaveBeenLastCalledWith(true, 'forest', false, previous);
+    expect(player.status.selectedBpm).toBe(previous.bpm);
     expect(audio.restartMusic).toHaveBeenCalledTimes(2);
-    player.select(PREVIOUS_STAGES.forest);
+    player.select(previous);
     expect(audio.restartMusic).toHaveBeenCalledTimes(2);
   });
 

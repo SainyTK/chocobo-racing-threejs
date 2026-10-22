@@ -63,7 +63,7 @@ describe('studio registry', () => {
   });
   it('offers every course with a race camera, sections and a prop sheet', () => {
     const courses = ELEMENTS.filter(e => e.category === 'Courses');
-    expect(courses.map(e => e.id).sort()).toEqual(['course.forest', 'course.gardens', 'course.gate', 'course.gingerbread', 'course.manor', 'course.mines', 'course.test', 'course.volcano']);
+    expect(courses.map(e => e.id).sort()).toEqual(['course.fantasia', 'course.forest', 'course.gardens', 'course.gate', 'course.gingerbread', 'course.manor', 'course.mines', 'course.test', 'course.volcano']);
     for (const e of courses) expect(e.variants.map(v => v.id)).toEqual(expect.arrayContaining(['drive', 'aerial', 'start', 's1', 'props']));
   });
   it('builds and disposes a prop sheet headless', () => {

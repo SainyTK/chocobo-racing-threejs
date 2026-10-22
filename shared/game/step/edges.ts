@@ -1,5 +1,6 @@
 import { TRACKS } from '../../track/tracks.ts';
 import { shortcutPaths } from '../../track/shortcuts.ts';
+import { railAt } from '../../track/surface.ts';
 import type { Place } from '../../track/route.ts';
 import type { TrackId } from '../../track/types.ts';
 import type { Racer } from '../types.ts';
@@ -31,7 +32,8 @@ export function keepOnCourse(track: TrackId, p: Racer, place: Place): EdgeContac
     return null;
   }
   const m = place.main;
-  if (def.wall && Math.abs(p.x) > def.width + .7) { const side = Math.sign(p.x); return { kind: 'wall', impact: bounce(p, m.px, m.pz, m.nx, m.nz, side, def.width + .65) }; }
+  // Walled courses are walled everywhere; a cliff course is walled only along its railings.
+  if (Math.abs(p.x) > def.width + .7 && (def.wall || railAt(track, m.s, Math.sign(p.x)))) { const side = Math.sign(p.x); return { kind: 'wall', impact: bounce(p, m.px, m.pz, m.nx, m.nz, side, def.width + .65) }; }
   if ((def.cliff && Math.abs(p.x) > def.width + 5 || Math.abs(p.x) > def.width + 35) && grounded && p.flying <= 0) return { kind: 'fall' };
   return null;
 }

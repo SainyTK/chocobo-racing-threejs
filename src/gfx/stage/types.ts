@@ -14,11 +14,14 @@ export interface Environment {
   exposure?: number;
 }
 
-export interface StartGateStyle { pillar: string; trim: string; banner: string; text: string; light?: string; flags?: string[] }
+/** `checker` recolours the start line's two squares; it defaults to white and ink. */
+export interface StartGateStyle { pillar: string; trim: string; banner: string; text: string; light?: string; flags?: string[]; checker?: [string, string] }
 /** How a slow or slippery patch looks. */
 export type PatchLook = 'mud' | 'oil' | 'ice' | 'icing' | 'syrup' | 'blood' | 'goo' | 'tar';
 /** Jump ramp colours: the deck, the chevrons and lip stripes, and the side panels. */
 export interface RampStyle { deck: string; stripe: string; side: string }
+/** Railing colours: the tube's upper half and post caps, its lower half and the bar below, and the posts. */
+export interface RailStyle { top: string; rail: string; post: string }
 /** Shortcut edge colours: wall faces (or the underside of a drop) and the cap or lip. */
 export interface ShortcutStyle { wall: string; cap: string }
 /**
@@ -38,6 +41,8 @@ export interface CourseArt {
   patches: Record<PatchSurface, PatchLook>;
   /** Needed when the course layout has ramps. */
   ramp?: RampStyle;
+  /** Needed when the course layout has rails. */
+  rail?: RailStyle;
   /** Needed when the course layout has shortcuts. */
   shortcut?: ShortcutStyle;
   /** Models for every kind of timed hazard in the course layout. */

@@ -6,6 +6,7 @@ export const test: CourseLayout = {
   patches: [{ s: 962, length: 34, x: -9, width: 10, surface: 'slip' }],
   ramps: [{ s: 640, x: 0, width: 10, length: 9, height: 1.1, lift: .3 }],
   gaps: [],
+  rails: [],
   shortcuts: [],
   hazards: [],
 };

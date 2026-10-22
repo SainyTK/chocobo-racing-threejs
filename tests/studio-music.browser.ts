@@ -5,7 +5,7 @@ import { MENU_MUSIC as PREVIOUS_MENU, STAGE_MUSIC as PREVIOUS_STAGES } from '../
 
 const status = (page: Page) => page.evaluate(() => (window as any).__studioAudio);
 
-test('studio music links do not autoplay, and all nine scores play without a race', async ({ page }) => {
+test('studio music links do not autoplay, and every score plays without a race', async ({ page }) => {
   const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
   await page.goto('/#panes=music.menu:score');
   await expect(page.getByRole('heading', { name: MENU_MUSIC.title })).toBeVisible();
@@ -63,7 +63,7 @@ test('comparison panes share one player and switching focus changes the audible 
   expect((await status(page)).playing).toBe(false);
 });
 
-test('revised and previous compositions can be reviewed for every song', async ({ page }) => {
+test('revised and previous compositions can be reviewed for every song that has both', async ({ page }) => {
   await page.goto('/#panes=music.menu:score');
   await page.getByRole('button', { name: 'Play music', exact: true }).click();
   await page.locator('#q').fill('music');
@@ -73,6 +73,8 @@ test('revised and previous compositions can be reviewed for every song', async (
     await page.locator(`#results .item[data-id="music.${id}"]`).click();
     await expect(page.locator('.music-reference')).toContainText('1999 reference:');
     await expect.poll(async () => (await status(page)).scoreBpm).toBe(revised.bpm);
+    // A course added after the revision has no first pass to compare with.
+    if (!previous) continue;
     await page.getByRole('combobox', { name: 'Variant', exact: true }).selectOption('previous');
     await expect(page.locator('.music-info')).toContainText('Previous composition');
     await expect.poll(async () => (await status(page)).scoreBpm).toBe(previous.bpm);
@@ -87,7 +89,7 @@ test('revised and previous compositions can be reviewed for every song', async (
   await expect(page.locator('.pane').nth(0).locator('.music-info')).toContainText('Revised composition');
   await expect(page.locator('.pane').nth(1).locator('.music-info')).toContainText('Previous composition');
   await page.locator('.pane').nth(1).locator('.title').click();
-  await expect.poll(async () => (await status(page)).scoreBpm).toBe(PREVIOUS_STAGES.forest.bpm);
+  await expect.poll(async () => (await status(page)).scoreBpm).toBe(PREVIOUS_STAGES.forest!.bpm);
   await expect(page.locator('.pane').nth(0).locator('.music-status')).toHaveText('Select this pane to listen.');
   await page.screenshot({ path: 'output/testing/studio-music-revision.png' });
 });

@@ -5,7 +5,7 @@ import type { StoneField, TrackId } from './types.ts';
  * the Floating Gardens gap and timed hazards such as Vulcan-O Valley's boulders.
  * Every course uses the stone set the original introduced in its Story chapter: Haste and "?" in Moogle Forest,
  * then Fire, Ice, Thunder, Mini, Reflect and Doom one chapter at a time. The original's first course had no stones;
- * here it shares Moogle Forest's set so a quick race on it still has magic. Ultima only comes from "?" stones.
+ * here it shares Moogle Forest's set so a quick race on it still has magic. Ultima only comes from "?" stones, except on Fantasia.
  * The first field of a lap has two rows, so holding a lane there stacks a level 2 spell; a level 3 spell takes a second field.
  */
 export const STONE_LAYOUTS: Record<TrackId, StoneField[]> = {
@@ -50,5 +50,13 @@ export const STONE_LAYOUTS: Record<TrackId, StoneField[]> = {
     { at: .08, rows: 2, lanes: ['fire', 'thunder', 'doom', 'haste'] },
     { at: .40, rows: 1, lanes: ['ice', 'random', 'mini', 'fire'] },
     { at: .80, rows: 1, lanes: ['shield', 'thunder', 'random', 'ice'] },
+  ],
+  // Fantasia lays every type, and Ultima directly: in the story Ultima stones were sealed in this realm.
+  fantasia: [
+    { at: .215, rows: 2, lanes: ['fire', 'random', 'ice', 'thunder'] },
+    { at: .345, rows: 1, lanes: ['haste', 'mini', 'random', 'shield'] },
+    { at: .49, rows: 1, lanes: ['doom', 'random', 'ultima', 'fire'] },
+    { at: .70, rows: 1, lanes: ['ice', 'ultima', 'random', 'haste'] },
+    { at: .90, rows: 1, lanes: ['thunder', 'random', 'mini', 'doom'] },
   ],
 };

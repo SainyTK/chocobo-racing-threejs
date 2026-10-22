@@ -174,7 +174,7 @@ document.addEventListener('click', async e => {
   try {
     if (action === 'play') { if (screen === 'results') { cup = null; document.querySelector('.results-backdrop')?.remove(); } beginRace(); }
     if (action === 'next-round' && cup) { cup.round++; beginRace(true); }
-    if (action === 'next-course' || action === 'previous-course') { readProfile(); track = TRACK_IDS[(TRACK_IDS.indexOf(track) + (action === 'next-course' ? 1 : 7)) % 8]; storage.set('track', track); world.buildTrack(track); home(); }
+    if (action === 'next-course' || action === 'previous-course') { readProfile(); track = TRACK_IDS[(TRACK_IDS.indexOf(track) + (action === 'next-course' ? 1 : TRACK_IDS.length - 1)) % TRACK_IDS.length]; storage.set('track', track); world.buildTrack(track); home(); }
     if (action === 'create' || action === 'join') { readProfile(); button.setAttribute('disabled', ''); await net.request(action, { name: playerName, character, abilityId, track, laps, difficulty, code: joinCode }); }
     if (action === 'start' || action === 'rematch') await net.request(action);
     if (action === 'leave') await leaveGame();

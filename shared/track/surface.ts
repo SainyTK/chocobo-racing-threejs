@@ -21,6 +21,9 @@ export function rampAt(id: TrackId, s: number, x: number): { ramp: Ramp; height:
   return null;
 }
 
+/** True where a railing runs along the `side` edge (+1 left, -1 right) at main-road distance `s`. */
+export function railAt(id: TrackId, s: number, side: number) { return courseLayout(id).rails.some(r => r.side === side && along(id, r.s, s) >= 0 && along(id, r.s, s) <= r.length); }
+
 /** True over a chasm in the course. */
 export function inGap(id: TrackId, s: number) { return courseLayout(id).gaps.some(g => { const a = along(id, g.s, s); return a >= 0 && a <= g.length; }); }
 

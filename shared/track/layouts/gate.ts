@@ -6,6 +6,7 @@ export const gate: CourseLayout = {
   patches: [],
   ramps: [],
   gaps: [],
+  rails: [],
   shortcuts: [{ from: 615, to: 752, side: -1, join: 20, width: 4.4, edge: 'wall' }],
   hazards: [
     { kind: 'door', s: 985, x: 5.5, length: 2.4, width: 11, period: 5, phase: 0, warn: .9, strike: 2.2, stun: 1.2, text: 'Crushed by the gate!' },

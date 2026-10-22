@@ -3,7 +3,8 @@ import { LATE_STAGE_MUSIC } from './previous-late.ts';
 import type { MusicEvent, StageMusic } from '../../src/music/types.ts';
 import type { TrackId } from '../../shared/track/types.ts';
 
-export const STAGE_MUSIC: Record<TrackId, StageMusic> = { ...EARLY_STAGE_MUSIC, ...LATE_STAGE_MUSIC };
+/** First-pass scores of the courses that had one; courses added after the revision have none. */
+export const STAGE_MUSIC: Partial<Record<TrackId, StageMusic>> = { ...EARLY_STAGE_MUSIC, ...LATE_STAGE_MUSIC };
 
 // Original menu score: two sixteen-bar phrases with a quieter answering phrase.
 const events: MusicEvent[] = [];

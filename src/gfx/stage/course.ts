@@ -8,6 +8,7 @@ import { Ambient } from './ambient.ts';
 import { chevronSign, block, rbox, cyl, ball, cone, tube, flagPole, xf } from './props/common.ts';
 import { buildPatches } from './patches.ts';
 import { buildRamps } from './ramps.ts';
+import { buildRails } from './rails.ts';
 import { buildShortcuts } from './shortcuts.ts';
 import { HazardViews } from './hazards.ts';
 import type { CourseArt, Environment, StartGateStyle } from './types.ts';
@@ -44,6 +45,7 @@ export function buildCourse(id: TrackId): Course {
   signs(kit, art);
   const surfaces = [...buildPatches(kit, art.patches), ...buildShortcuts(kit, road, art.shortcut, art.patches)];
   buildRamps(kit, art.ramp);
+  buildRails(kit, art.rail);
   const hazards = new HazardViews(kit, art.hazards);
   art.build(kit);
   kit.finish();
@@ -83,21 +85,23 @@ export function buildCourse(id: TrackId): Course {
 
 /** Checkered start line, grid boxes and the start gate with a banner naming the course. */
 function startLine(kit: Kit, st: StartGateStyle) {
-  const w = kit.w, a = new THREE.Color('#f7f4ee'), b = new THREE.Color('#25243a'), pos: number[] = [], col: number[] = [];
-  const quad = (s0: number, s1: number, o0: number, o1: number, c: THREE.Color, lift = .09) => {
+  // Light and dark squares are separate meshes: world geometry is painted one colour per part.
+  const w = kit.w, light = st.checker?.[0] ?? '#f7f4ee', dark = st.checker?.[1] ?? '#25243a', pos: Record<'light' | 'dark', number[]> = { light: [], dark: [] };
+  const quad = (s0: number, s1: number, o0: number, o1: number, tone: 'light' | 'dark', lift = .09) => {
     const p = [kit.at(s0, o0), kit.at(s0, o1), kit.at(s1, o0), kit.at(s1, o1)];
-    pos.push(p[0].x, p[0].y + lift, p[0].z, p[2].x, p[2].y + lift, p[2].z, p[1].x, p[1].y + lift, p[1].z, p[1].x, p[1].y + lift, p[1].z, p[2].x, p[2].y + lift, p[2].z, p[3].x, p[3].y + lift, p[3].z);
-    for (let i = 0; i < 6; i++) col.push(c.r, c.g, c.b);
+    pos[tone].push(p[0].x, p[0].y + lift, p[0].z, p[2].x, p[2].y + lift, p[2].z, p[1].x, p[1].y + lift, p[1].z, p[1].x, p[1].y + lift, p[1].z, p[2].x, p[2].y + lift, p[2].z, p[3].x, p[3].y + lift, p[3].z);
   };
   const n = Math.round(w * 2 / 1.2), cw = 2 * w / n;
-  for (let j = 0; j < 2; j++) for (let i = 0; i < n; i++) quad(j * 1.2, (j + 1) * 1.2, -w + i * cw, -w + (i + 1) * cw, (i + j) % 2 ? a : b);
+  for (let j = 0; j < 2; j++) for (let i = 0; i < n; i++) quad(j * 1.2, (j + 1) * 1.2, -w + i * cw, -w + (i + 1) * cw, (i + j) % 2 ? 'light' : 'dark');
   // Grid boxes for the six starting slots, matching the race setup.
   for (let g = 0; g < 6; g++) {
     const s = -8 - Math.floor(g / 2) * 6, x = (g % 2 - .5) * 6;
-    quad(s + 1.6, s + 1.85, x - 1.6, x + 1.6, a); quad(s - 1.4, s + 1.85, x - 1.6, x - 1.4, a); quad(s - 1.4, s + 1.85, x + 1.4, x + 1.6, a);
+    quad(s + 1.6, s + 1.85, x - 1.6, x + 1.6, 'light'); quad(s - 1.4, s + 1.85, x - 1.6, x - 1.4, 'light'); quad(s - 1.4, s + 1.85, x + 1.4, x + 1.6, 'light');
   }
-  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.computeVertexNormals(); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
-  kit.addWorld(g, '#ffffff', { ao: false });
+  for (const [tone, paint] of [['light', light], ['dark', dark]] as const) {
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos[tone], 3)); g.computeVertexNormals();
+    kit.addWorld(g, paint, { ao: false });
+  }
   // Gate: twin towers and a truss carrying the banner. Rebuilt per course from its palette.
   // Towers step outward until they clear every stretch of road, since some courses start on a bend.
   // A side that cannot clear (a start on a corner apex) gets no tower; the truss is cantilevered from the other one.

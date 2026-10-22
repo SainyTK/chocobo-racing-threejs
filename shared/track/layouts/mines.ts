@@ -6,6 +6,7 @@ export const mines: CourseLayout = {
   patches: [],
   ramps: [],
   gaps: [],
+  rails: [],
   shortcuts: [{ from: 575, to: 735, side: 1, join: 20, width: 3.2, edge: 'wall' }],
   hazards: [
     { kind: 'cart', s: 515, x: -16.5, length: 2.6, width: 3.2, period: 7, phase: 0, warn: 1.5, strike: 2.4, motion: 'cross', amp: 33, stun: 1.4, text: 'Hit by a mine cart!' },

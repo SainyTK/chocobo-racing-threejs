@@ -6,6 +6,7 @@ export const manor: CourseLayout = {
   patches: [{ s: 1241, length: 18, x: 0, width: 22, surface: 'slow' }],
   ramps: [{ s: 1236, x: 0, width: 22, length: 8, height: 1.2, lift: .3 }],
   gaps: [],
+  rails: [],
   shortcuts: [],
   hazards: [
     { kind: 'cage', s: 694, x: 2.25, length: 8, width: 17.5, period: 8, phase: 0, warn: 1.2, strike: 2.6, stun: 2.2, text: 'Caged!' },

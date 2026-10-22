@@ -26,5 +26,11 @@ export const TRACKS: Record<TrackId, TrackDefinition> = {
   volcano: { name: 'Vulcan-O Valley', difficulty: 4, width: 10.5, wall: false, cliff: true, sky: '#803e45', fog: '#b56e53', ground: '#e0602b', road: '#68535b', edge: '#ad8376', accent: '#ffb247', surface: 'stone', elevation: 11,
     description: 'Cliff edges, hairpins, and lava. Save your Dash for the exits.',
     points: [[-200,135],[-40,175],[145,150],[190,60],[80,10],[185,-60],[110,-165],[0,-100],[-65,-190],[-180,-145],[-125,-50],[-210,0]] },
+  // Bahamut's stage, traced from the original course map: the start on the right heading north, Leviathan's coils at the top right,
+  // the top straight, the zigzag out to the far-left hairpin, the lower S and the meander back to the line. The coils cross themselves
+  // in the original; here they are three linked lobes, since the road never passes over itself.
+  fantasia: { name: 'Fantasia', difficulty: 5, width: 9.5, wall: false, cliff: true, sky: '#05060f', fog: '#0b0c22', ground: '#1b1d33', road: '#6c6e7f', edge: '#9fe6ee', accent: '#b98cff', surface: 'stone', elevation: 4, hills: { at: .889, length: .042, height: 2.2, count: 2 },
+    description: 'The realm of the Espers. Narrow roads over bottomless pits, with a railing on one side at most.',
+    points: [[156,-41],[156,-78],[176,-102],[197,-127],[184,-152],[160,-148],[139,-119],[119,-107],[98,-127],[107,-156],[131,-168],[152,-193],[139,-217],[111,-217],[90,-193],[61,-193],[-4,-197],[-66,-193],[-45,-148],[-16,-102],[-29,-82],[-86,-94],[-152,-111],[-201,-119],[-176,-90],[-131,-57],[-94,-20],[-86,25],[-82,74],[-53,102],[4,102],[53,107],[37,148],[-12,152],[-57,160],[-49,201],[12,201],[74,197],[98,156],[135,119],[152,94],[127,74],[82,70],[61,45],[25,37],[-16,29],[-16,4],[12,-4],[61,-8],[90,4],[111,29],[139,25],[156,-4]] },
 };
 export const TRACK_IDS = Object.keys(TRACKS) as TrackId[];

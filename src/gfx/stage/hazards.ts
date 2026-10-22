@@ -4,9 +4,9 @@ import { STAGE, type Layer } from './materials.ts';
 import type { Kit, Parts } from './kit.ts';
 import type { HazardArt } from './types.ts';
 
-/** How each kind of hazard moves: dropping from the sky, bursting from the ground, lowering over the road, floating, rolling across, or standing still. */
-type Motion = 'drop' | 'burst' | 'lower' | 'float' | 'roll' | 'fixed';
-const MOTION: Record<HazardKind, Motion> = { boulder: 'drop', geyser: 'burst', cage: 'lower', door: 'lower', ghost: 'float', cart: 'roll', cutlery: 'fixed' };
+/** How each kind of hazard moves: dropping from the sky, bursting from the ground, lowering over the road, floating, rolling across, flashing in for its strike, or standing still. */
+type Motion = 'drop' | 'burst' | 'lower' | 'float' | 'roll' | 'flash' | 'fixed';
+const MOTION: Record<HazardKind, Motion> = { boulder: 'drop', geyser: 'burst', cage: 'lower', door: 'lower', ghost: 'float', cart: 'roll', cutlery: 'fixed', bolt: 'flash' };
 /** Where lowering hazards wait, above the camera's sight line, and where dropping ones start. */
 const RAISED = 9.6, DROP = 38;
 
@@ -89,6 +89,9 @@ export class HazardViews {
           // Carts sit at the rail head during the warning, then cross; between runs they are away in their tunnel.
           m.visible = st.live || st.warning > 0; m.rotation.y += Math.sign(v.h.amp ?? 1) * Math.PI / 2;
           if (st.warning > 0) m.position.y += Math.sin(time * 30) * .03; break;
+        case 'flash':
+          // Only there while it strikes, flickering as it fades.
+          m.visible = st.live && Math.sin(time * 90) > -.6; m.scale.set(1 - st.progress * .5, 1, 1 - st.progress * .5); m.rotation.y += time * 7; break;
         case 'fixed': break;
       }
     }
