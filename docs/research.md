@@ -67,7 +67,7 @@ Deliberate deviations:
 
 | Original | Remake | Reason |
 | --- | --- | --- |
-| No ability of his own: like the other secret racers he picks a shared one (the longplay gives him Dash) | Braver, a new sword swing: halfway through a 0.9 s swing, every rival within 9 m spins out; recharge 14 s. Any racer can still pick Dash or any other ability | Every racer here has a default ability; Braver is his first Limit Break in FFVII. In all-CPU races Cloud with Dash won 9% of races, with Braver at 14 s about BALANCE_WIN, near the field's average |
+| No ability of his own: like the other secret racers he picks a shared one (the longplay gives him Dash) | Braver, a new sword swing: halfway through a 0.9 s swing, every rival within 9 m spins out; recharge 14 s. Any racer can still pick Dash or any other ability | Every racer here has a default ability; Braver is his first Limit Break in FFVII. In all-CPU races Cloud with Dash won 9% of races, with Braver at 14 s he won 12% of 324 races with a mean place of 3.66 (the average is 3.5), level with Behemoth |
 | Unlocked by the 5th Story clear, hidden behind Squall's slot (hold R1) | His own slot, available from the start | This remake has no Story Mode or Squall |
 | No portrait: a black "?" icon in the HUD and results, Squall's portrait on the ability screen | A rendered portrait like every racer | The roster and HUD are built from 3D portraits |
 | 90 MPH and "very bad" cornering, the same as Goblin; acceleration not stated | Goblin's top speed, acceleration and loose grip, slightly slower steering | The same profile as the racer the original gives the same numbers |

@@ -56,9 +56,9 @@ Measured in the Studio with `createCharacter` (triangles of the body and of the 
 | Behemoth | 12,192 | 9,308 | 23 | none |
 | Chubby Chocobo | 14,768 | 10,024 | 35 | none |
 | Bahamut | 11,928 | 4,899 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Bahamut |
-| Cloud | CLOUD_TRIS | CLOUD_HULL | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Cloud |
+| Cloud | 10,756 | 4,394 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Cloud |
 
-The Bahamut GLB is 469 KB with 36 bones and six clips; the Cloud GLB is CLOUD_KB KB with 24 bones and seven clips.
+The Bahamut GLB is 469 KB with 36 bones and six clips; the Cloud GLB is 336 KB with 24 bones and seven clips.
 A new racer should stay near 12,000 body triangles and one atlas.
 
 ## Pitfalls

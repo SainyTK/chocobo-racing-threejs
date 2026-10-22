@@ -37,8 +37,9 @@ J = {
     "hips": (0, 0.36, 1.26),
     "chest": (0, 0.28, 1.6),
     "neck": (0, 0.18, 1.94),
-    "head": (0, 0.14, 2.06),
-    "head_end": (0, 0.14, 2.8),
+    # The head pivots low in the skull, so the game's head point (portraits, stun stars) sits on the face.
+    "head": (0, 0.12, 2.3),
+    "head_end": (0, 0.12, 2.9),
     "shoulder": (0.32, 0.18, 1.86),
     "elbow": (0.5, -0.1, 1.72),
     "wrist": (0.54, -0.44, 1.64),
