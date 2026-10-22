@@ -26,11 +26,19 @@ export const FAN_END = { hold: .1, fade: .13 } as const;
 /** Fans grow to full size over this many seconds when a boost starts. */
 export const FAN_GROW = { dash: .35, haste: .13, charge: .07 } as const;
 
+/** The activation flash several abilities open with: phase windows in seconds, colours, and sizes in racer heights. */
+export interface BurstLook {
+  cross: readonly [number, number]; glow: readonly [number, number]; core: readonly [number, number]; rays: readonly [number, number];
+  crossColor: string; glowInner: string; glowRim: string; coreColor: string; rayColor: string; rayTip: string;
+  /** Cross line length, glow radius at the start and end, core radius, ray count and ray length range. */
+  size: { cross: number; glowFrom: number; glowTo: number; core: number; rays: number; rayFrom: number; rayTo: number };
+}
 /** The Dash burst, scaled from the original's 1.6 s to fit the remake's 2 s Dash. */
-export const DASH_BURST = {
+export const DASH_BURST: BurstLook = {
   cross: [.03, .3], glow: [.1, .55], core: [.45, .8], rays: [.45, .95],
   crossColor: '#ffffff', glowInner: '#c9cbea', glowRim: '#6b5cd8', coreColor: '#ffffff', rayColor: '#ffa8ee', rayTip: '#c08cf7',
-} as const;
+  size: { cross: 3.2, glowFrom: .8, glowTo: 2.4, core: 1.2, rays: 9, rayFrom: 1.5, rayTo: 4.5 },
+};
 /** Haste: a thin blue-white ring circles the racer for its first frames. */
 export const HASTE_RING = { life: .2, color: '#cfe6ff' } as const;
 

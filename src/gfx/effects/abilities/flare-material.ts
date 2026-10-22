@@ -12,13 +12,13 @@ export const enum Glyph {
 }
 
 const vertexShader = /* glsl */`
-attribute vec2 corner; attribute vec3 color0, color1; attribute vec4 shape;
-varying vec2 vUv; varying vec3 vC0, vC1; varying vec4 vShape;
-void main() { vUv = corner; vC0 = color0; vC1 = color1; vShape = shape; gl_Position = projectionMatrix * viewMatrix * vec4(position, 1.); }`;
+attribute vec2 corner; attribute vec3 color0, color1; attribute vec4 shape; attribute float cover;
+varying vec2 vUv; varying vec3 vC0, vC1; varying vec4 vShape; varying float vCover;
+void main() { vUv = corner; vC0 = color0; vC1 = color1; vShape = shape; vCover = cover; gl_Position = projectionMatrix * viewMatrix * vec4(position, 1.); }`;
 
 const fragmentShader = /* glsl */`
 uniform vec3 uFeatherGlow;
-varying vec2 vUv; varying vec3 vC0, vC1; varying vec4 vShape;
+varying vec2 vUv; varying vec3 vC0, vC1; varying vec4 vShape; varying float vCover;
 void main() {
   int glyph = int(vShape.x + .5); float a; vec3 c;
   if (glyph == 0) {
@@ -42,13 +42,15 @@ void main() {
     a = clamp(body + halo * .8, 0., 1.);
   }
   a *= vShape.y; if (a < .002) discard;
-  gl_FragColor = vec4(c * a, 1.);
+  // Premultiplied: cover 0 adds light as before, cover 1 paints over the scene like normal alpha blending.
+  gl_FragColor = vec4(c * a, a * vCover);
 }`;
 
-/** One additive material draws every flare quad, so all ability effects together cost a single draw call. */
+/** One premultiplied-alpha material draws every flare quad, additive or painted, so all ability effects together cost a single draw call. */
 export function flareMaterial() {
   return new THREE.ShaderMaterial({
     vertexShader, fragmentShader, uniforms: { uFeatherGlow: { value: new THREE.Color(FLAP.glowColor) } },
-    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
+    transparent: true, depthWrite: false, side: THREE.DoubleSide, premultipliedAlpha: true,
+    blending: THREE.CustomBlending, blendEquation: THREE.AddEquation, blendSrc: THREE.OneFactor, blendDst: THREE.OneMinusSrcAlphaFactor,
   });
 }
