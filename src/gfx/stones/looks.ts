@@ -7,21 +7,23 @@ export const STONE_KINDS: StoneKind[] = [...Object.keys(ITEMS) as Item[], 'rando
 
 /**
  * How each stone is painted, read from footage of the original: a glossy ball in one body colour with a large symbol
- * on the side facing the camera. `glyph` is the symbol's main colour and `accent` its second tone. Ice is milky and
- * slightly see-through at its middle.
+ * on the side facing the camera. `glyph` is the symbol's main colour and `accent` its second tone.
  */
-export interface StoneLook { body: string; glyph: string; accent: string; opacity: number }
+export interface StoneLook { body: string; glyph: string; accent: string }
 export const STONE_LOOKS: Record<StoneKind, StoneLook> = {
-  fire: { body: '#e3200f', glyph: '#ffb01e', accent: '#fff4a8', opacity: 1 },
-  ice: { body: '#d9d6f2', glyph: '#28348f', accent: '#f4f6ff', opacity: .9 },
-  thunder: { body: '#45c824', glyph: '#ffe62e', accent: '#fff9c2', opacity: 1 },
-  haste: { body: '#11a98f', glyph: '#ff2cd6', accent: '#ff9cf0', opacity: 1 },
-  shield: { body: '#da3a80', glyph: '#7b3cff', accent: '#ffffff', opacity: 1 },
-  mini: { body: '#2c3fd6', glyph: '#7ff2ff', accent: '#0d2f96', opacity: 1 },
-  doom: { body: '#c49496', glyph: '#e9e6e2', accent: '#3a2a2e', opacity: 1 },
-  ultima: { body: '#f4f1ff', glyph: '#b28cff', accent: '#ffe27a', opacity: 1 },
-  random: { body: '#141218', glyph: '#ffe23a', accent: '#fff6b0', opacity: 1 },
+  fire: { body: '#e3200f', glyph: '#ffb01e', accent: '#fff4a8' },
+  ice: { body: '#1f43cf', glyph: '#46dcee', accent: '#0a1966' },
+  thunder: { body: '#45c824', glyph: '#ffe62e', accent: '#fff9c2' },
+  haste: { body: '#11a98f', glyph: '#ff2cd6', accent: '#9a2fb8' },
+  shield: { body: '#da3a80', glyph: '#7b3cff', accent: '#ffffff' },
+  mini: { body: '#9d96cc', glyph: '#212778', accent: '#d2ddf6' },
+  doom: { body: '#c49496', glyph: '#e9e6e2', accent: '#3a2a2e' },
+  ultima: { body: '#ab9c2c', glyph: '#d6edf8', accent: '#6880b0' },
+  random: { body: '#141218', glyph: '#ffe23a', accent: '#fff6b0' },
 };
+
+/** Kinds whose symbol stays centred on the ball: Ultima's burst fills the face inside an even gold ring, and Mini's man stands in the middle. */
+export const CENTRED_KINDS: StoneKind[] = ['mini', 'ultima'];
 
 /** Track stones: radius in metres and the height of their centre above the road, so they float half a ball up as in the original. */
 export const TRACK_STONE = { radius: .85, lift: 1.3 };

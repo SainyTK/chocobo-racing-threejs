@@ -101,7 +101,7 @@ A held key overrides touch steering.
 ### Magic Stones
 
 Stones are glossy coloured balls floating over the road in rows of three or four lanes, each with its spell's symbol painted on the side facing you, so steer into the one you want.
-Fire is red with a flame, Ice milky lavender with a navy snowflake, Thunder green with a lightning bolt, Haste turquoise with a pink up arrow, Mini deep blue with a cyan arrowhead, Reflect pink with a violet shield, Doom dusty rose with a skull and Ultima white with a violet star.
+Fire is red with a flame, Ice royal blue with a cyan ice crystal, Thunder green with a lightning bolt, Haste turquoise with a pink up arrow, Mini lavender with a little navy man, Reflect pink with a violet shield, Doom dusty rose with a skull and Ultima gold with a pale burst of light.
 Each course uses the stone set the original introduced in its Story chapter.
 Cid's Test Track and Moogle Forest have only Haste and "?" stones, The Ancient Gate adds Fire, and each later course adds one more: Ice, Thunder, Mini, Reflect and Doom.
 Fantasia, the Bahamut stage, lays every type, and it is the only course with Ultima stones on the road.
