@@ -88,7 +88,7 @@ function beginRace(nextRound = false) {
   race = createRace(course, [makeRacer(playerId, playerName, character, false, abilityId)], laps, Date.now() >>> 0, mode === 'time' ? 'time' : mode === 'versus' ? 'versus' : 'race', rival, mode === 'time' ? DEFAULT_DIFFICULTY : difficulty);
   if (cup?.order.length) race.racers.forEach(p => { const grid = cup!.order.indexOf(p.id); placeRacer(course, p, -8 - Math.floor(grid / 2) * 6, (grid % 2 - .5) * 6); p.rank = grid + 1; });
   savedGhost = null; recording = []; ghostIndex = 0;
-  if (mode === 'time') { try { const data = JSON.parse(storage.get(ghostKey(), 'null')); if (data && Number.isInteger(data.character) && data.character >= 0 && data.character < 8 && Number.isFinite(data.time) && data.time <= 300 && Array.isArray(data.points) && data.points.length > 1 && data.points.length < 5000 && data.points.every((p: GhostPoint) => [p.t, p.x, p.z, p.yaw, p.s].every(Number.isFinite))) savedGhost = data; } catch {} }
+  if (mode === 'time') { try { const data = JSON.parse(storage.get(ghostKey(), 'null')); if (data && Number.isInteger(data.character) && data.character >= 0 && data.character < RACERS.length && Number.isFinite(data.time) && data.time <= 300 && Array.isArray(data.points) && data.points.length > 1 && data.points.length < 5000 && data.points.every((p: GhostPoint) => [p.t, p.x, p.z, p.yaw, p.s].every(Number.isFinite))) savedGhost = data; } catch {} }
   world.setGhost(savedGhost ? clamp(savedGhost.character, 0, 7) : null); world.enterRace(race); hud();
 }
 function stopFinish() { finish.stop(); document.body.classList.remove('finishing'); }
