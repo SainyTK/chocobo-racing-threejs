@@ -12,7 +12,7 @@ const KERB = 2.5;
  */
 export function stepFinished(r: Race, p: Racer, dt: number) {
   p.drifting = false; p.drift = 0; p.boost = 0;
-  for (const key of ['stun', 'mini', 'flying', 'shield', 'charging', 'flare', 'slash', 'invincible', 'gripUp'] as const) p[key] = Math.max(0, p[key] - dt);
+  for (const key of ['stun', 'mini', 'flying', 'shield', 'charging', 'flare', 'invincible', 'gripUp'] as const) p[key] = Math.max(0, p[key] - dt);
   if (p.speed <= 0) { p.vx = p.vz = 0; return; }
   const order = r.racers.filter(q => q.finishTime !== null && q.finishTime < p.finishTime!).length, side = order % 2 ? 1 : -1;
   const aim = pointAt(r.track, p.s + 14, side * (TRACKS[r.track].width - KERB));

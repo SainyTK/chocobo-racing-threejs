@@ -20,8 +20,6 @@ export const SOUNDS = {
   steal: [noise(.18, .35, 'highpass', 2500, 5000), ...arpeggio('square', [1318, 1760], .06, .14, .12)],
   fall: [{ wave: 'sine', freq: 1300, to: 220, length: .9, volume: .3, vibrato: { rate: 9, depth: 25 } }],
   recover: arpeggio('sine', [392, 587, 784], .07, .25, .3),
-  /** Braver: the Buster Sword cutting the air, with a ring of steel. */
-  slash: [noise(.32, .55, 'bandpass', 500, 3400, 2.2, .1), tone('triangle', 1760, .5, .1, .3, 2350), tone('sine', 2637, .4, .06, .32)],
   flap: Array.from({ length: 6 }, (_, i) => noise(.07, .9, 'bandpass', 700 + i * 60, undefined, 2, i * .07)),
   grip: arpeggio('square', [1600, 1600, 2000], .05, .05, .3),
   doomPass: [noise(.4, .8, 'bandpass', 300, 1200, 2), tone('sawtooth', 160, .4, .25, 0, 90)],
@@ -48,7 +46,7 @@ export function castSound(kind: Item, level: number): Sound {
 }
 
 /** The sound of a spell landing on a racer, scaled by crash tier (1 spin-out, 2 crash, 3 big crash). */
-export function impactSound(kind: Item | 'charge' | 'braver' | 'doom' | 'megaflare', tier: number): Sound {
+export function impactSound(kind: Item | 'charge' | 'doom' | 'megaflare', tier: number): Sound {
   const t = LEVEL(tier), boom = (len: number, vol: number) => [tone('sine', 110, len, vol, 0, 32), noise(len * 1.2, vol * .8, 'lowpass', 2400, 120)];
   switch (kind) {
     case 'fire': return [...boom(.45 + t * .2, .5 + t * .12), noise(.3, .3, 'highpass', 1800, 600)];
@@ -57,7 +55,6 @@ export function impactSound(kind: Item | 'charge' | 'braver' | 'doom' | 'megafla
     case 'ultima': return [...boom(.7 + t * .3, .7), { wave: 'sine', freq: 1568, length: .9, volume: .14, vibrato: { rate: 6, depth: 20 } }];
     case 'doom': return [...boom(1.1, .75), tone('sawtooth', 220, 1, .12, 0, 55)];
     case 'megaflare': return [...boom(.9, .8), tone('sawtooth', 1200, .5, .12, 0, 200), noise(.7, .45, 'bandpass', 3200, 700, 1.5)];
-    case 'braver': return [noise(.08, .7, 'highpass', 2600), tone('square', 1320, .25, .12, 0, 900), ...boom(.3, .4), ...SOUNDS.spin];
     case 'mini': return [tone('square', 640, .14, .22, 0, 150), { wave: 'sine', freq: 420, to: 900, length: .35, volume: .3, at: .12, vibrato: { rate: 16, depth: 50 } }];
     default: return [...boom(.3 + t * .1, .45), ...SOUNDS.spin];
   }

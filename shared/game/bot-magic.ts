@@ -6,7 +6,7 @@ import type { TrackStone } from '../track/types.ts';
 import { ABILITY_SECONDS } from './abilities.ts';
 import { BOT_MAGIC } from './bot-personalities.ts';
 import { boostHolds } from './bot-driving.ts';
-import { BRAVER, HASTE_SECONDS } from './spells.ts';
+import { HASTE_SECONDS } from './spells.ts';
 import { aboveGround } from './combat.ts';
 import { TICK } from './constants.ts';
 import { MAX_STONES, canAddStone, heldStones, maxLevel } from './inventory.ts';
@@ -75,10 +75,6 @@ export function botMagic(r: Race, p: Racer, limited: boolean) {
   // A full leader with no use for its latest stack spends it to make room.
   const item = !!top && !p.lastItem && decide && !holding(r, p, top.kind, top.level) && (worthCasting(r, p, top, limited) || heldStones(p) >= MAX_STONES && !racerAhead(r, p));
   const id = p.abilityId, ready = p.ability >= 100 && !p.lastAbility;
-  const ability = ready && (id === 'dash' || id === 'charge' ? !limited && p.boost <= 0 && boostHolds(r, p, ABILITY_SECONDS[id]) : id === 'mug' ? canAddStone(p) : id === 'megaflare' ? activeRivals(r, p).some(q => q.invincible <= 0) : id === 'braver' ? swingWorthwhile(r, p) : id === 'flap' || id === 'grip');
+  const ability = ready && (id === 'dash' || id === 'charge' ? !limited && p.boost <= 0 && boostHolds(r, p, ABILITY_SECONDS[id]) : id === 'mug' ? canAddStone(p) : id === 'megaflare' ? activeRivals(r, p).some(q => q.invincible <= 0) : id === 'flap' || id === 'grip');
   return { item, ability };
-}
-/** A CPU swings Braver when a rival it can hit is close enough to still be in reach when the blade passes. */
-function swingWorthwhile(r: Race, p: Racer) {
-  return activeRivals(r, p).some(q => q.invincible <= 0 && q.falling <= 0 && Math.hypot(q.px - p.px, q.pz - p.pz) < BRAVER.reach * .7);
 }

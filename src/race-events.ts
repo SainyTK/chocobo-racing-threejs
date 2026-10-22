@@ -2,7 +2,7 @@ import { ITEMS, MEGAFLARE, crashTier, type GameEvent, type Item } from '../share
 
 /** How hard a crash lands, after the original's three hit types: 1 spin-out, 2 crash, 3 big crash. */
 export type CrashTier = 1 | 2 | 3;
-export interface CrashInfo { kind: Item | 'charge' | 'braver' | 'doom' | 'squash' | 'drift' | 'megaflare'; level: number; tier: CrashTier }
+export interface CrashInfo { kind: Item | 'charge' | 'doom' | 'squash' | 'drift' | 'megaflare'; level: number; tier: CrashTier }
 
 const SPELLS = (Object.keys(ITEMS) as Item[]).flatMap(kind => ITEMS[kind].names.map((name, i) => ({ name, kind, level: i + 1 })));
 
@@ -24,7 +24,6 @@ export function crashInfo(e: GameEvent): CrashInfo {
   if (text.startsWith('Squashed')) return { kind: 'squash', level: 1, tier: tierOf('squash', 1) };
   if (text.startsWith('Over-drift')) return { kind: 'drift', level: 1, tier: tierOf('drift', 1) };
   if (text.endsWith(': Charge!')) return { kind: 'charge', level: 1, tier: tierOf('charge', 1) };
-  if (text.endsWith(': Braver!')) return { kind: 'braver', level: 1, tier: tierOf('braver', 1) };
   if (text.endsWith(': Megaflare!')) return { kind: 'megaflare', level: 3, tier: tierOf('megaflare', 3) };
   const spell = SPELLS.find(s => text.endsWith(`: ${s.name}!`));
   return spell ? { kind: spell.kind, level: spell.level, tier: tierOf(spell.kind, spell.level) } : { kind: 'charge', level: 1, tier: 1 };

@@ -47,7 +47,6 @@ export function useAbility(r: Race, p: Racer) {
   if (p.abilityId === 'grip') p.gripUp = ABILITY_SECONDS.grip;
   if (p.abilityId === 'charge') { p.boost = ABILITY_SECONDS.charge; p.charging = ABILITY_SECONDS.charge; }
   if (p.abilityId === 'megaflare') p.flare = ABILITY_SECONDS.megaflare;
-  if (p.abilityId === 'braver') p.slash = ABILITY_SECONDS.braver;
   p.ability = 0; event(r, p, 'ability', `${ABILITIES[p.abilityId].name}!`);
 }
 export function recover(r: Race, p: Racer) {

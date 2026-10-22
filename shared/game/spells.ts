@@ -24,18 +24,11 @@ export const REFLECT_SECONDS = 5;
  * shorter crash time: with the heavy crash's 2.4 s, Bahamut won over a third of all-CPU races even with a 100 s recharge.
  */
 export const MEGAFLARE = { tier: 3, stun: CRASH.crash } as const;
-/**
- * Braver, Cloud's sword swing, invented for this remake (the original's Cloud picks a shared ability). `strike` is the
- * seconds into the swing when the blade passes, and `reach` the metres around him it spins rivals out.
- */
-export const BRAVER = { reach: 9, strike: .45 } as const;
-/** What can crash a racer through `hit`: a stone's spell, or a physical attack that Reflect and Receive cannot catch. */
-export type Attack = Item | 'charge' | 'braver';
-/** Hit tier of a crashing spell: 1 spin-out, 2 crash, 3 heavy crash. Blizzard sheets, Thunder, Ultima, Charge and Braver spin; every level 3 spell is heavy. */
-export function crashTier(kind: Attack, level: number): 1 | 2 | 3 {
+/** Hit tier of a crashing spell: 1 spin-out, 2 crash, 3 heavy crash. Blizzard sheets, Thunder, Ultima and Charge spin; every level 3 spell is heavy. */
+export function crashTier(kind: Item | 'charge', level: number): 1 | 2 | 3 {
   if (level >= 3) return 3;
-  if (kind === 'charge' || kind === 'braver' || kind === 'ice' || level === 1 && (kind === 'thunder' || kind === 'ultima')) return 1;
+  if (kind === 'charge' || kind === 'ice' || level === 1 && (kind === 'thunder' || kind === 'ultima')) return 1;
   return 2;
 }
 /** Stun seconds of a crashing spell. Ultima III is a catastrophic crash, longer than the heavy tier. */
-export const crashSeconds = (kind: Attack, level: number) => kind === 'ultima' && level >= 3 ? 3.2 : [CRASH.spin, CRASH.crash, CRASH.heavy][crashTier(kind, level) - 1];
+export const crashSeconds = (kind: Item | 'charge', level: number) => kind === 'ultima' && level >= 3 ? 3.2 : [CRASH.spin, CRASH.crash, CRASH.heavy][crashTier(kind, level) - 1];

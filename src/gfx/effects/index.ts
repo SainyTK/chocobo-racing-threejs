@@ -15,7 +15,6 @@ import { rand, floorY } from './util.ts';
 import { SpellFx } from './spells.ts';
 import { castInfo, crashInfo } from '../../race-events.ts';
 import { FLARE_COLOR, flareRain } from './megaflare.ts';
-import { BRAVER_COLOR, braverArcs, braverWindUp } from './braver.ts';
 
 const v = new THREE.Vector3(), v2 = new THREE.Vector3();
 /** Fireball scale per spell level. */
@@ -126,9 +125,8 @@ export class Effects {
       case 'pickup': { const kind = (Object.keys(ITEMS) as Item[]).find(k => e.text.startsWith(ITEMS[k].name)); this.sparkle(at, kind ? ITEMS[kind].color : '#ffffff', 20, 1.2); return; }
       case 'pad': case 'start': case 'spindash': s.boostColor.set(e.type === 'spindash' ? '#7fd8ff' : '#ffb347'); this.bursts.spawn('ring', ground, e.type === 'spindash' ? '#7fd8ff' : '#ffc45a', 3.5, .4); return;
       case 'ability': {
-        const id = text.includes('magic plus') ? 'magic' : p.abilityId, color = id === 'flap' ? '#ffffff' : id === 'grip' ? '#8cff7a' : id === 'charge' ? '#ff5a3a' : id === 'mug' ? '#ffd84a' : id === 'magic' ? '#c58bff' : id === 'megaflare' ? FLARE_COLOR : id === 'braver' ? BRAVER_COLOR : '#ffc45a';
+        const id = text.includes('magic plus') ? 'magic' : p.abilityId, color = id === 'flap' ? '#ffffff' : id === 'grip' ? '#8cff7a' : id === 'charge' ? '#ff5a3a' : id === 'mug' ? '#ffd84a' : id === 'magic' ? '#c58bff' : id === 'megaflare' ? FLARE_COLOR : '#ffc45a';
         if (id === 'dash' || id === 'charge') s.boostColor.set(color);
-        if (id === 'braver') { braverWindUp(this, ground); return; }
         this.bursts.spawn('ring', ground, color, 4, .5);
         if (id === 'flap') this.spray(this.smoke, 18, () => ({ x: at.x + rand(), y: at.y + rand(), z: at.z + rand(), vx: rand() * 3, vy: rand(1, 4), vz: rand() * 3, life: rand(.9, 1.5), size: .35, color: '#fff6d8', alpha: .9, drag: 2, gravity: 1.5, shape: Shape.Shard }));
         else this.sparkle(at, color, 22);
@@ -153,7 +151,6 @@ export class Effects {
     this.syncTraps(dt, race.traps.map(o => ({ key: `t${o.id}`, x: o.px, y: floorY(race, o.px, o.pz), z: o.pz, radius: o.radius })));
     this.updateRacers(dt, race, chars);
     flareRain(this, race, dt);
-    braverArcs(this, race, dt);
     this.animate(dt, camera, race);
   }
   /** Advances effects with no race running. The studio previews one-shot effects, fireballs and traps through this. */

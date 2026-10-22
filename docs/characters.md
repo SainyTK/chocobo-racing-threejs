@@ -43,7 +43,7 @@ The Python is formatted and linted with Ruff: `uvx ruff format scripts/character
 
 - `src/gfx/characters/models.ts` loads every GLB once with `GLTFLoader` and the meshopt decoder. The game (`src/main.ts`) and the Studio (`studio/main.ts`) await `loadCharacterModels()` before building any racer, so `createCharacter` stays synchronous.
 - `src/gfx/characters/skinned.ts` clones a model with `SkeletonUtils.clone`, gives the body the shared toon material (atlas as `map`, ambient occlusion as vertex colours, the rig's flash, rim and fade uniforms) and turns the `Outline` mesh into the inverted hull. Geometry, texture and clips stay shared between instances; `dispose` skips geometry marked `userData.shared`.
-- `src/gfx/characters/racers/cloud.ts` is a rider on a vehicle: one armature holds Cloud and the Hardy-Daytona. The wheels and the fork have their own bones that no clip keys; `driven()` in `skinned.ts` gives each one a stand-in joint, which the shared animator spins (`Build.wheels`) and steers (`Build.steer`) like a code-built racer's joint, and turns the bone about an axis given in model space after the mixer update. Idle and Ride blend by speed; Cast, Slash (Braver), Win and Lose follow the reaction's clock.
+- `src/gfx/characters/racers/cloud.ts` is a rider on a vehicle: one armature holds Cloud and the Hardy-Daytona. The wheels and the fork have their own bones that no clip keys; `driven()` in `skinned.ts` gives each one a stand-in joint, which the shared animator spins (`Build.wheels`) and steers (`Build.steer`) like a code-built racer's joint, and turns the bone about an axis given in model space after the mixer update. Idle and Ride blend by speed; Cast, Win and Lose follow the reaction's clock.
 - `src/gfx/characters/racers/bahamut.ts` builds the `Build` the rest of the game expects: head bone, exhaust and contact anchors fixed to bones, and an `update` that drives an `AnimationMixer`. Hover and Fly blend by speed. Roar, Win and Lose follow the reaction's own clock so every viewer sees the same frame, and Blink plays on its own timer. The shared lean, stun spin and reaction poses from `index.ts` and `poses.ts` still apply on top.
 
 ## Budgets
@@ -58,7 +58,7 @@ Measured in the Studio with `createCharacter` (triangles of the body and of the 
 | Bahamut | 11,928 | 4,899 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Bahamut |
 | Cloud | 10,756 | 4,394 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Cloud |
 
-The Bahamut GLB is 469 KB with 36 bones and six clips; the Cloud GLB is 336 KB with 24 bones and seven clips.
+The Bahamut GLB is 469 KB with 36 bones and six clips; the Cloud GLB is 326 KB with 24 bones and six clips.
 A new racer should stay near 12,000 body triangles and one atlas.
 
 ## Pitfalls

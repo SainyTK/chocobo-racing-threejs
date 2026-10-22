@@ -5,7 +5,6 @@ import type { CrashInfo, CrashTier } from '../../race-events.ts';
 import type { Effects } from './index.ts';
 import { rand } from './util.ts';
 import { flareImpact } from './megaflare.ts';
-import { braverImpact } from './braver.ts';
 
 const v = new THREE.Vector3();
 const feet = (at: THREE.Vector3, up = .1) => v.set(at.x, at.y - 1.5 + up, at.z).clone();
@@ -80,7 +79,6 @@ export class SpellFx {
       case 'ultima': fx.ultimaHit(at, info.level, mine); return;
       case 'doom': fx.doomHit(at); return;
       case 'megaflare': flareImpact(fx, at, mine); return;
-      case 'braver': braverImpact(fx, at, feet(at), mine); return;
       case 'squash': fx.sparkle(at, '#c99bff', 20, 1.4, 1); fx.dust(at, 14); return;
       case 'drift': fx.dust(at, 12); return;
       default: fx.sparkle(v.set(at.x, at.y + 1, at.z), '#ffe27a', 18, 1, 2); fx.dust(at, 10); fx.bursts.spawn('ring', feet(at), '#ffd27a', 3, .35);

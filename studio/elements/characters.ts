@@ -15,7 +15,6 @@ const REACTIONS: Record<string, { label: string; period: number; pose: (t: numbe
   'hit-2': { label: 'Hit: flattened', period: 1.8, pose: t => ({ kind: 'hit', t, tier: 2 }), state: { stun: 1 } },
   'hit-3': { label: 'Hit: tumble', period: 2, pose: t => ({ kind: 'hit', t, tier: 3 }), state: { stun: 1 } },
   cast: { label: 'Casting', period: 1.2, pose: t => ({ kind: 'cast', t }), state: { speed: 30 } },
-  slash: { label: 'Braver swing', period: 1.6, pose: t => ({ kind: 'slash', t }), state: { speed: 30 } },
   overtake: { label: 'Overtaking', period: 1.4, pose: t => ({ kind: 'overtake', t }), state: { speed: 30 } },
   win: { label: 'Winning', period: 6, pose: t => ({ kind: 'win', t }) },
   lose: { label: 'Losing', period: 4, pose: t => ({ kind: 'lose', t }) },

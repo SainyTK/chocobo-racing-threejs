@@ -153,13 +153,12 @@ Every ability gauge starts empty and fills at a constant rate.
 | Barrier | White Mage | 16 s | Automatically raises a shield for 4 s or until it blocks one hit |
 | Receive | Chubby Chocobo | 18 s | Automatically catches the next spell that hits you as a stone of the same level, if there is room |
 | Charge | Behemoth | 14 s | A 1 s boost that spins out rivals you ram |
-| Braver | Cloud | 14 s | Cloud swings the Buster Sword round his right side; 0.45 s in, every rival within 9 m spins out. Barrier blocks it; Reflect and Receive cannot catch it |
+| Dash | Cloud | 16 s | The same Dash as Chocobo's: the original's Cloud has no ability of his own and picks a shared one |
 | Megaflare | Bahamut | 80 s | Flare shots rain down for 1.5 s, then every rival is thrown into the air and crashes for 1.6 s. Barrier, Reflect and Receive cannot stop it; only the post-crash safe window does |
 
 CPU racers cast only when a spell has a valid target, and each character has its own habit.
 Chocobo and Chubby Chocobo hoard stones, Golem, Goblin and Black Magician build them up, Mog and White Mage cast quickly, Behemoth specialises in Fire, Bahamut builds Fire like Golem and Goblin, and Cloud specialises in Thunder.
-A CPU Bahamut fires Megaflare as soon as one rival can be hit, and a CPU swings Braver when a rival it can hit is within about 6 m.
-The original's Cloud has no ability of his own; Braver is new to this remake, and any racer can pick it.
+A CPU Bahamut fires Megaflare as soon as one rival can be hit.
 The original charges Megaflare in 45 s; here that won Bahamut 63% of all-CPU races, so it charges in 80 s and stalls for a normal crash's time.
 
 ### Courses
