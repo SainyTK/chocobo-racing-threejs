@@ -11,7 +11,7 @@ type ClipName = typeof LOOPS[number] | typeof POSED[number];
 /** Seconds between blinks, and how long one lasts. */
 const BLINK = { every: 4.2, seconds: .18 };
 const FRONT_RADIUS = .55, REAR_RADIUS = .6;
-/** His wings rest on the handlebars, so the bars turn only a little with the steering and the hands stay on the grips. */
+/** His wings rest on the handlebars, so the bars turn only a little with the steering and the wing tips stay on the grips. */
 const STEER = .22;
 /** Flap is a wingbeat layered on top of whatever the body is doing, so it plays as an additive copy, made once per clip. */
 const additive = new WeakMap<THREE.AnimationClip, THREE.AnimationClip>();

@@ -2,7 +2,7 @@
 speed), Flap on top of either while airborne or hopping, Cast when he casts, Win and Lose after the finish, and Blink
 every few seconds. The fork and the wheels are turned in code, so no clip keys them.
 
-His wings rest on the handlebars at rest. For the left wing a negative X angle lifts the hand off the bar and a
+His wings rest on the handlebars at rest. For the left wing a negative X angle lifts the wing tip off the bar and a
 positive Z angle swings it out to the side.
 """
 

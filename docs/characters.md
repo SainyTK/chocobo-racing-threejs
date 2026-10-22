@@ -58,12 +58,12 @@ Measured in the Studio with `createCharacter` (triangles of the body and of the 
 | Racer | Triangles | Outline triangles | Meshes | Texture |
 | --- | --- | --- | --- | --- |
 | Chocobo | 11,956 | 4,705 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Chocobo (the procedural model had 12,708, 7,456 and 35) |
-| Chubby Chocobo | 12,002 | 4,964 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Chubby Chocobo (the procedural model had 14,768, 10,024 and 35) |
+| Chubby Chocobo | 11,414 | 4,742 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Chubby Chocobo (the procedural model had 14,768, 10,024 and 35) |
 | Bahamut | 11,928 | 4,899 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Bahamut |
 | Cloud | 11,032 | 4,570 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Cloud |
 | Behemoth | 12,220 | 4,224 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Behemoth |
 
-The Bahamut GLB is 469 KB with 36 bones and six clips; the Cloud GLB is 329 KB with 24 bones and six clips; the Chubby Chocobo GLB is 322 KB with 20 bones and seven clips.
+The Bahamut GLB is 469 KB with 36 bones and six clips; the Cloud GLB is 329 KB with 24 bones and six clips; the Chubby Chocobo GLB is 310 KB with 20 bones and seven clips.
 The Behemoth GLB is 407 KB with 37 bones and six clips; the code-built Behemoth it replaced had 12,192 and 9,308 triangles in 23 meshes.
 A new racer should stay near 12,000 body triangles and one atlas.
 
@@ -139,8 +139,8 @@ npm run character -- chubby
 
 Chubby Chocobo is one skinned GLB for the bird and his trike, built from `scripts/characters/chubby/` on top of the shared bird package.
 His `Bird` is a wide, squat pear with a slight notch at the neck and no crest; the pointed nub on the crown is a plump feather.
-The package adds what the bird package does not have: closed, happy eyes (a dark arc on each `eye` bone, so Blink squints them), a flat duck's bill on `head` and `jaw`, the thistle on his chest, arm-like wings that reach forward to the handlebars, thick legs with clawed feet on `foot` bones, and the trike.
-It replaces the bird's wing bones with ones that run from the shoulder to the hand on the grip, and moves the `tail` bone up to the tail, which sits high on his back above the engine.
+The package adds what the bird package does not have: closed, happy eyes (a dark arc on each `eye` bone, so Blink squints them), a small round bill on `head` and `jaw`, the thistle on his chest, short plump wings that hug his sides and rest their tips on the handlebars, thick legs with clawed feet on `foot` bones, and the trike.
+It replaces the bird's wing bones with ones that run from the shoulder, out past his side and in to the wing tip on the grip, and moves the `tail` bone up to the tail, which sits high on his back above the engine.
 
 The trike hangs off a `trike` bone under `root`.
 `fork` turns about the raked steering axis and carries the handlebars, horn, front wheel and pedal axle; `wheel_front` and `wheel_rear` (one bone for both rear wheels) spin.
@@ -158,3 +158,4 @@ Pitfalls met on Chubby Chocobo:
 - His paint is a near-neutral cream (#fafbf5). The PS1 race view measures near white (#f5f5f2 lit, #dfdfc2 in shade), and the game's warm sun already adds the cream tint the podium shows.
 - A tyre lofted with end caps has a domed face that bulges out past the rim; a hub disc must stand proud of it or it disappears inside the tyre.
 - A belly that bulges forward swallows the fork and the middle of the handlebars. Move the steering head forward with the belly.
+- Wings that reach the grips as long arms with spread feather fingers read as human hands from the front. Keep them short and plump against his sides, with the elbow pushed out so they still show as paddles from behind.

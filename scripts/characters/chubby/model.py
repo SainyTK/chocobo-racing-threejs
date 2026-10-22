@@ -1,7 +1,7 @@
 """Chubby Chocobo on the Phat-Burner Plus, after the PS1 Chocobo Racing (1999) model and the official model sheet.
 
-A huge cream-white pear of a chocobo with a pointed nub on the crown, closed happy eyes, a wide flat orange bill and a
-pink thistle on his chest. His plump wings reach forward to rest on the handlebars and his orange feet sit on the
+A huge cream-white pear of a chocobo with a pointed nub on the crown, closed happy eyes, a small round orange bill and a
+pink thistle on his chest. His short plump wings hug his sides with their tips on the handlebars, and his orange feet sit on the
 pedals. The trike is red: one black front wheel in a fork with a brass horn and very wide handlebars, two big black
 rear wheels, and a grey twin-cylinder engine with silver exhausts behind his seat.
 
@@ -96,9 +96,9 @@ BIRD = Bird(
 
 NUB = Feather(0.975, -H, (0, 0.25, 1), 0.34, 0.26)
 """The pointed tip of the crown."""
-SHOULDER, WRIST, HAND = Vector((0.72, -0.1, 1.96)), Vector((1.38, -0.72, 1.9)), Vector((1.5, -1.22, 1.72))
-"""The left wing reaches out and forward from the shoulder to rest its hand on the handlebar. From behind the wings
-show as paddles sticking out past the body at mid height, as in the race view."""
+SHOULDER, WRIST, HAND = Vector((0.78, -0.12, 1.96)), Vector((1.4, -0.55, 1.9)), Vector((1.32, -1.1, 1.7))
+"""The left wing bulges out past his side from the shoulder and curves in to rest its tip on the handlebar. From behind
+the wings show as paddles sticking out past the body at mid height, as in the race view."""
 PEDAL = Vector((0.8, -1.5, 0.56))
 """The left pedal, on the end of the front axle."""
 
@@ -108,8 +108,8 @@ REAR_X = 1.32
 """Rear wheel centres from the middle: wide enough to poke out past the belly from behind, as in the race view."""
 STEER_TOP = Vector((0, -1.34, 1.42))
 """Top of the steering axis; the fork bone runs from here down to the front axle."""
-GRIP = Vector((1.5, -1.18, 1.6))
-"""The left handlebar grip's inner end, under the hand."""
+GRIP = Vector((1.3, -1.18, 1.6))
+"""The left handlebar grip's inner end, under the wing tip."""
 CYLINDER_X, CYLINDER_Y = 0.38, 1.3
 """The engine's two upright cylinders, side by side between the rear wheels."""
 EXHAUST = (Vector((CYLINDER_X, CYLINDER_Y + 0.02, 1.44)), Vector((CYLINDER_X, CYLINDER_Y + 0.08, 1.56)), Vector((CYLINDER_X, CYLINDER_Y + 0.16, 1.66)))
@@ -205,17 +205,17 @@ def eye_parts() -> list[Part]:
 
 
 def bill_parts() -> list[Part]:
-    """A wide, flat duck's bill hanging forward and down from the face, widest near the rounded tip, and the lower bill
-    on the jaw under it."""
+    """A small, round orange bill pointing forward and a little down from the face, and the lower bill on the jaw
+    under it."""
     root = beak_root(BIRD)
     upper = loft(
         "beak",
         "beak",
-        [root + Vector(p) for p in ((0, 0.18, 0.08), (0, -0.12, 0.0), (0, -0.3, -0.06), (0, -0.4, -0.14))],
+        [root + Vector(p) for p in ((0, 0.16, 0.06), (0, -0.1, 0.0), (0, -0.25, -0.06), (0, -0.33, -0.13))],
         ellipse(
-            lambda t: 0.33 + 0.1 * math.sin(math.pi * min(1.0, t * 1.15)) ** 0.7 * (1 - max(0.0, t - 0.8) * 2.5),
-            lambda t: 0.16 - 0.1 * t,
-            lambda t: 0.08 - 0.04 * t,
+            lambda t: 0.25 * math.sin(math.pi * (0.25 + 0.75 * t)) ** 0.5 + 0.02,
+            lambda t: 0.15 - 0.08 * t,
+            lambda t: 0.08 - 0.03 * t,
         ),
         20,
         12,
@@ -224,8 +224,8 @@ def bill_parts() -> list[Part]:
     lower = loft(
         "jaw",
         "jaw",
-        [root + Vector(p) for p in (JAW[0], (0, -0.17, -0.1), (0, -0.3, -0.16))],
-        ellipse(lambda t: 0.29 - 0.07 * t, lambda t: 0.06, lambda t: 0.08 - 0.03 * t),
+        [root + Vector(p) for p in (JAW[0], (0, -0.15, -0.1), (0, -0.25, -0.15))],
+        ellipse(lambda t: 0.2 - 0.06 * t, lambda t: 0.06, lambda t: 0.07 - 0.03 * t),
         16,
         8,
         (0, 0, 1),
@@ -259,35 +259,38 @@ def flower() -> list[Part]:
 
 
 def wing_parts() -> list[Part]:
-    """A plump arm from the shoulder to the hand, which rests on the grip with four rounded finger feathers hanging
-    over the front of the handlebar."""
+    """A short, plump wing: a flat paddle from the shoulder that tapers to a rounded tip resting by the grip, with three
+    small scalloped feather tips. From behind it shows as a paddle sticking out at mid height."""
+
+    def half_width(t: float) -> float:
+        return 0.3 - 0.15 * t**1.5
+
     arm = loft(
         "wing",
         "feather",
-        [SHOULDER - Vector((0.2, -0.05, 0.05)), SHOULDER.lerp(WRIST, 0.5) + Vector((0.04, 0, 0.04)), WRIST, HAND - Vector((0, -0.06, 0.06))],
-        ellipse(lambda t: 0.3 - 0.06 * t, lambda t: 0.19 - 0.05 * t),
+        [SHOULDER - Vector((0.2, -0.05, 0.05)), SHOULDER.lerp(WRIST, 0.5) + Vector((0.04, 0, 0.04)), WRIST, HAND],
+        ellipse(half_width, lambda t: 0.19 - 0.08 * t),
         16,
         12,
         (0, 0, 1),
     )
     along(arm, [("wing.L", 0), ("wing_tip.L", 0.62)], 0.12)
-    hand = ellipsoid(
-        "hand", "feather", tuple(HAND + Vector((0.0, 0.02, 0.06))), (0.22, 0.24, 0.13), axis=(0.25, -0.9, -0.3), around=12, along=6, up_hint=(0, 0.3, 1)
-    )
-    parts = [arm, rigid(hand, "wing_tip.L")]
-    for k in range(4):
-        x = (k - 1.5) * 0.12
-        base = HAND + Vector((x, -0.12, 0.02))
-        finger = loft(
-            f"finger{k}",
+    parts = [arm]
+    d = (HAND - WRIST).normalized()
+    side = d.cross(Vector((0, 0, 1))).normalized()
+    for k in range(3):
+        x = (k - 1) * 0.085
+        base = HAND - d * 0.08 + side * x
+        tip = loft(
+            f"wing_tip{k}",
             "feather",
-            [base, base + Vector((x * 0.2, -0.16, -0.06)), base + Vector((x * 0.3, -0.22, -0.24))],
-            ellipse(lambda t: 0.065 * (1 - 0.35 * t), lambda t: 0.06 * (1 - 0.35 * t)),
+            [base, base + d * 0.1 + side * x * 0.4 + Vector((0, 0, -0.03)), base + d * 0.16 + side * x * 0.6 + Vector((0, 0, -0.08))],
+            ellipse(lambda t: 0.06 * (1 - 0.4 * t), lambda t: 0.05 * (1 - 0.4 * t)),
             7,
-            5,
+            4,
             (0, 0, 1),
         )
-        parts.append(rigid(finger, "wing_tip.L"))
+        parts.append(rigid(tip, "wing_tip.L"))
     return parts + [mirror(p, p.name + ".R") for p in parts]
 
 
