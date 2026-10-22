@@ -15,9 +15,9 @@ export interface FanLook {
   tint: string; tintAmount: number;
 }
 
-export const DASH_FAN: FanLook = { root: '#ffffff', mid: '#a8dcff', tip: '#3f78ff', spikes: 8, length: 2.3, offset: .14, low: .04, high: 1.25, tint: '#0a3a8c', tintAmount: .5 };
+export const DASH_FAN: FanLook = { root: '#ffffff', mid: '#a8dcff', tip: '#3f78ff', spikes: 8, length: 2.3, offset: .14, low: .04, high: 1.25, tint: '#145270', tintAmount: .5 };
 export const HASTE_FAN: FanLook = { root: '#d8ffcc', mid: '#7ee860', tip: '#2fd814', spikes: 7, length: 2, offset: .14, low: .04, high: 1.2, tint: '#1f9a10', tintAmount: .45 };
-export const CHARGE_FAN: FanLook = { root: '#fffbe8', mid: '#ffe070', tip: '#ff8030', spikes: 9, length: 1.45, offset: .26, low: .12, high: 1.3, tint: '#c04010', tintAmount: .45 };
+export const CHARGE_FAN: FanLook = { root: '#fffbe8', mid: '#ffe070', tip: '#ff8030', spikes: 9, length: 1.45, offset: .26, low: .12, high: 1.3, tint: '#8a0000', tintAmount: .7 };
 
 /** Seconds a spike keeps its random length and angle: the original re-rolls them every 30 fps frame. */
 export const SPIKE_HOLD = 1 / 30;

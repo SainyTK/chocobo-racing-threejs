@@ -183,7 +183,7 @@ Everything they draw is a flat additive sprite rebuilt every frame, as on the PS
 Colours, sizes and phase times live in `abilities/looks.ts`.
 
 Every boost in the original shows the same layout: two mirrored fans of spikes on the road either side of the racer, flat along the road and rising to about 70 degrees, white at the root and coloured at the tips, re-rolled every frame and always facing the camera.
-The racer's whole model is tinted while the boost lasts.
+The racer's whole model is tinted for the whole boost and the tint cuts off in one frame when it ends: Chocobo's yellow (#f3a608) reads tan (#b08857) mid-Dash, Chubby Chocobo's white reads mint under Haste, and Behemoth's purple reads red-magenta (#7c2640) under Charge.
 The colour says what the boost is: blue-white for Dash, green for Haste and yellow-orange for Charge.
 The earlier note that Haste makes the blue-white fan came from a Dash; the Haste stone's fan is green.
 
