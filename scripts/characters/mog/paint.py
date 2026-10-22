@@ -15,7 +15,8 @@ import numpy as np
 
 from pipeline.atlas import Painter, band, fill, hex_rgb, mix
 
-FUR, FUR_SHADE = "#ffffff", "#ece8ee"
+FUR, FUR_SHADE = "#eef0ff", "#dfe2f0"
+"""A faintly cool white: the game's warm sun and sky light turn it into the PS1's near-neutral white (about #f5f5f2)."""
 NOSE, NOSE_LIGHT, NOSE_DARK = "#e62e5e", "#ff7a9c", "#a8183e"
 POM, POM_LIGHT, POM_DARK = "#e8361e", "#ff7a50", "#a8200e"
 EYE, MOUTH, MOUTH_DARK, ANTENNA = "#2a1820", "#c02634", "#6a1018", "#3a2a2e"
