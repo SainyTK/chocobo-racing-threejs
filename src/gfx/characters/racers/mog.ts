@@ -27,7 +27,7 @@ function pomSpring() {
 
 /** Mog on the Mog-Mobile R2: one skinned model for the moogle and his kick scooter, with wheels, fork and antenna moved in code. */
 export function mog(): Build {
-  const r = new Rig(), m = skinnedModel(r, 'mog', { selfShadow: false });
+  const r = new Rig(), m = skinnedModel(r, 'mog');
   const action = (name: string) => { const a = m.actions.get(name); if (!a) throw new Error(`Mog has no ${name} clip`); a.play(); a.weight = 0; return a; };
   const clips = Object.fromEntries([...LOOPS, ...POSED].map(n => [n, action(n)])) as Record<ClipName, ReturnType<typeof action>>;
   for (const n of POSED) clips[n].timeScale = 0;
