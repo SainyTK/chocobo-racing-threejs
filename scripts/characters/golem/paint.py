@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from pipeline.atlas import Painter, band, fill, hex_rgb, mix
+from pipeline.atlas import Painter, band, fill, hex_rgb, mix, value_noise
 
 SHOULDER, ARM, TORSO, HEAD, HEAD_BACK = "#bbaeaa", "#a5928d", "#98827c", "#a89c98", "#4d3d38"
 """Grey-brown stone per region, set by measuring the PS1 frames under their lighting and ours under the game's: the
@@ -32,21 +32,6 @@ OUTLINE = "#231c18"
 
 def angle(u: np.ndarray) -> np.ndarray:
     return -np.pi / 2 + 2 * np.pi * u
-
-
-def value_noise(u: np.ndarray, v: np.ndarray, cells: int, seed: int, rows: int | None = None) -> np.ndarray:
-    """Smooth random values in 0..1 on a grid of `cells` around u and `rows` along v (as many as `cells` unless
-    given), wrapping around u so a loft shows no seam."""
-    rows = rows or cells
-    grid = np.random.default_rng(seed).random((rows + 1, cells))
-    x, y = u * cells, v * rows
-    x0, y0 = np.floor(x).astype(int), np.clip(np.floor(y).astype(int), 0, rows - 1)
-    fx, fy = x - x0, y - y0
-    fx, fy = fx * fx * (3 - 2 * fx), fy * fy * (3 - 2 * fy)
-    x0, x1 = x0 % cells, (x0 + 1) % cells
-    top = grid[y0, x0] * (1 - fx) + grid[y0, x1] * fx
-    bottom = grid[y0 + 1, x0] * (1 - fx) + grid[y0 + 1, x1] * fx
-    return top * (1 - fy) + bottom * fy
 
 
 def facets(u: np.ndarray, v: np.ndarray, cells: int, rows: int, seed: int) -> tuple[np.ndarray, np.ndarray]:

@@ -347,3 +347,37 @@ def box(
 ) -> Part:
     """A flat-ended rounded box from `start` to `end`, the width across and the height toward `up_hint`."""
     return flat(loft(name, skin, [start, end], superellipse(lambda t: half_width, lambda t: half_height, power), around, along, up_hint), around)
+
+
+def lathe(name: str, skin: str, profile: Sequence[tuple[float, float]], around: int, along: int, centre: Vec = (0, 0, 0)) -> Part:
+    """A surface of revolution about the vertical axis through `centre`, for hats, bells and domes whose outline is
+    easier to draw than to loft: `profile` is (radius, height) points from the bottom pole to the top pole, both at
+    radius 0, smoothed by a spline. u runs around (u = 0 at the back, the ring angle a = 2 pi u - pi / 2 with sin(a)
+    pointing forward), v along the profile."""
+    pts = catmull_rom([(r, 0.0, z) for r, z in profile], along)
+    c = Vector(centre)
+    verts: list[Vector] = []
+    params: list[tuple[float, float]] = []
+    for i in range(1, along):
+        for j in range(around):
+            a = -math.pi / 2 + 2 * math.pi * j / around
+            verts.append(c + Vector((pts[i].x * math.cos(a), -pts[i].x * math.sin(a), pts[i].z)))
+            params.append((j / around, i / along))
+    faces: list[tuple[int, ...]] = []
+    uvs: list[list[tuple[float, float]]] = []
+    for i in range(along - 2):
+        for j in range(around):
+            a, b = i * around + j, i * around + (j + 1) % around
+            faces.append((a, b, b + around, a + around))
+            u0, u1, v0, v1 = j / around, (j + 1) / around, (i + 1) / along, (i + 2) / along
+            uvs.append([(u0, v0), (u1, v0), (u1, v1), (u0, v1)])
+    for end, ring in ((0, 0), (1, (along - 2) * around)):
+        verts.append(c + Vector((0, 0, pts[0 if end == 0 else -1].z)))
+        params.append((0.5, float(end)))
+        p, v, w = len(verts) - 1, float(end), (1 if end == 0 else along - 1) / along
+        for j in range(around):
+            a, b = ring + j, ring + (j + 1) % around
+            faces.append((b, a, p) if end == 0 else (a, b, p))
+            first, second = ((j + 1) / around, w), (j / around, w)
+            uvs.append([first, second, ((j + 0.5) / around, v)] if end == 0 else [second, first, ((j + 0.5) / around, v)])
+    return Part(name, skin, verts, faces, uvs, params=params)
