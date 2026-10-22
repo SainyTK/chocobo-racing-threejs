@@ -121,7 +121,7 @@ def win(t: float) -> Pose:
     pose |= {
         "cloud": ((0, 0, 0.05 * wave), (0, 0, 0)),
         "hips": ((-0.05, 0, 0.08 * math.sin(TAU * p)), (0, 0, 0)),
-        "head": ((0.32, 0, 0.12 * math.sin(TAU * p)), (0, 0, 0)),
+        "head": ((0.42, 0, 0.12 * math.sin(TAU * p)), (0, 0, 0)),
     }
     pose |= mirrored({"cape.L": ((0.2 + 0.1 * wave, 0, 0), (0, 0, 0))})
     return pose

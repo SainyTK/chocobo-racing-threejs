@@ -29,8 +29,8 @@ PUFFS = (
 )
 """(centre, radius, bone) of the round puffs on the cloud's left half; the right half mirrors them. From behind, the
 biggest puffs swell up at the sides to about the cape's hem, with his legs showing between them, as in the original."""
-MIDDLE_PUFFS = (((0, -0.74, 0.6), 0.32), ((0, 0.66, 0.5), 0.3))
-"""Puffs on the middle line, front and back, kept low so his feet and legs show above them."""
+MIDDLE_PUFFS = (((0, -0.74, 0.6), 0.32),)
+"""A puff on the middle line in front, kept low so his feet and legs show above it."""
 
 J = {
     "hips": (0, 0.02, 1.44),
@@ -65,15 +65,15 @@ HAT_PROFILE = (
     (1.07, 2.55),
     (BRIM_RADIUS, 2.57),
     (1.06, 2.61),
-    (0.86, 2.72),
-    (0.64, 2.80),
-    (0.6, 2.92),
-    (0.53, 3.12),
-    (0.42, 3.34),
-    (0.28, 3.56),
-    (0.15, 3.72),
-    (0.06, 3.80),
-    (0.0, 3.82),
+    (0.9, 2.7),
+    (0.72, 2.77),
+    (0.63, 2.86),
+    (0.55, 3.06),
+    (0.43, 3.3),
+    (0.29, 3.53),
+    (0.15, 3.7),
+    (0.06, 3.79),
+    (0.0, 3.81),
 )
 """The hat's outline from the middle of the brim's underside out to the rim, back over the brim's top and up the cone
 to the tip, as (radius, height). The brim is about as wide as the cape and droops toward its rim, and the broad cone
@@ -92,7 +92,7 @@ def skeleton() -> dict[str, BoneSpec]:
     bones: dict[str, BoneSpec] = {
         "root": ((0, 0, 0), (0, -0.4, 0), None),
         "cloud": (tuple(CLOUD), tuple(CLOUD + Vector((0, -0.5, 0))), "root"),
-        "puff": ((0, 0.5, 0.75), (0, 0.5, 1.05), "cloud"),
+        "puff": ((0, -0.74, 0.6), (0, -0.74, 0.9), "cloud"),
         "hips": (J["hips"], J["chest"], "cloud"),
         "chest": (J["chest"], J["neck"], "hips"),
         # The head bone stands upright and pivots in the middle of the face, so turns are yaw and portraits centre on it.
@@ -124,9 +124,8 @@ def cloud_parts() -> list[Part]:
     for i, (centre, r, bone) in enumerate(PUFFS):
         left.append(rigid(ellipsoid(f"puff{i}", "cloud", centre, (r * 0.86, r, r * 1.05), axis=(0, 0, 1), around=18, along=10, up_hint=(0, -1, 0)), bone))
     for i, (centre, r) in enumerate(MIDDLE_PUFFS):
-        bone = "puff" if centre[1] > 0 else "cloud"
-        out.append(rigid(ellipsoid(f"puff_mid{i}", "cloud", centre, (r * 0.86, r * 1.1, r), axis=(0, 0, 1), around=18, along=10, up_hint=(0, -1, 0)), bone))
-    wisp = ellipsoid("wisp", "cloud", (0, -0.06, 0.98), (0.24, 0.15, 0.13), axis=(0, 0, 1), around=12, along=8, up_hint=(0, -1, 0))
+        out.append(rigid(ellipsoid(f"puff_mid{i}", "cloud", centre, (r * 0.86, r * 1.1, r), axis=(0, 0, 1), around=18, along=10, up_hint=(0, -1, 0)), "puff"))
+    wisp = ellipsoid("wisp", "cloud", (0, -0.04, 1.04), (0.32, 0.12, 0.11), axis=(0, 0, 1), around=12, along=8, up_hint=(0, -1, 0))
     out.append(rigid(wisp, "cloud"))
     puffs = out[1:] + left + [mirror(p, p.name + ".R") for p in left]
     # Only the cloud's body carries the ink outline: an outline round every puff reads as a pile of snowballs, while

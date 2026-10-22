@@ -116,6 +116,26 @@ His roster colour follows the model's stone.
 | Rear of the jeep | The low-resolution chase view shows a dark tailgate framed in blue, a pale bar on top and two orange shapes with copper pipes at its corners | A dark tailgate with a pale plate, a light grey seat back, orange tail lights and two exhaust stacks with copper tips, which also carry the boost flames |
 | Wheel hubs | Grey in the game, orange in the CG ending | Grey |
 
+## Black Magician
+
+Black Magician follows the PS1 in-game model, checked side by side against two Grand Prix played as him (the chase view from behind, the GOAL orbit from the front, the Select Racer screen and the podium), not the CG ending.
+The MagiCloud MK-1 is a small, flat white cloud of round puffs, blue-white in its shade, and he stands on it with his feet apart; in the GOAL view a white wisp rises between his legs.
+He hovers, so Ice sheets and road dust pass under him, as before.
+He wears a wide orange straw hat whose brim droops toward its rim and whose broad cone bends back at the tip, over a black face with two round yellow eyes.
+A high purple collar hides the lower face and runs into a capelet over the shoulders and a wide cape down his back, which from the chase camera fills the space under the brim.
+Below it is a round tunic in alternating cyan and pale yellow vertical stripes, gathered at the hips, with orange gloves, orange legs and shoes.
+He carries a dark brown wooden staff with a fat curled head in his right hand: upright beside his hat on the Select Racer screen and over his shoulder from behind, waved overhead on the podium.
+Colours were measured region by region in the PS1 frames and in the remake's under the game's lighting: the cape is hue 259 at 36% lightness in the original's chase view and hue 258 at 34% in the remake.
+The hat is hue 35 and fully saturated orange on the Select Racer screen but a hue 43 ochre at 63% saturation in the chase view; the remake's hat sits between them, at hue 39 and 41% lightness in the chase view.
+His eyes glow, through a small emission mask baked by the pipeline, and so does the cloud a little, so its shaded side stays pale.
+
+| Deviation | Original | Remake |
+| --- | --- | --- |
+| Hat colour | Bright orange on the Select Racer screen and the podium, a duller ochre in the chase view | One straw orange between the two |
+| Win and lose | The podium shows the staff raised and the free hand up; no race animation is seen | The podium pose as his Win clip; a slump with his arms hanging as Lose |
+| Cast | Not seen; Magic Plus is passive | Raises the staff overhead with both arms, as every racer acts out its ability |
+| Puffs behind the cloud | White puffs trail from the cloud | The shared exhaust smoke leaves the back of the cloud |
+
 ## Magic Stones
 
 The stones follow footage of the original on six courses (Moogle Forest, Floating Gardens, Gingerbread Land, Vulcan-O Valley, The Black Manor and Fantasia), read frame by frame where stones are passed and picked up.
