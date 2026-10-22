@@ -2,7 +2,7 @@ import type { AbilityId } from './abilities.ts';
 
 /** `hovers`: rides above the road, so Ice sheets and rough-ground dust pass underneath. */
 export const RACERS = [
-  { name: 'Chocobo', color: '#ffd044', light: '#fff09a', vehicle: 'Jet-Blades CR', ability: 'dash' as AbilityId, speed: 39.3, acceleration: 23, grip: 10, steering: 1.65, size: 1, hovers: false },
+  { name: 'Chocobo', color: '#ffb52e', light: '#ffd98a', vehicle: 'Jet-Blades CR', ability: 'dash' as AbilityId, speed: 39.3, acceleration: 23, grip: 10, steering: 1.65, size: 1, hovers: false },
   { name: 'Mog', color: '#f7ece5', light: '#ffffff', vehicle: 'Mog-Mobile R2', ability: 'flap' as AbilityId, speed: 39.3, acceleration: 27, grip: 10, steering: 1.8, size: .93, hovers: false },
   { name: 'Golem', color: '#a3937e', light: '#d8c8a2', vehicle: "Rockin' Roller V8", ability: 'grip' as AbilityId, speed: 38.9, acceleration: 19, grip: 13, steering: 1.83, size: 1.18, hovers: false },
   { name: 'Goblin', color: '#83ba62', light: '#c4dc8c', vehicle: 'Gob-Cart H4', ability: 'mug' as AbilityId, speed: 39.9, acceleration: 24, grip: 8.5, steering: 1.65, size: .92, hovers: false },

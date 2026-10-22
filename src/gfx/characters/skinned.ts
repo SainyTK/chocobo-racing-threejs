@@ -20,9 +20,10 @@ export interface Overlay { j: THREE.Object3D; restore(): void; capture(): void; 
 /**
  * Clones a loaded racer model into the rig with the game's look: the textured body gets the shared toon ramp, rim
  * and hit flash, and the `Outline` mesh becomes the inverted hull in its material's colour. Geometry, texture and
- * clips stay shared.
+ * clips stay shared. `width` is the outline's thickness. `selfShadow: false` stops the body receiving shadows, for a
+ * model whose bumps would otherwise shade its own back in soft blotches under the sun; it still casts its shadow.
  */
-export function skinnedModel(r: Rig, id: ModelId, width = .032): SkinnedModel {
+export function skinnedModel(r: Rig, id: ModelId, { width = .032, selfShadow = true } = {}): SkinnedModel {
   const gltf = characterModel(id), root = clone(gltf.scene);
   let outline = '#000000';
   root.traverse(o => {
@@ -30,7 +31,7 @@ export function skinnedModel(r: Rig, id: ModelId, width = .032): SkinnedModel {
     const source = o.material as THREE.MeshStandardMaterial;
     if (o.name.startsWith('Outline')) { outline = `#${source.color.getHexString()}`; o.material = outlineMaterial(outline, width, r.skin); o.castShadow = false; o.userData.outline = true; return; }
     const m = toon('#ffffff', r.skin);
-    m.map = source.map; m.vertexColors = !!o.geometry.attributes.color; o.material = m; o.castShadow = o.receiveShadow = true;
+    m.map = source.map; m.vertexColors = !!o.geometry.attributes.color; o.material = m; o.castShadow = true; o.receiveShadow = selfShadow;
   });
   r.model.add(root);
   const mixer = new THREE.AnimationMixer(root), actions = new Map(gltf.animations.map(clip => [clip.name, mixer.clipAction(clip)]));

@@ -1,7 +1,8 @@
 """Chocobo's palette and painters, from the in-game Chocobo Racing model and the official model sheet.
 
-Warm yellow plumage, an orange beak, navy eyes and a green bandana. The Jet-Blades have blue boots with a white cuff,
-a white front seam and gold rivets, a silver chassis and exhaust, a red engine block and black tyres.
+Warm golden orange-yellow plumage (hue about 38 degrees, measured from the original's race view), an orange beak,
+navy eyes and a green bandana. The Jet-Blades have blue boots with a white cuff, a white front seam and gold rivets,
+a silver chassis and exhaust, a red engine block and black tyres.
 """
 
 from __future__ import annotations
@@ -11,7 +12,7 @@ import numpy as np
 from bird import paint as bird
 from pipeline.atlas import Painter, band, fill, hex_rgb, mix
 
-YELLOW, YELLOW_LIGHT, YELLOW_SHADE, YELLOW_TIP = "#ffcc33", "#ffe16a", "#fcb424", "#fdbf2a"
+YELLOW, YELLOW_LIGHT, YELLOW_SHADE, YELLOW_TIP = "#ffb026", "#ffcb57", "#f7981a", "#fba21e"
 ORANGE, ORANGE_LIGHT, ORANGE_DARK, MOUTH = "#f57d1c", "#ffa040", "#c95410", "#9c2a1c"
 NAVY, NAVY_RING, PUPIL, LID = "#1d2f8a", "#101a52", "#070a1c", "#b9c3dc"
 GREEN, GREEN_LIGHT, GREEN_DARK = "#20922e", "#4fc04a", "#0f5a1c"

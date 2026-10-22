@@ -91,12 +91,12 @@ BIRD = Bird(
         Feather(-0.16, 0, (0.9, 0.4, -0.7), 0.46, 0.15),
     ),
     scarf=(0.35, 0.05, 0.43),
-    # Feather clumps on the back of the head and the upper back, which give the original's race view its bumpy outline.
+    # Feather puffs give the original's race view its bumpy outline. They sit only where the outline is seen from
+    # behind (the upper corners and the sides of the head): puffs in the middle of the back break the toon shading
+    # into blotches there.
     clumps=(
-        Clump(0.88, -H, 0.62, 0.16),
         Clump(0.79, -0.55, 0.6, 0.22),
         Clump(0.6, -0.25, 0.62, 0.2),
-        Clump(0.58, -H, 0.66, 0.11),
     ),
 )
 

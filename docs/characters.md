@@ -126,6 +126,9 @@ Pitfalls met on Chocobo:
 - Clips that already raise the wings stack with the additive Flap on a win. Keep the Win wings level and let the overlay beat them.
 - From the chase camera a smooth egg reads wrong: the original's back has a few large rounded feather puffs. `Clump`s displace the body loft itself, so the outline is bumpy. Use a handful of big ones, each about a fifth of the body width, placed where the outline is seen from behind (crown, upper corners, sides of the head); many small ones read as toad skin.
 - A character package can set `AO_STRENGTH` in `paint.py` to soften the baked ambient occlusion. Chocobo uses 0.18 so his bright, flat yellow does not mottle between the puffs.
+- Puffs in the middle of the back break the toon shading into blotches right where the chase camera looks. Put them only where the outline is seen from behind.
+- The sun's self-shadowing also blotches a bumpy back. `skinnedModel(r, id, { selfShadow: false })` stops a model receiving shadows while it still casts one; Chocobo uses it.
+- Match colours by measuring the original's race view and ours under the game's lighting: the PS1 Chocobo samples at about hue 39 degrees there (`#de9516`), which the paint base `#ffb026` reproduces.
 - A feather fan pointing straight back is seen end-on from the chase camera as a row of dark triangles. Keep the tail small and low.
 - The race view is decided by the skates: big black rear wheels about as wide as they are tall, poking out past the body's sides, the red engines between them and the blue boots visible above. A red cowl over the wheel hides the boots.
 
