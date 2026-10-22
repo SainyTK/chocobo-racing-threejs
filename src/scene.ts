@@ -9,10 +9,10 @@ import { SpeedLines } from './gfx/effects/speed-lines.ts';
 import { ChaseCamera } from './gfx/camera/chase.ts';
 import { Reactions } from './gfx/reactions.ts';
 import { FinishStage, type FinishView } from './gfx/finish-stage.ts';
-import { makePickup, type Pickup } from './gfx/effects/pickup.ts';
-import { makeOrb, setOrbDetail, ORB_GEOMETRIES } from './gfx/orbs/index.ts';
 import { FX_GEOMETRIES } from './gfx/effects/geometries.ts';
-import { AURA_GEOMETRIES } from './gfx/orbs/stack.ts';
+import { StoneField } from './gfx/stones/field.ts';
+import { heldStonePreview } from './gfx/stones/preview.ts';
+import { HELD_STONE } from './gfx/stones/looks.ts';
 import { ghostMaterial } from './gfx/materials/ghost.ts';
 import { Shape } from './gfx/particles/particles.ts';
 import { configureRenderer, createComposer, createLights } from './gfx/pipeline.ts';
@@ -21,7 +21,7 @@ import { buildCourse, applyEnvironment, sunOffset, type Course, type StageQualit
 const MENU_FOV = 58;
 /** Rivals closer to the camera than this dissolve, so they never fill the screen or cover the HUD. */
 const NEAR_FADE = 7.5;
-const shared: THREE.BufferGeometry[] = [padGeo, ...FX_GEOMETRIES, ...ORB_GEOMETRIES, ...AURA_GEOMETRIES];
+const shared: THREE.BufferGeometry[] = [padGeo, ...FX_GEOMETRIES];
 export interface GhostPoint { t: number; x: number; z: number; yaw: number; s: number }
 interface RacerView { c: Character; label?: THREE.Sprite; scale: number }
 function makeLabel(name: string) {
@@ -43,7 +43,7 @@ function softwareRenderer() {
 export class World {
   readonly software = softwareRenderer(); readonly recommendedQuality = this.software ? 'low' : 'high';
   renderer: THREE.WebGLRenderer; scene = new THREE.Scene(); camera = new THREE.PerspectiveCamera(MENU_FOV, 1, .2, 1500);
-  course: Course | null = null; dynamic = new THREE.Group(); racers = new Map<string, RacerView>(); hero = createCharacter(0); heroIndex = 0; track: TrackId = 'test'; raceId = ''; mode: 'menu' | 'race' = 'menu'; clock = 0; stones: Pickup[] = []; ghost: Character | null = null;
+  course: Course | null = null; dynamic = new THREE.Group(); racers = new Map<string, RacerView>(); hero = createCharacter(0); heroIndex = 0; track: TrackId = 'test'; raceId = ''; mode: 'menu' | 'race' = 'menu'; clock = 0; stones: StoneField | null = null; ghost: Character | null = null;
   fx: Effects; chase = new ChaseCamera(); speedLines = new SpeedLines(); reactions = new Reactions(); finish: FinishView | null = null; private finishStage: FinishStage; hemi: THREE.HemisphereLight; sun: THREE.DirectionalLight;
   private composer: EffectComposer; private quality = 'high'; private ghostMat = ghostMaterial(); private portraits: string[] = []; private icons = new Map<Item, string>(); private sunOffset = new THREE.Vector3();
   constructor(canvas: HTMLCanvasElement) {
@@ -55,7 +55,7 @@ export class World {
     this.buildTrack('test'); this.resize(); addEventListener('resize', () => this.resize());
   }
   resize() { this.renderer.setSize(innerWidth, innerHeight, false); this.composer.setPixelRatio(this.renderer.getPixelRatio()); this.composer.setSize(innerWidth, innerHeight); this.camera.aspect = innerWidth / innerHeight; this.camera.updateProjectionMatrix(); }
-  setQuality(q: string) { this.quality = q; this.fx.density = q === 'high' ? 1 : .5; setOrbDetail(q === 'high' ? 1 : .5); this.renderer.setPixelRatio(q === 'retro' ? .65 : q === 'low' ? (this.software ? .75 : 1) : Math.min(devicePixelRatio, 1.5)); this.renderer.shadowMap.enabled = q === 'high'; this.sun.castShadow = q === 'high'; if (this.course) { this.course.setQuality(q as StageQuality); applyEnvironment(this.course.env, this.scene, this.hemi, this.sun); } this.scene.traverse(o => { if (o instanceof THREE.Mesh && o.material instanceof THREE.Material) o.material.needsUpdate = true; }); this.resize(); }
+  setQuality(q: string) { this.quality = q; this.fx.density = q === 'high' ? 1 : .5; this.renderer.setPixelRatio(q === 'retro' ? .65 : q === 'low' ? (this.software ? .75 : 1) : Math.min(devicePixelRatio, 1.5)); this.renderer.shadowMap.enabled = q === 'high'; this.sun.castShadow = q === 'high'; if (this.course) { this.course.setQuality(q as StageQuality); applyEnvironment(this.course.env, this.scene, this.hemi, this.sun); } this.scene.traverse(o => { if (o instanceof THREE.Mesh && o.material instanceof THREE.Material) o.material.needsUpdate = true; }); this.resize(); }
   disposeObject(obj: THREE.Object3D) { const keep = [padMaterial]; obj.traverse(o => { if (o instanceof THREE.Mesh) { if (!shared.includes(o.geometry)) o.geometry.dispose(); for (const m of Array.isArray(o.material) ? o.material : [o.material]) if (!keep.includes(m)) { (m as THREE.MeshBasicMaterial).map?.dispose(); m.dispose(); } } if (o instanceof THREE.Sprite) { if (!o.material.map?.userData.shared) o.material.map?.dispose(); o.material.dispose(); } }); }
   setHero(ch: number) { this.scene.remove(this.hero.root); this.hero.dispose(); this.hero = createCharacter(ch); this.heroIndex = ch; this.hero.root.visible = this.mode === 'menu'; this.scene.add(this.hero.root); }
   setGhost(ch: number | null) {
@@ -72,12 +72,12 @@ export class World {
     cam.position.set(head.x - 1.4, head.y + .35, head.z + 5.2); cam.lookAt(head.x, head.y - .25, head.z);
     this.portraits[i] = this.snapshot(scene, cam, 160); c.dispose(); return this.portraits[i];
   }
-  /** A held Magic Stone's orb, frozen mid-animation, cached as a data URL for the HUD stone slots. */
+  /** A held Magic Stone with its symbol facing front, cached as a data URL for the HUD stone slots. */
   stoneIcon(kind: Item) {
     if (this.icons.has(kind)) return this.icons.get(kind)!;
-    const scene = new THREE.Scene(), cam = new THREE.PerspectiveCamera(30, 1, .1, 20), orb = makeOrb(kind, { halo: false });
-    orb.update(1.3); cam.position.set(0, .25, 4.1); cam.lookAt(0, 0, 0); scene.add(orb.root);
-    const url = this.snapshot(scene, cam, 96); orb.dispose(); this.icons.set(kind, url); return url;
+    const scene = new THREE.Scene(), cam = new THREE.PerspectiveCamera(30, 1, .1, 20), stone = heldStonePreview(kind, 1);
+    stone.update(0); cam.position.set(0, 0, HELD_STONE.radius / Math.sin(15 * Math.PI / 180) * 1.04); cam.lookAt(0, 0, 0); scene.add(stone.root);
+    const url = this.snapshot(scene, cam, 96); stone.dispose(); this.icons.set(kind, url); return url;
   }
   /** Renders a small offscreen scene on a transparent background into a PNG data URL. */
   private snapshot(scene: THREE.Scene, cam: THREE.Camera, size: number) {
@@ -90,12 +90,12 @@ export class World {
     g.putImageData(img, 0, 0); rt.dispose(); return canvas.toDataURL('image/png');
   }
   buildTrack(id: TrackId) {
-    this.track = id; this.chase.reset(); this.disposeObject(this.dynamic); this.dynamic.clear(); this.stones = [];
+    this.track = id; this.chase.reset(); this.disposeObject(this.dynamic); this.dynamic.clear(); this.stones = null;
     if (this.course) { this.scene.remove(this.course.root); this.course.dispose(); }
     this.course = buildCourse(id); this.course.setQuality(this.quality as StageQuality); this.scene.add(this.course.root);
     applyEnvironment(this.course.env, this.scene, this.hemi, this.sun);
     const objects = courseObjects(id);
-    objects.stones.forEach((st, i) => { const p = routePoint(id, st.route ?? MAIN_ROUTE, st.s, st.x), stone = makePickup(st.kind, i); stone.root.position.set(p.x, p.y + 1.5, p.z); this.dynamic.add(stone.root); this.stones.push(stone); });
+    this.stones = new StoneField(objects.stones.map(st => { const p = routePoint(id, st.route ?? MAIN_ROUTE, st.s, st.x); return { kind: st.kind, at: new THREE.Vector3(p.x, p.y, p.z) }; })); this.dynamic.add(this.stones.root);
     for (const pad of objects.pads) { const p = pointAt(id, pad.s, pad.x), m = makeBoostPad(); m.position.set(p.x, p.y + .07, p.z); m.rotation.y = p.yaw; this.dynamic.add(m); }
   }
   private addRacer(id: string, character: number, name?: string) {
@@ -109,10 +109,7 @@ export class World {
   render(dt: number, race: Race | null, playerId: string, steer = 0, lookBack = false, ghost?: GhostPoint, paused = false) {
     const live = paused ? 0 : dt; this.clock += live; const t = this.clock;
     padMaterial.uniforms.uTime.value = t;
-    this.stones.forEach((stone, i) => {
-      const g = stone.root; g.visible = !race || race.mode !== 'time' && race.pickups[i] <= 0; if (g.visible) stone.update(t);
-      if (g.visible && live && Math.random() < .05) { const a = Math.random() * 6.28; this.fx.glow.emit({ x: g.position.x + Math.cos(a) * .9, y: g.position.y + Math.random() - .4, z: g.position.z + Math.sin(a) * .9, vy: .7, life: .8, size: .35, color: '#ffffff', endColor: '#ffe6a0', shape: Shape.Star }); }
-    });
+    this.stones?.update(t, live, i => !race || race.mode !== 'time' && race.pickups[i] <= 0);
     const target = new THREE.Vector3();
     if (this.mode === 'menu' || !race) {
       const p = pointAt(this.track, -12); this.hero.root.position.set(p.x, p.y, p.z); this.hero.root.rotation.y = p.yaw + .4 + Math.sin(t * .35) * .9;

@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { MAIN_ROUTE, TRACKS, TRACK_IDS, courseLayout, pointAt, routePoint, trackLength, courseObjects, type TrackId } from '../../shared/track/index.ts';
 import { createCharacter } from '../../src/gfx/characters/index.ts';
-import { makePickup } from '../../src/gfx/effects/pickup.ts';
+import { StoneField } from '../../src/gfx/stones/field.ts';
 import { makeBoostPad, padMaterial } from '../../src/gfx/stage/boost-pad.ts';
 import { buildCourse, type Course } from '../../src/gfx/stage/course.ts';
 import { STAGE } from '../../src/gfx/stage/materials.ts';
@@ -37,9 +37,9 @@ const variants = (id: TrackId): Variant[] => [
 
 /** The game's dynamic objects, so the studio shows the course exactly as a race does. */
 function raceObjects(id: TrackId, group: THREE.Group) {
-  const stones = courseObjects(id).stones.map((st, i) => { const p = routePoint(id, st.route ?? MAIN_ROUTE, st.s, st.x), stone = makePickup(st.kind, i); stone.root.position.set(p.x, p.y + 1.5, p.z); group.add(stone.root); return stone; });
+  const stones = new StoneField(courseObjects(id).stones.map(st => { const p = routePoint(id, st.route ?? MAIN_ROUTE, st.s, st.x); return { kind: st.kind, at: new THREE.Vector3(p.x, p.y, p.z) }; })); group.add(stones.root);
   for (const pad of courseObjects(id).pads) { const p = pointAt(id, pad.s, pad.x), m = makeBoostPad(); m.position.set(p.x, p.y + .07, p.z); m.rotation.y = p.yaw; group.add(m); }
-  return { update(t: number) { padMaterial.uniforms.uTime.value = t; stones.forEach(s => s.update(t)); }, dispose() { stones.forEach(s => s.dispose()); } };
+  return { update(t: number, dt: number) { padMaterial.uniforms.uTime.value = t; stones.update(t, dt); }, dispose() { stones.dispose(); } };
 }
 
 /** Chase camera matching the game's: behind and above the racer, looking a little ahead. Dragging orbits around it. */
@@ -109,7 +109,7 @@ function create(id: TrackId, variant: string): Instance {
   const base: Instance = { object: root, env, setQuality: q => course.setQuality(q), dispose() { objects.dispose(); course.dispose(); } };
   if (variant === 'drive') {
     const c = chase(id, course, root);
-    return { ...base, camera: c.camera, update(t, dt) { objects.update(t); c.update!(t, dt); }, dispose() { c.dispose!(); base.dispose!(); } };
+    return { ...base, camera: c.camera, update(t, dt) { objects.update(t, dt); c.update!(t, dt); }, dispose() { c.dispose!(); base.dispose!(); } };
   }
   let cam: THREE.Camera = new THREE.PerspectiveCamera();
   if (variant.startsWith('g')) {
@@ -124,7 +124,7 @@ function create(id: TrackId, variant: string): Instance {
         if (c.fov !== 58 || c.far !== 1500) { c.fov = 58; c.near = .2; c.far = 1500; c.updateProjectionMatrix(); }
         return look;
       },
-      update(t, dt) { objects.update(t); course.update(t, dt, cam); },
+      update(t, dt) { objects.update(t, dt); course.update(t, dt, cam); },
     };
   }
   const at = variant === 'start' ? -4 : variant.startsWith('s') ? (Number(variant.slice(1)) - .5) * len / SECTIONS : 0, p = pointAt(id, at);
@@ -141,7 +141,7 @@ function create(id: TrackId, variant: string): Instance {
       c.position.set(t.x + Math.sin(a) * Math.cos(e) * d, t.y + Math.max(1.5, Math.sin(e) * d), t.z + Math.cos(a) * Math.cos(e) * d); c.lookAt(t);
       return t;
     },
-    update(t, dt) { objects.update(t); course.update(t, dt, cam); },
+    update(t, dt) { objects.update(t, dt); course.update(t, dt, cam); },
   };
 }
 
