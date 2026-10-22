@@ -1,6 +1,6 @@
 """Golem's palette and one painter per skin, from the in-game Chocobo Racing look.
 
-Mottled taupe stone with darker cracks; a black face with two yellow eyes under the brow; red wristbands with white
+Rough grey-brown stone, darkest on the head, with dark cracks between lighter faces; a black face with two yellow eyes under the brow; red wristbands with white
 spikes. The jeep is blue with a teal front face, five dark grille slots, yellow headlights, a silver bumper, a dark
 tailgate with a pale plate, orange tail lights, a light grey seat back, chrome exhaust stacks with copper tips and black
 knobbly tyres on grey hubs.
@@ -15,7 +15,11 @@ import numpy as np
 
 from pipeline.atlas import Painter, band, fill, hex_rgb, mix
 
-STONE, STONE_DARK, STONE_LIGHT, CRACK = "#bcaba2", "#95847b", "#d4c7be", "#6a5c55"
+SHOULDER, ARM, TORSO, HEAD, HEAD_BACK = "#bbaeaa", "#a5928d", "#98827c", "#a89c98", "#4d3d38"
+"""Grey-brown stone per region, set by measuring the PS1 frames under their lighting and ours under the game's: the
+shoulders are the lightest rocks, the arms and chest darker, the head darker still and the back of the head a dark
+brown block from the chase camera."""
+CRACK = "#312825"
 FACE = "#0d0b0c"
 EYE, EYE_DARK = "#ffe23a", "#b88a10"
 RED, RED_DARK, RED_LIGHT = "#d62a24", "#7e1210", "#f2624a"
@@ -30,28 +34,60 @@ def angle(u: np.ndarray) -> np.ndarray:
     return -np.pi / 2 + 2 * np.pi * u
 
 
-def noise(u: np.ndarray, v: np.ndarray, scale: float, seed: int) -> np.ndarray:
-    """Soft blotches from a few summed waves, deterministic per seed, in about -1..1. Whole waves around u, so a loft
-    shows no seam where u wraps."""
+def value_noise(u: np.ndarray, v: np.ndarray, cells: int, seed: int, rows: int | None = None) -> np.ndarray:
+    """Smooth random values in 0..1 on a grid of `cells` around u and `rows` along v (as many as `cells` unless
+    given), wrapping around u so a loft shows no seam."""
+    rows = rows or cells
+    grid = np.random.default_rng(seed).random((rows + 1, cells))
+    x, y = u * cells, v * rows
+    x0, y0 = np.floor(x).astype(int), np.clip(np.floor(y).astype(int), 0, rows - 1)
+    fx, fy = x - x0, y - y0
+    fx, fy = fx * fx * (3 - 2 * fx), fy * fy * (3 - 2 * fy)
+    x0, x1 = x0 % cells, (x0 + 1) % cells
+    top = grid[y0, x0] * (1 - fx) + grid[y0, x1] * fx
+    bottom = grid[y0 + 1, x0] * (1 - fx) + grid[y0 + 1, x1] * fx
+    return top * (1 - fy) + bottom * fy
+
+
+def facets(u: np.ndarray, v: np.ndarray, cells: int, rows: int, seed: int) -> tuple[np.ndarray, np.ndarray]:
+    """Rock faces as a Voronoi pattern of `cells` points around u by `rows` along v, wrapping around u. Returns each
+    pixel's face shade in -1..1 and its distance to the nearest edge between faces, in units of one face."""
     rng = np.random.default_rng(seed)
-    total = np.zeros_like(u)
-    for _ in range(6):
-        fu, fv, pu, pv = max(1, round(rng.uniform(1.5, 4.0) * scale)), rng.uniform(1.5, 4.0) * scale, rng.uniform(0, 6.3), rng.uniform(0, 6.3)
-        total += np.sin(u * fu * 6.283 + pv * 0.4 * np.sin(v * 3)) * np.sin(v * fv * 6.283 + pu)
-    return total / 3
+    count = cells * rows
+    points, shades = rng.random((count, 2)), rng.uniform(-1, 1, count)
+    near = np.full(u.shape, 9.0)
+    second = np.full(u.shape, 9.0)
+    shade = np.zeros_like(u)
+    for (pu, pv), k in zip(points, shades, strict=True):
+        du = np.abs(u - pu)
+        d = np.hypot(np.minimum(du, 1 - du) * cells, (v - pv) * rows)
+        closer = d < near
+        second = np.where(closer, near, np.minimum(second, d))
+        shade = np.where(closer, k, shade)
+        near = np.where(closer, d, near)
+    return shade, second - near
 
 
-def stone(seed: int, scale: float = 1.0) -> Painter:
-    """Taupe stone: large soft light and dark patches, fine speckle and a few thin dark cracks."""
+def stone(base: str, seed: int, cells: int, aspect: float) -> Painter:
+    """Rough grey-brown rock: lighter and darker faces split by thin dark cracks, mottled with blotches and speckles.
+
+    `cells` is the number of faces around the part and `aspect` how many times farther the part runs around than
+    along, so faces and speckles come out round on the model, not stretched into stripes.
+    """
 
     def painter(u: np.ndarray, v: np.ndarray) -> np.ndarray:
-        big = noise(u, v, 1.2 * scale, seed)
-        fine = noise(u, v, 6.0 * scale, seed + 1)
-        img = mix(fill(STONE, u), fill(STONE_DARK, u), np.clip(big, 0, 1) * 0.6)
-        img = mix(img, fill(STONE_LIGHT, u), np.clip(-big, 0, 1) * 0.5)
-        img = mix(img, fill(STONE_DARK, u), np.clip(fine - 0.5, 0, 1) * 0.35)
-        crack = noise(u, v, 2.4 * scale, seed + 2)
-        return mix(img, fill(CRACK, u), band(crack, 0, 0.025, 0.02) * 0.3)
+        colour = hex_rgb(base)
+        rows = max(1, round(cells / aspect))
+        shade, edge = facets(u, v, cells, rows, seed)
+        blotch = value_noise(u, v, cells * 2, seed + 1, rows * 2) - 0.5
+        speck = value_noise(u, v, cells * 10, seed + 2, rows * 10) - 0.5
+        # Every ring meets at a pole at each end of the loft, where faces and cracks would swirl into a pinwheel, so
+        # near the ends only the soft blotches remain.
+        detail = np.clip(np.minimum(v, 1 - v) * 9 - 0.3, 0, 1)
+        k = 1 + 0.4 * blotch + detail * (0.14 * shade + 0.5 * speck)
+        img = np.clip(colour * k[..., None], 0, 1)
+        crack = np.clip(1 - edge / 0.06, 0, 1) * (value_noise(u, v, cells, seed + 3, rows) > 0.35) * detail
+        return mix(img, fill(CRACK, u), crack * 0.7)
 
     return painter
 
@@ -61,19 +97,19 @@ def head(u: np.ndarray, v: np.ndarray) -> np.ndarray:
     lower edge is jagged like teeth, set between the cheeks under the brow slab."""
     a = angle(u)
     forward, side = np.sin(a), np.cos(a)
-    img = stone(3)(u, v)
-    # The back of the head is darker weathered stone; from the chase camera it reads as the original's dark block.
-    img = mix(img, fill(CRACK, u), np.clip(-forward * 1.4, 0, 1) * 0.75)
+    img = stone(HEAD, 3, 9, 3.2)(u, v)
+    # The back and top of the head are a dark brown block from the chase camera.
+    back = stone(HEAD_BACK, 4, 9, 3.2)(u, v)
+    img = mix(img, back, np.clip((-forward - 0.35) * 3, 0, 1))
     teeth = 0.36 + 0.05 * np.abs(np.mod(side * 3.2 + 0.5, 1) - 0.5) * 2
     face = np.clip((forward - 0.35) * 12, 0, 1) * np.clip((0.7 - np.abs(side)) * 14, 0, 1) * np.clip((v - teeth) * 40, 0, 1)
     return mix(img, fill(FACE, u), face)
 
 
 def torso(u: np.ndarray, v: np.ndarray) -> np.ndarray:
-    """The body block, darker and more weathered low down, where the original's chase view shows a dark mottled waist
-    under the lighter shoulders and upper back."""
-    img = stone(31, 1.3)(u, v)
-    return mix(img, fill(STONE_DARK, u), np.clip((0.55 - v) * 2.5, 0, 1) * 0.7)
+    """The body block, darker low down, where the original's chase view shows a dark mottled waist."""
+    img = stone(TORSO, 31, 12, 4.0)(u, v)
+    return mix(img, img * 0.7, np.clip((0.55 - v) * 2.5, 0, 1))
 
 
 def eye(u: np.ndarray, v: np.ndarray) -> np.ndarray:
@@ -105,7 +141,7 @@ def body(u: np.ndarray, v: np.ndarray) -> np.ndarray:
     up = np.sin(angle(u))
     img = mix(fill(BLUE, u), fill(BLUE_LIGHT, u), np.clip(up, 0, 1) * 0.5)
     img = mix(img, fill(BLUE_DARK, u), np.clip(-up, 0, 1) * 0.55)
-    return mix(img, fill(BLUE_DARK, u), np.clip(noise(u, v, 2.0, 21) - 0.2, 0, 1) * 0.35)
+    return mix(img, fill(BLUE_DARK, u), np.clip(value_noise(u, v, 6, 21) - 0.6, 0, 1) * 0.9)
 
 
 def grille(u: np.ndarray, v: np.ndarray) -> np.ndarray:
@@ -155,12 +191,12 @@ def lamp(u: np.ndarray, v: np.ndarray) -> np.ndarray:
 
 PAINTERS: dict[str, Painter] = {
     "head": head,
-    "slab": stone(30, 1.2),
+    "slab": stone(HEAD, 30, 8, 2.4),
     "torso": torso,
-    "rock": stone(32),
-    "shoulder": stone(33),
-    "arm": stone(34),
-    "fist": stone(35, 0.8),
+    "rock": stone(TORSO, 32, 7, 2.5),
+    "shoulder": stone(SHOULDER, 33, 9, 1.6),
+    "arm": stone(ARM, 34, 6, 2.4),
+    "fist": stone(ARM, 35, 6, 1.4),
     "eye": eye,
     "band": band_paint,
     "spike": spike,
@@ -201,4 +237,4 @@ SIZES: dict[str, tuple[int, int]] = {
     "copper": (32, 32),
 }
 
-BACKGROUND = tuple(float(c) for c in hex_rgb(STONE))
+BACKGROUND = tuple(float(c) for c in hex_rgb(TORSO))

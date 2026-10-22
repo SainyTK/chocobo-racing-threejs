@@ -105,9 +105,10 @@ Deliberate deviations:
 Golem follows the PS1 in-game model, checked side by side against a Grand Prix played as him (chase view, racer select turn, podium) and the Story Mode Chapter 3 cutscenes, not the CG art.
 The Rockin' Roller V8 is a small blue 4WD jeep, as the manual says ("4WD jeep"), even though its name suggests a road roller: a blue tub, a teal front face with round yellow headlights and five grille slots, a silver bumper, blue arches over the front wheels, four big black knobbly tyres, a light grey seat back, orange tail lights and two exhaust stacks at the back.
 The front wheels steer on their own knuckles.
-Golem is built from separate rounded boulders in warm taupe stone: a tall block head under a thick brim that overhangs a black face with two angry yellow eyes, huge round shoulder boulders, long rocky arms and big fists on the steering wheel, with red wristbands studded with white spikes.
+Golem is built from separate rounded boulders of rough grey-brown stone: a tall block head under a thick brim that overhangs a black face with two angry yellow eyes, huge round shoulder boulders whose tops sit level with his eyes, long rocky arms and big fists on the steering wheel, with red wristbands studded with white spikes.
 His Win clip, one fist punched up and the other arm thrown out, is the pose he strikes on the podium and in the racer select screen.
-His stone colour was set by measuring the chase view: the original's lit stone samples at about hue 26 to 37 and 70% lightness, and the remake's at hue 28 to 31 and 64% to 65% with the shared self-shadow fix.
+His stone was matched region by region, by measuring the PS1 frames and the remake's under the game's lighting. In the chase view the original's shoulders are the lightest stone (about 53% lightness), the back is darker (23% to 32%) and the back of the head is a dark brown block (16% to 19%); in the racer select screen the shoulders read 47%, the forearms 40%, the chest 37% and the head darker than the shoulders. The remake measures 52%, 34%, 17%, and in the menu 52%, 42% and 41% for the shoulders, forearms and head.
+The stone is painted rough: lighter and darker faces split by thin dark cracks, with blotches and speckles, and no extra geometry.
 His roster colour follows the model's stone.
 
 | Deviation | Original | Remake |

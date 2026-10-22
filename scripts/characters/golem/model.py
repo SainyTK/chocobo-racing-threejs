@@ -33,7 +33,7 @@ J = {
     "chest": (0, 0.18, 2.1),
     "neck": (0, 0.06, 2.9),
     "head": (0, -0.02, 3.3),
-    "shoulder": (0.92, 0.14, 2.7),
+    "shoulder": (0.96, 0.12, 2.9),
     "elbow": (1.2, -0.3, 2.12),
     "wrist": (0.62, -0.86, 2.0),
     "hand_end": (0.38, -1.06, 1.92),
@@ -155,7 +155,8 @@ def torso_parts() -> list[Part]:
     left: list[Part] = []
     pec = rock("pec", "rock", [(0.04, -0.26, 2.46), (0.7, -0.26, 2.46)], (0.33, 0.3), (0, 0, 1), 4, 3.0, 0.05, 14, 8)
     left.append(rigid(pec, "chest"))
-    shoulder = rock("shoulder", "shoulder", [(0.5, 0.14, 2.7), (1.56, 0.14, 2.66)], (0.52, 0.46), (0, 0, 1), 7, 2.2, 0.05, 18, 10)
+    # Round boulders whose tops sit level with the eyes, as in the select screen and the cutscenes.
+    shoulder = rock("shoulder", "shoulder", [(0.62, 0.12, 2.9), (1.5, 0.12, 2.86)], (0.54, 0.52), (0, 0, 1), 7, 2.0, 0.04, 18, 10)
     left.append(rigid(shoulder, "arm.L"))
     return parts + left + [mirror(p, p.name + ".R") for p in left]
 
@@ -163,7 +164,7 @@ def torso_parts() -> list[Part]:
 def arm_parts() -> list[Part]:
     """Upper arm and forearm rocks, a red wristband studded with white spikes, and a big fist on the wheel rim."""
     elbow, wrist = Vector(J["elbow"]), Vector(J["wrist"])
-    upper = rock("upper_arm", "arm", [(1.0, 0.1, 2.5), (1.16, -0.1, 2.3), J["elbow"]], (0.3, 0.3), (0, -1, 0), 8, 3.0)
+    upper = rock("upper_arm", "arm", [(1.04, 0.08, 2.6), (1.18, -0.12, 2.34), J["elbow"]], (0.3, 0.3), (0, -1, 0), 8, 3.0)
     fore = rock("forearm", "arm", [elbow + (elbow - wrist).normalized() * 0.12, (0.94, -0.6, 2.06), wrist], (0.31, 0.31), (0, 0, 1), 9, 3.0)
     parts = [rigid(upper, "arm.L"), rigid(fore, "forearm.L")]
     d = (wrist - elbow).normalized()
