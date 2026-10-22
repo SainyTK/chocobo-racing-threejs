@@ -40,7 +40,7 @@ vec4 glyphFire(vec2 p, float aa, vec3 g, vec3 a) {
   vec4 c = over(vec4(0.), g * 1.15, cover(outer, aa));
   return over(c, a * 1.3, cover(core, aa));
 }
-// Ice: an eight-pointed snowflake with a blue outline.
+// Ice: an eight-pointed navy snowflake with a pale outline.
 vec4 glyphIce(vec2 p, float aa, vec3 g, vec3 a) {
   float d = 1e9;
   for (int i = 0; i < 4; i++) { float an = float(i) * .7854; vec2 dir = vec2(cos(an), sin(an)) * .58; d = min(d, sdSegment(p, -dir, dir)); }
@@ -63,15 +63,15 @@ vec4 glyphReflect(vec2 p, float aa, vec3 g, vec3 a) {
   float tail = min(sdSegment(p, o, o + vec2(-.2, .22)), sdSegment(p, o, o + vec2(-.28, -.05))) - .038;
   return over(c, a * 1.1, cover(min(arrow, tail), aa));
 }
-// Haste: a right-pointing triangle, lit on its upper face and shaded on its lower one.
-vec4 glyphHaste(vec2 p, float aa, vec3 g, vec3 a) {
+// Mini: a right-pointing triangle, lit on its upper face and shaded on its lower one.
+vec4 glyphMini(vec2 p, float aa, vec3 g, vec3 a) {
   vec2 A = vec2(-.36, .48), B = vec2(-.36, -.48), T = vec2(.52, 0.), M = vec2(-.12, -.06);
   vec4 c = over(vec4(0.), g, cover(sdTriangle(p, A, M, T), aa));
   c = over(c, g * .92, cover(sdTriangle(p, A, B, M), aa));
   return over(c, a, cover(sdTriangle(p, B, T, M), aa));
 }
-// Mini: a fat upward arrow, lighter along its middle.
-vec4 glyphMini(vec2 p, float aa, vec3 g, vec3 a) {
+// Haste: a fat upward arrow, lighter along its middle.
+vec4 glyphHaste(vec2 p, float aa, vec3 g, vec3 a) {
   float d = min(sdTriangle(p, vec2(-.54, .08), vec2(.54, .08), vec2(0., .64)), sdBox(p - vec2(0., -.2), vec2(.24, .3), .02));
   return over(vec4(0.), mix(g, a, smoothstep(.0, -.2, d) * .35), cover(d, aa));
 }

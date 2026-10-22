@@ -111,22 +111,22 @@ The remake draws the same thing: a toon-shaded ball with a three-band light from
 | --- | --- | --- |
 | "?" | Black ball, thick yellow question mark | Same |
 | Fire | Red ball, orange flame with a yellow-white core | Same |
-| Ice | Pale see-through ball, white eight-pointed snowflake outlined in blue | Same, at 78% opacity |
+| Ice | Milky lavender ball, faintly see-through, navy eight-pointed snowflake | Same, at 90% opacity |
 | Thunder | Green ball, yellow lightning bolt | Same |
-| Haste | Deep blue ball, two-tone cyan arrowhead pointing right | Same |
-| Mini | Teal ball, pink upward arrow | Same |
+| Haste | Turquoise ball, pink upward arrow | Same |
+| Mini | Deep blue ball, two-tone cyan arrowhead pointing right | Same |
 | Reflect | Magenta-pink ball, glowing violet disc with a white arrow bouncing off it | Same |
 | Doom | Dusty rose ball, grey-white skull | Same |
 | Ultima | Not seen clearly in any footage; the manual calls it white | White ball, violet four-pointed star with a gold heart |
 
-Haste and Mini are told apart by course: Moogle Forest, which only has Haste and "?" stones in the original, shows the blue arrowhead stone.
+Haste and Mini are told apart by what happens on use: in a Vulcan-O Valley race, casting the turquoise arrow stone gives a speed burst to about 120 MPH, and the manual names Haste turquoise and Mini purple. A Moogle Forest Grand Prix race shows the blue arrowhead stone, so Grand Prix stone sets may differ from the Story sets.
 
 On pickup the held stone appears at once, and the track stone turns into a bright additive smear of its own colours that swells and fades within about five frames.
 The remake bursts the stone the same way over 0.22 s and drops the earlier star sparkles.
-Respawn timing is not shown in the footage; the remake keeps its 3.5 s and grows the stone back in over 0.25 s.
+In the original a taken stone leaves an empty slot, and the slot is full again by the next lap, sometimes with a different kind. The refill itself is never on screen; the remake keeps its fixed kinds and 3.5 s respawn and grows the stone back in over 0.25 s.
 Held stones in the original roll on the road in a short chain right behind the racer's rear wheels, about half a track stone across, symbol facing the camera.
 The manual says a stack "will flash" to show its level, and one FAQ says level two "will start to blink" and level three "will start to blink rapidly"; the footage shows held stones blinking to black.
-The remake blinks level two four times a second and level three eight times a second.
+In 30 fps captures a held stone alternates with black every frame for bursts of two to three seconds; footage does not separate the levels. The remake blinks level two four times a second and level three eight times a second, steadily, so the level is always readable.
 The original HUD shows no held-stone icons; the remake keeps its MAGIC slots, now drawn from the same stone model.
 
 Deliberate deviations:
@@ -134,9 +134,10 @@ Deliberate deviations:
 | Original | Remake | Reason |
 | --- | --- | --- |
 | Held stones sit right under and behind the rear wheels | Held stones roll on the road 2.1 m behind the racer's centre, then every 1.3 m, scaled by racer size | The simulation places stacks there and a rival steals one by driving into it; moving them would change gameplay. Drawn small and at road level, they read like the original's chain |
+| Rows hold five stones on the roads seen in footage | Rows keep three to five lanes per course | Lane counts are gameplay layout, outside this visual pass |
 | Ultima's look is unknown | White ball with a violet star | No clear frame of an Ultima stone was found |
 | Symbols are low-resolution textures | Symbols are drawn per pixel | Crisp at phone and desktop resolutions |
-| Respawn and blink timings unknown | 3.5 s respawn, 4 and 8 blinks a second | Interpretations |
+| Slots refill within a lap, possibly with another kind; held stacks blink in bursts | Fixed kinds, 3.5 s respawn, steady 4 and 8 blinks a second | Keeps the existing simulation; a steady blink always shows the level |
 
 All track stones draw in three instanced draw calls (stones, shadows and pickup bursts, the last only while a burst plays) and every racer's held stones in one more.
 
