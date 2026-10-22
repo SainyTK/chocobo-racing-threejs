@@ -100,7 +100,7 @@ A held key overrides touch steering.
 Stones lie on the road in rows of three or four coloured lanes, and each colour is one spell, so steer into the colour you want.
 Each course uses the stone set the original introduced in its Story chapter.
 Cid's Test Track and Moogle Forest have only Haste and "?" stones, The Ancient Gate adds Fire, and each later course adds one more: Ice, Thunder, Mini, Reflect and Doom.
-A "?" stone, drawn as a white orb with a question mark, rolls a random spell.
+A black "?" stone, a dark orb with a white question mark as in the original, rolls a random spell.
 Racers in the back half of the field get stronger random spells, and only they can roll Ultima.
 A taken stone comes back after 3.5 s.
 
@@ -383,7 +383,7 @@ Reports are in `output/playwright-report/`; screenshots are in `output/testing/`
 - `src/gfx/effects/`: spell and race effects: fireballs, ice traps, lightning, Ultima, Reflect bubbles, Doom runes, boost trails, drift sparks and status auras.
   `index.ts` holds the `Effects` controller; `spells.ts` draws each spell's cast and impact by level; `speed-lines.ts` draws the screen-space speed streaks; `bolt.ts`, `trail.ts`, `bursts.ts`, `status.ts` and `pickup.ts` each hold one effect component.
 - `src/gfx/particles/`: instanced billboard particle pools and their shaders.
-- `src/gfx/orbs/`: Magic Stone orbs. Each stone is a glass sphere with its element ray-marched inside it: a flame, a turning cluster of ice crystals, plasma-globe lightning, a speed dash with trailing spikes, a mirror ball, shrinking rings, a Doom skull in smoke, a star core and a white question mark.
+- `src/gfx/orbs/`: Magic Stone orbs. Each stone is a glass sphere with its element ray-marched inside it: a flame, a turning cluster of ice crystals, plasma-globe lightning, a speed dash with trailing spikes, a mirror ball, shrinking rings, a Doom skull in smoke, a star core and a white question mark in black smoke.
   `interiors.ts` holds one shader per stone, `glass.ts` the shell and `index.ts` builds an orb. Track pickups, held stones and HUD slots all use them. `stack.ts` wraps a held orb in its level two or three aura.
 - `src/gfx/stage/`: course scenery.
   `course.ts` assembles a course; `kit.ts` places and merges props; `patches.ts`, `ramps.ts`, `shortcuts.ts` and `hazards.ts` draw the course gimmicks; `terrain.ts` builds the ground heightfield and textured road; `sky.ts` the sky dome and distant mountains; `liquid.ts` water, lava and cloud seas; `ambient.ts` drifting particles; `textures.ts` procedural road and ground textures; `props/` shared props; `courses/` one file per course.

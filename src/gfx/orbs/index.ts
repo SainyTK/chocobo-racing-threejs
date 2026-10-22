@@ -5,7 +5,8 @@ import { glassMaterial } from './glass.ts';
 import { INTERIORS } from './interiors.ts';
 import { vertex, fragment } from './glsl.ts';
 
-export const RANDOM_COLOR = '#ffffff';
+/** A "?" stone is black, as in the original. Its glass rim, glow and ground ring use this pale accent so it still reads on dark roads. */
+export const RANDOM_COLOR = '#e8e2ff';
 /** The interior only needs to cover the sphere's silhouette, so it is coarse and slightly oversized; the glass needs smooth normals. */
 const glassGeo = new THREE.SphereGeometry(1, 28, 18), interiorGeo = new THREE.SphereGeometry(1.04, 18, 12);
 export const ORB_GEOMETRIES = [glassGeo, interiorGeo];
@@ -29,6 +30,9 @@ export const glowMap = (() => {
   const t = new THREE.DataTexture(px, n, n); t.magFilter = t.minFilter = THREE.LinearFilter; t.needsUpdate = true; t.userData.shared = true; return t;
 })();
 
+/** Glass and interior draw after the road's see-through layers (patches, shortcut surfaces, hazard marks), which would otherwise paint over them. */
+const INTERIOR_ORDER = 3, GLASS_ORDER = 4;
+
 /** Ray-marched element held inside a glass sphere. The interior draws first, then the glass over it. */
 export function makeOrb(kind: PickupKind, o: OrbOptions = {}): Orb {
   const { tint = true, halo = true } = o, color = orbColor(kind), root = new THREE.Group();
@@ -36,8 +40,8 @@ export function makeOrb(kind: PickupKind, o: OrbOptions = {}): Orb {
     defines: { DETAIL: detail.toFixed(2) }, transparent: true, depthWrite: false, side: THREE.BackSide, blending: THREE.CustomBlending, blendSrc: THREE.OneFactor, blendDst: THREE.OneMinusSrcAlphaFactor,
     uniforms: { uTime: { value: 0 } }, vertexShader: vertex, fragmentShader: fragment(INTERIORS[kind]),
   });
-  const interior = new THREE.Mesh(interiorGeo, interiorMat); interior.scale.setScalar(.94); interior.renderOrder = 1;
-  const glass = new THREE.Mesh(glassGeo, glassMaterial(tint ? color : '#cfe6ff')); glass.renderOrder = 2;
+  const interior = new THREE.Mesh(interiorGeo, interiorMat); interior.scale.setScalar(.94); interior.renderOrder = INTERIOR_ORDER;
+  const glass = new THREE.Mesh(glassGeo, glassMaterial(tint ? color : '#cfe6ff')); glass.renderOrder = GLASS_ORDER;
   root.add(interior, glass);
   const materials: THREE.ShaderMaterial[] = [interiorMat, glass.material];
   let glow: THREE.Sprite | null = null;

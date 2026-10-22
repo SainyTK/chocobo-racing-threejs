@@ -216,7 +216,7 @@ export const INTERIORS: Record<PickupKind, string> = {
     return vec4(col, 1. - T * .8);
   }`,
 
-  // Only a white question mark floating in clear glass: the stone could become anything.
+  // A white question mark floating in black smoke, like the original's black "?" stone: it could become anything.
   random: /* glsl */ `
   float glyph(vec2 q) {
     q = q / 1.35 - vec2(0., .04); vec2 c = vec2(0., .14); float r = .17, d = abs(length(q - c) - r);
@@ -228,9 +228,10 @@ export const INTERIORS: Record<PickupKind, string> = {
   vec4 interior(vec3 ro, vec3 rd, float t0, float t1) {
     float tp; vec2 q = billboard(ro, rd, tp);
     q.y -= sin(uTime * 1.8) * .025;
-    // A soft shadow behind the mark keeps it legible against the white glass.
-    float g = glyph(q), ink = smoothstep(.034, .026, g), shadow = smoothstep(.1, .03, g) * (1. - ink);
-    vec3 c = vec3(2.6) * ink + vec3(.04, .06, .1) * (t1 - t0);
-    return vec4(c, max(ink, shadow * .55));
+    // Slowly churning dark smoke fills the sphere, so the stone reads black on bright icing and the mark stays legible.
+    float n = fbm(rotY(uTime * .4) * (ro + rd * (t0 + t1) * .5) * 2.6), body = .9 + .07 * n;
+    float g = glyph(q), ink = smoothstep(.034, .026, g);
+    vec3 smoke = vec3(.02, .015, .04) + vec3(.09, .07, .16) * n * n;
+    return vec4(mix(smoke * body, vec3(2.6), ink), mix(body, 1., ink));
   }`,
 };

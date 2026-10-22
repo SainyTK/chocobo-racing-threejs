@@ -2,7 +2,7 @@ import type { StoneType } from '../track/types.ts';
 
 export type Item = StoneType;
 export const ITEMS: Record<Item, { name: string; names: string[]; symbol: string; color: string; help: string }> = {
-  fire: { name: 'Fire', names: ['Fire', 'Fira', 'Firaga'], symbol: '●', color: '#ff5950', help: 'Aim a fireball. Fira homes; Firaga attacks everyone.' },
+  fire: { name: 'Fire', names: ['Fire', 'Fira', 'Firaga'], symbol: '●', color: '#ff5950', help: 'A fireball flies straight ahead. Fira homes on the racer ahead; Firaga homes on every racer ahead.' },
   ice: { name: 'Ice', names: ['Blizzard', 'Blizzara', 'Blizzaga'], symbol: '❄', color: '#73c9f5', help: 'Drop ice. Blizzara drops six; Blizzaga freezes rivals.' },
   thunder: { name: 'Thunder', names: ['Thunder', 'Thundara', 'Thundaga'], symbol: 'ϟ', color: '#72df89', help: 'Strike a rival ahead. Thundaga hits every rival.' },
   haste: { name: 'Haste', names: ['Haste', 'Haste II', 'Haste III'], symbol: '»', color: '#56e3d2', help: 'A turbo boost. More matching stones last longer.' },
