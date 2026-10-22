@@ -29,8 +29,8 @@ vec4 glyphRandom(vec2 p, float aa, vec3 g, vec3 a) {
   vec2 c = vec2(0., .2); float r = .25, an = atan(p.y - c.y, p.x - c.x);
   float arc = abs(length(p - c) - r); if (an < -1.05 && an > -2.75) arc = 1.;
   vec2 tail = c + r * vec2(cos(-1.05), sin(-1.05));
-  float d = min(min(arc, sdSegment(p, tail, vec2(0., -.1))), sdSegment(p, vec2(0., -.1), vec2(0., -.17))) - .095;
-  d = min(d, length(p - vec2(0., -.42)) - .1);
+  float d = min(min(arc, sdSegment(p, tail, vec2(0., -.1))), sdSegment(p, vec2(0., -.1), vec2(0., -.17))) - .12;
+  d = min(d, length(p - vec2(0., -.45)) - .12);
   return over(vec4(0.), mix(g, a, smoothstep(.0, -.08, d) * .35), cover(d, aa));
 }
 // Fire: a flame with a white-hot core.
@@ -56,24 +56,24 @@ vec4 glyphThunder(vec2 p, float aa, vec3 g, vec3 a) {
 }
 // Reflect: a glowing violet shield with a white arrow bouncing off it.
 vec4 glyphReflect(vec2 p, float aa, vec3 g, vec3 a) {
-  vec2 o = vec2(-.1, -.08); float disc = length(p - o) - .4;
-  vec4 c = over(vec4(0.), mix(a, g, smoothstep(.05, .34, length(p - o))), cover(disc, aa));
+  vec2 o = vec2(-.12, -.08); float disc = length(p - o) - .48;
+  vec4 c = over(vec4(0.), mix(a, g, smoothstep(.04, .4, length(p - o))), cover(disc, aa));
   vec2 tip = vec2(.44, .4), dir = normalize(tip - o), side = vec2(-dir.y, dir.x);
-  float arrow = min(sdSegment(p, o, tip - dir * .1) - .05, sdTriangle(p, tip, tip - dir * .24 + side * .15, tip - dir * .24 - side * .15));
-  float tail = min(sdSegment(p, o, o + vec2(-.2, .22)), sdSegment(p, o, o + vec2(-.28, -.05))) - .045;
+  float arrow = min(sdSegment(p, o, tip - dir * .1) - .04, sdTriangle(p, tip, tip - dir * .24 + side * .15, tip - dir * .24 - side * .15));
+  float tail = min(sdSegment(p, o, o + vec2(-.2, .22)), sdSegment(p, o, o + vec2(-.28, -.05))) - .038;
   return over(c, a * 1.1, cover(min(arrow, tail), aa));
 }
-// Mini: a right-pointing triangle, lit on its upper face and shaded on its lower one.
-vec4 glyphMini(vec2 p, float aa, vec3 g, vec3 a) {
+// Haste: a right-pointing triangle, lit on its upper face and shaded on its lower one.
+vec4 glyphHaste(vec2 p, float aa, vec3 g, vec3 a) {
   vec2 A = vec2(-.36, .48), B = vec2(-.36, -.48), T = vec2(.52, 0.), M = vec2(-.12, -.06);
   vec4 c = over(vec4(0.), g, cover(sdTriangle(p, A, M, T), aa));
   c = over(c, g * .92, cover(sdTriangle(p, A, B, M), aa));
   return over(c, a, cover(sdTriangle(p, B, T, M), aa));
 }
-// Haste: a fat upward arrow, lighter along its middle.
-vec4 glyphHaste(vec2 p, float aa, vec3 g, vec3 a) {
-  float d = min(sdTriangle(p, vec2(-.5, .02), vec2(.5, .02), vec2(0., .6)), sdBox(p - vec2(0., -.26), vec2(.22, .3), .02));
-  return over(vec4(0.), mix(g, a, smoothstep(.0, -.16, d) * .45), cover(d, aa));
+// Mini: a fat upward arrow, lighter along its middle.
+vec4 glyphMini(vec2 p, float aa, vec3 g, vec3 a) {
+  float d = min(sdTriangle(p, vec2(-.54, .08), vec2(.54, .08), vec2(0., .64)), sdBox(p - vec2(0., -.2), vec2(.24, .3), .02));
+  return over(vec4(0.), mix(g, a, smoothstep(.0, -.2, d) * .35), cover(d, aa));
 }
 // Doom: a pale skull.
 vec4 glyphDoom(vec2 p, float aa, vec3 g, vec3 a) {

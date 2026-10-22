@@ -38,7 +38,7 @@ void main() {
   vec3 col = mix(uBody[vKind] * band, sym.rgb * mix(.86, 1.04, lit), sym.a);
   float hl = dot(n, normalize(L + v)), rim = 1. - max(dot(n, v), 0.);
   col *= 1. - .3 * smoothstep(.5, 1., rim);
-  col += vec3(1.) * (smoothstep(.972, .985, hl) * .95 + smoothstep(.9, .98, hl) * .12);
+  col += vec3(1.) * (smoothstep(.95, .985, hl) * .62 + smoothstep(.86, .97, hl) * .14);
   float alpha = mix(uOpacity[vKind], 1., max(sym.a, smoothstep(.45, 1., rim) * .6));
   // A held stack of two or three blinks to black, faster at level three.
   if (vState.y > 0. && fract(uTime * vState.y + vState.x * .16) > .5) col *= .07;

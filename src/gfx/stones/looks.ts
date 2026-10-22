@@ -14,11 +14,11 @@ export interface StoneLook { body: string; glyph: string; accent: string; opacit
 export const STONE_LOOKS: Record<StoneKind, StoneLook> = {
   fire: { body: '#e3200f', glyph: '#ffb01e', accent: '#fff4a8', opacity: 1 },
   ice: { body: '#c9d4f4', glyph: '#ffffff', accent: '#2f5ee0', opacity: .78 },
-  thunder: { body: '#2fb52a', glyph: '#ffe62e', accent: '#fff9c2', opacity: 1 },
-  haste: { body: '#17b49c', glyph: '#ff3cc8', accent: '#ffc4f2', opacity: 1 },
-  shield: { body: '#df2f78', glyph: '#7b3cff', accent: '#ffffff', opacity: 1 },
-  mini: { body: '#2c3fd6', glyph: '#7ff2ff', accent: '#1aa6c9', opacity: 1 },
-  doom: { body: '#c28c86', glyph: '#e9e6e2', accent: '#3a2a2e', opacity: 1 },
+  thunder: { body: '#45c824', glyph: '#ffe62e', accent: '#fff9c2', opacity: 1 },
+  haste: { body: '#2c3fd6', glyph: '#7ff2ff', accent: '#0d2f96', opacity: 1 },
+  shield: { body: '#da3a80', glyph: '#7b3cff', accent: '#ffffff', opacity: 1 },
+  mini: { body: '#11a98f', glyph: '#ff2cd6', accent: '#ff9cf0', opacity: 1 },
+  doom: { body: '#c49496', glyph: '#e9e6e2', accent: '#3a2a2e', opacity: 1 },
   ultima: { body: '#f4f1ff', glyph: '#b28cff', accent: '#ffe27a', opacity: 1 },
   random: { body: '#141218', glyph: '#ffe23a', accent: '#fff6b0', opacity: 1 },
 };

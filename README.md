@@ -100,18 +100,19 @@ A held key overrides touch steering.
 
 ### Magic Stones
 
-Stones lie on the road in rows of three or four coloured lanes, and each colour is one spell, so steer into the colour you want.
+Stones are glossy coloured balls floating over the road in rows of three or four lanes, each with its spell's symbol painted on the side facing you, so steer into the one you want.
+Fire is red with a flame, Ice pale blue and see-through with a snowflake, Thunder green with a lightning bolt, Haste blue with a cyan arrowhead, Mini teal with a pink up arrow, Reflect pink with a violet shield, Doom dusty rose with a skull and Ultima white with a violet star.
 Each course uses the stone set the original introduced in its Story chapter.
 Cid's Test Track and Moogle Forest have only Haste and "?" stones, The Ancient Gate adds Fire, and each later course adds one more: Ice, Thunder, Mini, Reflect and Doom.
 Fantasia, the Bahamut stage, lays every type, and it is the only course with Ultima stones on the road.
-A black "?" stone, a dark orb with a white question mark as in the original, rolls a random spell.
+A black "?" stone with a yellow question mark, as in the original, rolls a random spell.
 Racers in the back half of the field get stronger random spells, and only they can roll Ultima from one.
-A taken stone comes back after 3.5 s.
+A taken stone bursts into a bright smear of its colour and grows back in after 3.5 s.
 
-You hold up to three stones, trailing in a line behind your racer.
+You hold up to three stones, as small balls rolling in a line on the road behind your racer.
 A stone that matches your latest stack merges into it for a stronger spell, up to level three, but every stone still takes a place until you cast.
 A level three stack fills all three HUD slots.
-Level two and three stacks glow, and level three blazes.
+As in the original, a level two stack blinks and a level three stack blinks fast.
 The latest stack casts first, at its full level.
 Reflect and Doom never merge.
 Drive into a rival's trailing stack to take it.
