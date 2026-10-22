@@ -1,7 +1,7 @@
 # Racer models
 
 Most racers are built in code from primitives in `src/gfx/characters/racers/*.ts`: rigid parts on a joint hierarchy, baked into vertex-coloured toon meshes by `Rig`.
-Chocobo, Mog, Chubby Chocobo, Bahamut, Cloud and Behemoth are authored as skinned, textured GLBs, by Blender scripts in this repository.
+Chocobo, Mog, Goblin, Chubby Chocobo, Bahamut, Cloud and Behemoth are authored as skinned, textured GLBs, by Blender scripts in this repository.
 This page describes that pipeline so the next racer can reuse it.
 
 ## Pipeline
@@ -12,6 +12,7 @@ npm run character -- cloud
 npm run character -- chocobo
 npm run character -- chubby
 npm run character -- mog
+npm run character -- goblin
 ```
 
 `scripts/characters/build.mjs` runs Blender headless (`/Applications/Blender.app/Contents/MacOS/Blender`, or the `BLENDER` environment variable) on `scripts/characters/build.py`, which writes `src/assets/characters/<name>.glb`.
@@ -22,7 +23,7 @@ The shared pipeline lives in `scripts/characters/pipeline/`:
 
 | Module | Job |
 | --- | --- |
-| `geometry.py` | Smooth paths, lofted tubes (`loft`, `ellipsoid`, `claw`), round (`ellipse`) and rounded-box (`superellipse`) rings, Coons patches for membranes, thickening and mirroring. Every part carries its own (u, v) parameters. |
+| `geometry.py` | Smooth paths, lofted tubes (`loft`, `ellipsoid`, `claw`), round (`ellipse`) and rounded-box (`superellipse`) rings, flat-ended boxes (`box`, `flat`), Coons patches for membranes, thickening and mirroring. Every part carries its own (u, v) parameters. |
 | `weights.py` | Skin weights without painting: `rigid`, `along` (blend down a loft between consecutive bones) and `nearest` (inverse distance to bone segments). At most four influences per vertex. |
 | `atlas.py` | Packs one rectangle per skin into a 1024 x 1024 atlas, maps part UVs into it with padding, and paints each skin with numpy. |
 | `scene.py` | Armature, joined body mesh, the outline hull (welded and decimated), the ambient-occlusion bake into vertex colours, materials and the GLB export with meshopt compression and WebP textures. |
@@ -60,6 +61,7 @@ Measured in the Studio with `createCharacter` (triangles of the body and of the 
 | --- | --- | --- | --- | --- |
 | Chocobo | 11,956 | 4,705 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Chocobo (the procedural model had 12,708, 7,456 and 35) |
 | Mog | 12,632 | 4,902 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Mog (the code-built Mog in his old car had 10,720, 5,844 and 24) |
+| Goblin | 12,740 | 5,448 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Goblin (the code-built Goblin in his plank wagon had 8,220, 4,816 and 20) |
 | Chubby Chocobo | 10,994 | 4,552 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Chubby Chocobo (the procedural model had 14,768, 10,024 and 35) |
 | Bahamut | 11,928 | 4,899 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Bahamut |
 | Cloud | 11,032 | 4,570 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Cloud |
@@ -183,3 +185,25 @@ Pitfalls met on Chubby Chocobo:
 - A tyre lofted with end caps has a domed face that bulges out past the rim; a hub disc must stand proud of it or it disappears inside the tyre.
 - A belly that bulges forward swallows the fork and the middle of the handlebars. Move the steering head forward with the belly.
 - Wings that reach the grips as long arms with spread feather fingers read as human hands from the front. Keep each wing one short, plump paddle against his side with a single rounded tip and no separate feathers, and push the elbow out so it still shows as a paddle from behind.
+
+## Goblin and the Gob-Cart H4
+
+```sh
+npm run character -- goblin
+```
+
+Goblin in his mine cart is one skinned GLB (343 KB, 22 bones, six clips), built by `scripts/characters/goblin/`.
+One armature carries the goblin and the cart, and the rest pose is the riding pose, so his fists sit on the crank bar.
+
+- The cart hangs off `cart`. Each front wheel turns about an upright pivot at its hub (`steer.L`, `steer.R`) and spins on `wheel_front.L` and `wheel_front.R` below it; the rear pair shares `wheel_rear`. `racers/goblin.ts` turns all five through `driven()`, and the front pivots go in `Build.steer`, so the shared animator steers them.
+- The lantern hangs from `lantern`, which `racers/goblin.ts` swings sideways on the spring Mog's pom-pom uses (`spring.ts`) through a second `overlay()`. It does not tip back with speed, which would push it into the front wall.
+- The clips never key the wheels, the steering or the lantern (`DRIVEN` in `clips.py`). Blink squashes the eyeballs on `eye.L` and `eye.R`; the club rides on `club` under the right forearm.
+- The helmet is a `shell` over the skull from a lower edge that follows `BRIM` round the head, with a rolled rim lofted along that edge. The wheels, drum, bracelet and lantern cap are `lathe`s, which give the painter a v along the profile so the wheel's faces, tread and axle caps paint apart.
+
+Pitfalls met on Goblin:
+
+- A `box` that stands upright needs a horizontal `up_hint`; with the default hint along its length it gets no frame and does not show.
+- A raised forearm tips whatever the fist holds back over the shoulder. Pitch the held bone forward by about the forearm's lift so the club stands up.
+- A pupil painted by the loft's v covers far more of an eyeball than it seems: v 0.8 is three quarters of the radius. Keep the pupil to about v 0.93.
+- A hanging part in front of a wall must not swing back with speed, or it disappears into the wall.
+- Seen from the PS1's higher chase camera the mane is about as wide as the helmet. A mane much wider than the helmet looks like a wig from our lower camera.

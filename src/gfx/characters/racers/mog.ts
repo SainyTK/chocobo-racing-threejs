@@ -1,8 +1,9 @@
 import * as THREE from 'three';
-import { clamp, damp } from '../math.ts';
+import { damp } from '../math.ts';
 import { POSE_SECONDS } from '../poses.ts';
 import { Rig } from '../rig.ts';
 import { anchor, driven, overlay, skinnedModel } from '../skinned.ts';
+import { swingSpring } from '../spring.ts';
 import type { Build } from '../types.ts';
 
 /** Loops blend by speed; Cast, Win and Lose follow the reaction's own clock so every viewer sees the same frame. */
@@ -11,19 +12,6 @@ type ClipName = typeof LOOPS[number] | typeof POSED[number];
 const FRONT_RADIUS = .25, REAR_RADIUS = .3;
 /** Flap is a wingbeat layered on top of whatever the body is doing, so it plays as an additive copy, made once per clip. */
 const additive = new WeakMap<THREE.AnimationClip, THREE.AnimationClip>();
-
-/**
- * The pom-pom's antenna lags behind steering and speed on a damped spring, so it swings as Mog turns and leans back
- * as he speeds up. Angles are in model axes: `x` tips it forward and back, `z` to the sides.
- */
-function pomSpring() {
-  let vx = 0, x = 0, vz = 0, z = 0;
-  return (j: THREE.Object3D, dt: number, steer: number, push: number, t: number) => {
-    vz += ((-steer * 3 - z) * 60 - vz * 5) * dt; z += vz * dt;
-    vx += ((-push * 1.2 - x) * 60 - vx * 5) * dt; x += vx * dt;
-    j.rotation.set(clamp(x * .3 + Math.sin(t * 18) * .04 * push, -.8, .8), 0, clamp(z * .3, -.8, .8));
-  };
-}
 
 /** Mog on the Mog-Mobile R2: one skinned model for the moogle and his kick scooter, with wheels, fork and antenna moved in code. */
 export function mog(): Build {
@@ -34,7 +22,7 @@ export function mog(): Build {
   const beat = action('Flap').getClip();
   if (!additive.has(beat)) additive.set(beat, THREE.AnimationUtils.makeClipAdditive(beat.clone()));
   const flap = m.mixer.clipAction(additive.get(beat)!); flap.play(); flap.weight = 0;
-  const turn = overlay(m, 'head'), head = turn.j, antenna = overlay(m, 'antenna'), sway = pomSpring();
+  const turn = overlay(m, 'head'), head = turn.j, antenna = overlay(m, 'antenna'), sway = swingSpring();
   const weights: Record<ClipName, number> = { Idle: 0, Ride: 0, Cast: 0, Win: 0, Lose: 0 };
   // The fork turns about the stem's raked line; the stem and handlebar stay put so the paws keep their grip.
   const fork = driven(m, 'fork', [0, 1.04, -.1], 'y'), front = driven(m, 'wheel_front', [1, 0, 0], 'x'), rear = driven(m, 'wheel_rear', [1, 0, 0], 'x');

@@ -100,6 +100,25 @@ Deliberate deviations:
 | No win or lose animation is seen in a race | On the podium he waves both paws and calls out with little hops; otherwise he lets go of the bars and droops | Every racer here acts out win and lose reactions |
 | The scooter's motor is unknown | No exhaust smoke; boost flames leave the foot of the batteries | A battery scooter has no engine smoke |
 
+## Goblin
+
+Goblin follows the PS1 in-game model, checked side by side against two Grand Prix played as him and a Cid's Test Track run (the chase view from behind, the GOAL orbit and the Select Racer screen), with the official model sheet for shapes only.
+The Gob-Cart H4 is a wooden mine cart, as the manual says: an open box of light planks with riveted grey iron posts at the corners, four big wooden disc wheels outside the box with iron axle caps, a lantern hanging from the middle of the front wall, and a drum with a crank bar inside the front wall.
+The code-built cart it replaced was a flat plank wagon with black rubber tyres and a steering wheel.
+Goblin sits in the box: tan skin, a red-orange helmet whose rolled rim frowns down over big round eyes, a big round nose, long pointed ears, a magenta-violet mane that fills the space between the helmet and the rim from behind, a green chest band, a bandaged left hand, a bracelet on the right wrist and a wooden club in his right fist.
+The code-built Goblin was green-skinned with a red cap; the game's model is tan, and his roster colour is now the helmet's red-orange.
+Colours were measured on the PS1 frames and on ours under the game's lighting: helmet hue about 18, mane hue about 305, planks hue about 42.
+In the Select Racer screen he shakes his club beside his head, which his menu idle does too.
+
+Deliberate deviations:
+
+| Original | Remake | Reason |
+| --- | --- | --- |
+| The pencil sketch draws a tapered hopper on flanged rail wheels | A straight box on plain disc wheels | The game model and the CG model sheet use the straight box |
+| The chase camera sits higher, so the helmet reads as a tall dome over the mane | The helmet's crown stands a little taller off the skull | Our chase camera is lower and closer; a plain dome looked flat from behind |
+| No win or lose animation is seen in a race | He shakes the club and pumps his fist on the podium, and slumps over the bar when he loses | Every racer here acts out win and lose reactions |
+| The cart has no engine | No exhaust smoke; boost flames leave the back corners of the box | A push cart has no engine smoke |
+
 ## Technology choice
 
 | Option | Decision |
