@@ -5,9 +5,10 @@ import bahamutUrl from '../../assets/characters/bahamut.glb?url';
 import behemothUrl from '../../assets/characters/behemoth.glb?url';
 import chocoboUrl from '../../assets/characters/chocobo.glb?url';
 import cloudUrl from '../../assets/characters/cloud.glb?url';
+import golemUrl from '../../assets/characters/golem.glb?url';
 
 /** Racers authored as skinned GLB files by `npm run character`, rather than built from code. */
-const URLS = { bahamut: bahamutUrl, behemoth: behemothUrl, chocobo: chocoboUrl, cloud: cloudUrl } as const;
+const URLS = { bahamut: bahamutUrl, behemoth: behemothUrl, chocobo: chocoboUrl, cloud: cloudUrl, golem: golemUrl } as const;
 export type ModelId = keyof typeof URLS;
 
 const models = new Map<ModelId, GLTF>();

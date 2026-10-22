@@ -83,6 +83,21 @@ He hunches over it, much wider at the shoulders than the tank: purple fur with m
 The original shows no victory animation in a race; his Win clip, fists pumping over his head, comes from his Grand Prix ending movie.
 His roster colour follows the model's purple.
 
+## Golem
+
+Golem follows the PS1 in-game model, checked side by side against a Grand Prix played as him (chase view, racer select turn, podium) and the Story Mode Chapter 3 cutscenes, not the CG art.
+The Rockin' Roller V8 is a small blue 4WD jeep, as the manual says ("4WD jeep"), even though its name suggests a road roller: a blue tub, a teal front face with round yellow headlights and five grille slots, a silver bumper, blue arches over the front wheels, four big black knobbly tyres, a light grey seat back, orange tail lights and two exhaust stacks at the back.
+The front wheels steer on their own knuckles.
+Golem is built from separate rounded boulders in warm taupe stone: a tall block head under a thick brim that overhangs a black face with two angry yellow eyes, huge round shoulder boulders, long rocky arms and big fists on the steering wheel, with red wristbands studded with white spikes.
+His Win clip, one fist punched up and the other arm thrown out, is the pose he strikes on the podium and in the racer select screen.
+His stone colour was set by measuring the chase view: the original's lit stone samples at about hue 26 to 37 and 70% lightness, and the remake's at hue 28 to 29 and 66% to 68% once self-shadowing is left out.
+His roster colour follows the model's stone.
+
+| Deviation | Original | Remake |
+| --- | --- | --- |
+| Rear of the jeep | The low-resolution chase view shows a dark tailgate framed in blue, a pale bar on top and two orange shapes with copper pipes at its corners | A dark tailgate with a pale plate, a light grey seat back, orange tail lights and two exhaust stacks with copper tips, which also carry the boost flames |
+| Wheel hubs | Grey in the game, orange in the CG ending | Grey |
+
 ## Technology choice
 
 | Option | Decision |
