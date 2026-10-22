@@ -334,9 +334,9 @@ export const gate: CourseArt = {
     bunting(kit, new THREE.Vector3(c2.x, c2.y + 13.5, c2.z), new THREE.Vector3(d.x, d.y + 13.5, d.z), [C.gold, '#ffffff', C.purple]);
     for (const side of [-1, 1]) kit.onTrack(kit.prop(`start flag${side}`, () => flagPole(side > 0 ? C.purple : C.gold, '#ffffff', 9)), 14, side * (w + 1.3), { y: 3.46 });
     void cyl; void cone; void disc; void ellipsoid; void torus;
-    // The fork: pointed sandstone arches over the side passage's entrance and exit, high enough to clear the camera.
+    // The fork: pointed sandstone arches over the side passage's entrance and exit, high and wide enough to clear the chase camera.
     for (const path of shortcutPaths(kit.id)) for (const end of ['mouth', 'exit'] as const) {
-      const q = shortcutGate(kit, path, end), span = 2 * (path.shortcut.width + .9);
+      const q = shortcutGate(kit, path, end), span = 2 * (path.shortcut.width + 1.8);
       kit.place(kit.prop('passage arch', () => new Parts().add(arch(span, 10.5, 1.3, 2.4, true, 12), grad(C.stoneDark, C.stoneLight, 0, 12), { flat: true, ao: [0, 3, .65] }).add(block(span + 3.2, .5, 2.8, [0, 0, 0]), C.carve, { ao: false })), q.x, q.y, q.z, { yaw: q.yaw, shortcut: true });
     }
   },

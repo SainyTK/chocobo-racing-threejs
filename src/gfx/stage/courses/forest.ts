@@ -117,7 +117,7 @@ function stump(r: Rng) {
 
 /** Log archway over the road with hanging lanterns and a carved sign, the forest's welcome gate. */
 function forestArch(w: number) {
-  const p = new Parts(), span = w + 2.4, h = 12;
+  const p = new Parts(), span = w + 3.4, h = 12;
   for (const s of [-1, 1]) {
     p.add(tube([[s * span, 0, 0], [s * span * .99, h * .5, 0], [s * span * .96, h, 0]], .55, 8), grad(C.barkDark, C.bark, 0, h), { ao: [0, 1.5, .6] });
     p.add(blob(1.8, [s * span, h + .6, 0], s * 3, .25), grad(C.leafDark, C.leafLight, h - .5, h + 2), { layer: 'foliage', sway: .1, ao: false });

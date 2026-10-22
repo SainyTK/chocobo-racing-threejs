@@ -13,8 +13,8 @@ export interface ShortcutPath { shortcut: Shortcut; x: Float64Array; y: Float64A
 export interface ShortcutProjection { u: number; x: number; distance: number; px: number; pz: number; nx: number; nz: number; yaw: number }
 
 const SAMPLES = 240;
-/** Metres before a shortcut's mouth, and after its exit, where the road's wall is already open. */
-export const OPENING = 4;
+/** Metres before a shortcut's mouth, and after its exit, where the road's wall is already open: enough for a racer to turn in early and for the chase camera behind it. */
+export const OPENING = 12;
 const paths = new Map<TrackId, ShortcutPath[]>();
 const smooth = (t: number) => t * t * (3 - 2 * t);
 
