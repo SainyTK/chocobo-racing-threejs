@@ -168,6 +168,8 @@ Bugs found and fixed during the pass:
 
 - Racers could drive through finished racers parked on the line. Finished racers now roll to a roadside slot and have no contact mass.
 - The tightest hairpins folded the road's inside edge over itself. A racer on the inside line jumped about 11 m in projected progress and lost that much lap distance. The apexes are now eased to a radius of at least the road's half-width plus 1 m.
+- Track curvature (`pointAt().curve`) read about 0.57 of the true value, because it divided the turn between two chords by the span between their far ends. It now divides by the distance between the chord midpoints and matches a three-point circle fit within about 2%. CPU corner plans used a 7/4 correction, which is gone; the pilots and scenery thresholds were rescaled so their behaviour is unchanged.
+- Client prediction credited every jump in lap distance while the server rejected large ones, so the two could disagree. Both now use one rule (`followPlace`).
 - The keyboard e2e pilot kept a brake held after a pause and restart, so the test course could time out. The restarted pilot now releases the old keys.
 - `tests/tunnel.test.ts` gave up after 1 s while the server was still starting under load. It now waits for the readiness line as an event.
 
