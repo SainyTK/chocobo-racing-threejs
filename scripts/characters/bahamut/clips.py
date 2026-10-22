@@ -63,7 +63,7 @@ def fly(t: float) -> Pose:
     """Racing: pitched forward, legs and tail streaming back, arms tucked, strong quick beats."""
     p = t / 0.6
     beat = math.sin(TAU * p)
-    pose = wing_pose(p, 0.08, 0.62, sweep=0.12)
+    pose = wing_pose(p, 0.3, 0.5, sweep=0.12)
     pose |= tail_pose(t, 1 / 0.6, 0.06, 0.38)
     pose |= {
         "root": ((0, 0, 0), (0, 0, 0.1 * -math.cos(TAU * p))),
@@ -74,10 +74,10 @@ def fly(t: float) -> Pose:
     }
     pose |= mirrored(
         {
-            "thigh.L": ((0.7 + 0.06 * beat, 0, 0.08), (0, 0, 0)),
-            "shin.L": ((0.35, 0, 0), (0, 0, 0)),
-            "foot.L": ((0.5, 0, 0), (0, 0, 0)),
-            "arm.L": ((-0.35, 0, -0.1), (0, 0, 0)),
+            "thigh.L": ((0.95 + 0.06 * beat, 0, 0.14), (0, 0, 0)),
+            "shin.L": ((0.4, 0, 0), (0, 0, 0)),
+            "foot.L": ((0.45, 0, 0), (0, 0, 0)),
+            "arm.L": ((-0.3, -0.35, -0.1), (0, 0, 0)),
             "forearm.L": ((-0.4, 0, 0), (0, 0, 0)),
         }
     )
