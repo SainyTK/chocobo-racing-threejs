@@ -1,21 +1,22 @@
 import * as THREE from 'three';
 import { GLYPHS } from './glyphs.ts';
-import { STONE_KINDS, STONE_LOOKS } from './looks.ts';
+import { CENTRED_KINDS, STONE_KINDS, STONE_LOOKS } from './looks.ts';
 
 const table = (pick: (kind: typeof STONE_KINDS[number]) => string) => STONE_KINDS.map(kind => new THREE.Color(pick(kind)));
 const N = STONE_KINDS.length;
 
 const vertex = /* glsl */ `
 attribute float aKind; attribute vec4 aState;
-uniform float uTime;
+uniform float uTime; uniform float uSway[${N}];
 varying vec3 vN; varying vec3 vView; varying vec3 vF; varying vec3 vR; varying vec3 vU; varying vec4 vState; flat varying int vKind;
 void main() {
   mat4 mv = modelViewMatrix * instanceMatrix;
   vec4 p = mv * vec4(position, 1.), centre = mv * vec4(0., 0., 0., 1.);
   vN = normalize(mat3(mv) * normal); vView = -p.xyz; vState = aState; vKind = int(aKind + .5);
-  // The symbol faces the camera and rocks gently: it sways a little to each side and rolls back and forth.
+  // The symbol faces the camera and rocks gently: it sways a little to each side and rolls back and forth. A centred
+  // symbol only rolls, so it never slides off the middle of the ball.
   vec3 f = normalize(-centre.xyz), r = normalize(cross(vec3(0., 1., 0.), f)), u = cross(f, r);
-  float sway = sin(uTime * 1.7 + aState.x) * .32, roll = sin(uTime * 1.13 + aState.x * 1.3) * .22;
+  float sway = sin(uTime * 1.7 + aState.x) * .32 * uSway[vKind], roll = sin(uTime * 1.13 + aState.x * 1.3) * .22;
   vec3 f2 = f * cos(sway) + r * sin(sway), r2 = r * cos(sway) - f * sin(sway);
   vF = f2; vR = r2 * cos(roll) + u * sin(roll); vU = u * cos(roll) - r2 * sin(roll);
   gl_Position = projectionMatrix * p;
@@ -58,7 +59,7 @@ export function stoneMaterial(puff = false) {
     vertexShader: vertex, fragmentShader: fragment, defines: puff ? { PUFF: '' } : {},
     transparent: true, depthWrite: !puff, blending: puff ? THREE.AdditiveBlending : THREE.NormalBlending,
     uniforms: {
-      uTime: { value: 0 }, uBody: { value: table(k => STONE_LOOKS[k].body) }, uGlyph: { value: table(k => STONE_LOOKS[k].glyph) },
+      uTime: { value: 0 }, uSway: { value: STONE_KINDS.map(k => CENTRED_KINDS.includes(k) ? 0 : 1) }, uBody: { value: table(k => STONE_LOOKS[k].body) }, uGlyph: { value: table(k => STONE_LOOKS[k].glyph) },
       uAccent: { value: table(k => STONE_LOOKS[k].accent) },
     },
   });

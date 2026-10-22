@@ -150,10 +150,10 @@ The remake draws the same thing: a toon-shaded ball with a three-band light from
 | Ice | Royal blue ball, a cut ice crystal seen point on: a tall diamond in four facets, pale upper left, cyan upper right, teal lower left, navy lower right | Same |
 | Thunder | Green ball, yellow lightning bolt | Same |
 | Haste | Turquoise ball, magenta upward arrow that darkens to purple down the stem | Same |
-| Mini | Greyish lavender ball, a little navy-outlined man with pale limbs, arms out and legs apart, and navy strokes over his left shoulder | Same |
+| Mini | Greyish lavender ball, a little navy-outlined man with pale limbs, arms out and legs apart, and navy marks above him | A plain standing man with a round head, arms straight out and legs apart, so he reads as a person at race-camera distance; the blurry marks above him are left out |
 | Reflect | Magenta-pink ball, glowing violet disc with a white arrow bouncing off it | Same |
 | Doom | Dusty rose ball, grey-white skull | Same |
-| Ultima | Olive-gold ball whose face is a slate-blue disc filled by a pale blue-white burst of about 16 rays around a white-hot heart | Same |
+| Ultima | Olive-gold ball whose face is a centred slate-blue disc filled by a pale blue-white burst of about 16 rays around a white-hot heart, inside an even gold ring | Same; Ultima and Mini only roll and never sway, so the disc and the man stay in the middle of the ball |
 
 Ice, Mini and Ultima were first read from blurry frames and are now set from decisive references.
 The clearest is a 1080p Grand Prix played as White Mage (https://www.youtube.com/watch?v=VTdC1giA0Tc), where her held stone rolls large right under the camera:

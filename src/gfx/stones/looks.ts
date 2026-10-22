@@ -22,6 +22,9 @@ export const STONE_LOOKS: Record<StoneKind, StoneLook> = {
   random: { body: '#141218', glyph: '#ffe23a', accent: '#fff6b0' },
 };
 
+/** Kinds whose symbol stays centred on the ball: Ultima's burst fills the face inside an even gold ring, and Mini's man stands in the middle. */
+export const CENTRED_KINDS: StoneKind[] = ['mini', 'ultima'];
+
 /** Track stones: radius in metres and the height of their centre above the road, so they float half a ball up as in the original. */
 export const TRACK_STONE = { radius: .85, lift: 1.3 };
 /** Held stones sit on the road in the trailing line, about half a track stone across. */

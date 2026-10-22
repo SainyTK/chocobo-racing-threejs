@@ -64,17 +64,14 @@ vec4 glyphReflect(vec2 p, float aa, vec3 g, vec3 a) {
   float tail = min(sdSegment(p, o, o + vec2(-.2, .22)), sdSegment(p, o, o + vec2(-.28, -.05))) - .038;
   return over(c, a * 1.1, cover(min(arrow, tail), aa));
 }
-// Mini: a little navy man with his arms and legs spread, pale inside his outline, and two shrink strokes over his
-// left shoulder.
+// Mini: a little man standing face on, with a round head, a short body, arms straight out and legs apart, pale inside a
+// navy outline.
 vec4 glyphMini(vec2 p, float aa, vec3 g, vec3 a) {
-  vec2 hip = vec2(.02, -.22), neck = vec2(.02, .2);
-  float limbs = min(min(sdSegment(p, neck, hip), sdSegment(p, vec2(-.44, .0), vec2(.46, .0))),
-    min(sdSegment(p, hip, vec2(-.3, -.58)), sdSegment(p, hip, vec2(.34, -.58))));
-  float head = length((p - vec2(.04, .36)) * vec2(.8, 1.15)) - .15;
-  vec2 q = p - vec2(-.32, .4);
-  float strokes = min(sdSegment(q, vec2(-.18, -.08), vec2(.1, .12)), sdSegment(q, vec2(-.06, -.2), vec2(.22, 0.))) - .055;
-  vec4 c = over(vec4(0.), g, cover(min(min(limbs - .13, head), strokes), aa));
-  return over(c, a, cover(limbs - .065, aa));
+  vec2 hip = vec2(0., -.14);
+  float body = min(sdSegment(p, vec2(0., .14), hip), sdSegment(p, vec2(-.44, .06), vec2(.44, .06)));
+  float man = min(min(body, min(sdSegment(p, hip, vec2(-.28, -.54)), sdSegment(p, hip, vec2(.28, -.54)))) - .075, length(p - vec2(0., .32)) - .15);
+  vec4 c = over(vec4(0.), g, cover(man - .055, aa));
+  return over(c, a, cover(man, aa));
 }
 // Haste: a fat upward arrow, magenta at the head and darkening to purple down the stem.
 vec4 glyphHaste(vec2 p, float aa, vec3 g, vec3 a) {
@@ -95,10 +92,10 @@ vec4 glyphDoom(vec2 p, float aa, vec3 g, vec3 a) {
 // between them and a white-hot heart.
 vec4 glyphUltima(vec2 p, float aa, vec3 g, vec3 a) {
   float r = length(p), an = atan(p.y, p.x);
-  vec4 c = over(vec4(0.), a, cover(r - .66, aa));
+  vec4 c = over(vec4(0.), a, cover(r - .58, aa));
   // Distance to the nearest of 16 rays: the 8 main ones reach the rim, the 8 between them stop short.
   float sector = .3927, k = floor(an / sector + .5), off = an - k * sector;
-  float reach = mod(k, 2.) < .5 ? (mod(k, 4.) < .5 ? .74 : .66) : .46;
+  float reach = mod(k, 2.) < .5 ? (mod(k, 4.) < .5 ? .66 : .58) : .4;
   float ray = abs(sin(off)) * r + max(r - reach, 0.) - mix(.075, .015, clamp(r / reach, 0., 1.));
   c = over(c, g, cover(ray, aa));
   return over(c, vec3(1.), smoothstep(.3, .05, r));
