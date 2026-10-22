@@ -12,7 +12,7 @@ import { FlapFx } from './flap.ts';
 import { FlareBatch } from './flare-batch.ts';
 import { drawGrip } from './grip.ts';
 import { HeldCues } from './held-cues.ts';
-import { ACTIVATION, MAGIC_ACTIVATION, MUG_ACTIVATION, RACER_HEIGHT } from './looks.ts';
+import { ACTIVATION_BURST, MAGIC_BURST, MUG_BURST, RACER_HEIGHT } from './looks.ts';
 import { MagicPlusFx } from './magic-plus.ts';
 import { MegaflareFx } from './megaflare.ts';
 import { MugFx } from './mug.ts';
@@ -47,15 +47,15 @@ export class AbilityFx {
   /** Starts the look of a racer's ability. Returns false for abilities drawn elsewhere. Mug and Magic Plus start through `mugged` and `raised`. */
   used(ability: AbilityId, racerId: string) {
     if (ability === 'dash' || ability === 'charge') this.boost.start(racerId, ability);
-    if (ability === 'grip' || ability === 'barrier') this.activation.start(racerId, ACTIVATION, this.time);
+    if (ability === 'grip' || ability === 'barrier') this.activation.start(racerId, ACTIVATION_BURST, this.time);
     return ability === 'dash' || ability === 'charge' || ability === 'flap' || ability === 'megaflare' || ability === 'grip' || ability === 'barrier' || ability === 'mug' || ability === 'magic';
   }
   /** Goblin's Mug took a `kind` stone from `victim`, or conjured one when nobody held a stone. `stackIndex` is a new stack it made in the thief's line. */
   mugged(thief: string, victim: string | undefined, kind: Item, stackIndex: number | undefined) {
-    this.activation.start(thief, MUG_ACTIVATION, this.time); this.mug.start(thief, victim, kind, stackIndex, this.time);
+    this.activation.start(thief, MUG_BURST, this.time); this.mug.start(thief, victim, kind, stackIndex, this.time);
   }
   /** Magic Plus raised the stack at `stackIndex`. */
-  raised(racerId: string, stackIndex: number) { this.activation.start(racerId, MAGIC_ACTIVATION, this.time); this.magic.start(racerId, stackIndex, this.time); }
+  raised(racerId: string, stackIndex: number) { this.activation.start(racerId, MAGIC_BURST, this.time); this.magic.start(racerId, stackIndex, this.time); }
   /** Receive caught a spell as a stack of `kind` and `level`; `stackIndex` is the new stack it made, if any. */
   received(racerId: string, kind: Item, level: number, stackIndex: number | undefined) { this.receive.start(racerId, kind, level, stackIndex, this.time); }
   /** A Barrier blocked a spell and goes down after one last pulse. */

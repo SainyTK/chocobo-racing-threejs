@@ -14,16 +14,16 @@ export class FlareBatch {
   /** The camera's position. */
   readonly eye = new THREE.Vector3();
   private n = 0;
-  private readonly pos: Float32Array; private readonly col0: Float32Array; private readonly col1: Float32Array; private readonly shape: Float32Array;
+  private readonly pos: Float32Array; private readonly col0: Float32Array; private readonly col1: Float32Array; private readonly shape: Float32Array; private readonly cover: Float32Array;
   constructor(readonly capacity: number) {
     const v = capacity * 4, geo = new THREE.BufferGeometry();
-    this.pos = new Float32Array(v * 3); this.col0 = new Float32Array(v * 3); this.col1 = new Float32Array(v * 3); this.shape = new Float32Array(v * 4);
+    this.pos = new Float32Array(v * 3); this.col0 = new Float32Array(v * 3); this.col1 = new Float32Array(v * 3); this.shape = new Float32Array(v * 4); this.cover = new Float32Array(v);
     const corner = new Float32Array(v * 2), index = new Uint32Array(capacity * 6);
     for (let i = 0; i < capacity; i++) {
       corner.set([-1, -1, 1, -1, 1, 1, -1, 1], i * 8);
       const a = i * 4; index.set([a, a + 1, a + 2, a, a + 2, a + 3], i * 6);
     }
-    for (const [name, array, size] of [['position', this.pos, 3], ['color0', this.col0, 3], ['color1', this.col1, 3], ['shape', this.shape, 4]] as const) geo.setAttribute(name, new THREE.BufferAttribute(array, size).setUsage(THREE.DynamicDrawUsage));
+    for (const [name, array, size] of [['position', this.pos, 3], ['color0', this.col0, 3], ['color1', this.col1, 3], ['shape', this.shape, 4], ['cover', this.cover, 1]] as const) geo.setAttribute(name, new THREE.BufferAttribute(array, size).setUsage(THREE.DynamicDrawUsage));
     geo.setAttribute('corner', new THREE.BufferAttribute(corner, 2)); geo.setIndex(new THREE.BufferAttribute(index, 1));
     this.mesh = new THREE.Mesh(geo, flareMaterial()); this.mesh.frustumCulled = false; this.mesh.renderOrder = 4; geo.setDrawRange(0, 0);
   }
@@ -41,8 +41,8 @@ export class FlareBatch {
     return (d - step) / Math.max(d, 1e-3);
   }
   /**
-   * A quad centred on `at` spanning `±ax` and `±ay`; the glyph's bottom edge is at `-ay`. `cover` 0 adds its light,
-   * as every glow does; up to 1 it paints over what is behind it instead.
+   * A quad centred on `at` spanning `±ax` and `±ay`; the glyph's bottom edge is at `-ay`. `cover` 0 adds light, 1 paints
+   * the colour over the scene as normal alpha blending does, and values between mix the two.
    */
   quad(at: THREE.Vector3, ax: THREE.Vector3, ay: THREE.Vector3, glyph: Glyph, inner: THREE.ColorRepresentation, outer: THREE.ColorRepresentation, alpha: number, p = 0, q = 0, cover = 0) {
     if (this.n >= this.capacity || alpha <= .002) return;
@@ -51,7 +51,7 @@ export class FlareBatch {
       const sx = k === 0 || k === 3 ? -1 : 1, sy = k < 2 ? -1 : 1, j = (i * 4 + k);
       this.pos[j * 3] = at.x + ax.x * sx + ay.x * sy; this.pos[j * 3 + 1] = at.y + ax.y * sx + ay.y * sy; this.pos[j * 3 + 2] = at.z + ax.z * sx + ay.z * sy;
       this.col0[j * 3] = c0.r; this.col0[j * 3 + 1] = c0.g; this.col0[j * 3 + 2] = c0.b; this.col1[j * 3] = c1.r; this.col1[j * 3 + 1] = c1.g; this.col1[j * 3 + 2] = c1.b;
-      this.shape[j * 4] = glyph + Math.min(1, Math.max(0, cover)) * .9; this.shape[j * 4 + 1] = alpha; this.shape[j * 4 + 2] = p; this.shape[j * 4 + 3] = q;
+      this.shape[j * 4] = glyph; this.shape[j * 4 + 1] = alpha; this.shape[j * 4 + 2] = p; this.shape[j * 4 + 3] = q; this.cover[j] = cover;
     }
   }
   /** A blade from `from` along the unit `dir`, `width` wide at its root, lying in the plane of `dir` and the unit `across`. */
@@ -79,7 +79,7 @@ export class FlareBatch {
   clear() { this.n = 0; this.end(); }
   end() {
     const geo = this.mesh.geometry, v = this.n * 4;
-    for (const name of ['position', 'color0', 'color1', 'shape']) { const a = geo.getAttribute(name) as THREE.BufferAttribute; a.clearUpdateRanges(); a.addUpdateRange(0, v * a.itemSize); a.needsUpdate = true; }
+    for (const name of ['position', 'color0', 'color1', 'shape', 'cover']) { const a = geo.getAttribute(name) as THREE.BufferAttribute; a.clearUpdateRanges(); a.addUpdateRange(0, v * a.itemSize); a.needsUpdate = true; }
     geo.setDrawRange(0, this.n * 6); this.mesh.visible = this.n > 0;
   }
   get count() { return this.n; }

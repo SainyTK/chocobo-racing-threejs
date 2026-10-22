@@ -20,20 +20,19 @@ export const enum Glyph {
 }
 
 const vertexShader = /* glsl */`
-attribute vec2 corner; attribute vec3 color0, color1; attribute vec4 shape;
-varying vec2 vUv; varying vec3 vC0, vC1; varying vec4 vShape;
-void main() { vUv = corner; vC0 = color0; vC1 = color1; vShape = shape; gl_Position = projectionMatrix * viewMatrix * vec4(position, 1.); }`;
+attribute vec2 corner; attribute vec3 color0, color1; attribute vec4 shape; attribute float cover;
+varying vec2 vUv; varying vec3 vC0, vC1; varying vec4 vShape; varying float vCover;
+void main() { vUv = corner; vC0 = color0; vC1 = color1; vShape = shape; vCover = cover; gl_Position = projectionMatrix * viewMatrix * vec4(position, 1.); }`;
 
 const fragmentShader = /* glsl */`
 uniform vec3 uFeatherGlow;
-varying vec2 vUv; varying vec3 vC0, vC1; varying vec4 vShape;
+varying vec2 vUv; varying vec3 vC0, vC1; varying vec4 vShape; varying float vCover;
 float noise1(float n) { return fract(sin(n * 127.1 + 311.7) * 43758.5453); }
 void main() {
-  // The glyph is the whole part of shape.x; its fraction is how much the quad covers what is behind it.
-  float gx = vShape.x + .001; int glyph = int(floor(gx)); float cover = fract(gx) / .9; float a; vec3 c;
+  int glyph = int(vShape.x + .5); float a; vec3 c;
   if (glyph == 0) {
     float y = vUv.y * .5 + .5, w = mix(1., vShape.z, y), x = abs(vUv.x) / max(w, .001);
-    a = (1. - smoothstep(.45, 1., x)) * smoothstep(0., .05, y) * (1. - smoothstep(.82, 1., y));
+    a = (1. - smoothstep(.72, 1., x)) * smoothstep(0., .05, y) * (1. - smoothstep(.82, 1., y));
     c = mix(vC0, vC1, smoothstep(.2, .85, y));
     c = mix(c, vec3(1.), (1. - smoothstep(0., .6, x)) * vShape.w * (1. - smoothstep(.1, .55, y)));
   } else if (glyph == 1) {
@@ -78,17 +77,15 @@ void main() {
     a = exp(-d * d * 2.5); c = mix(vC0, vC1, vShape.w);
   }
   a *= vShape.y; if (a < .002) discard;
-  gl_FragColor = vec4(c * a, a * cover);
+  // Premultiplied: cover 0 adds light as before, cover 1 paints over the scene like normal alpha blending.
+  gl_FragColor = vec4(c * a, a * vCover);
 }`;
 
-/**
- * One material draws every flare quad, so all ability effects together cost a single draw call. It blends
- * premultiplied: a quad with no cover adds its light, and one with full cover paints over what is behind it.
- */
+/** One premultiplied-alpha material draws every flare quad, additive or painted, so all ability effects together cost a single draw call. */
 export function flareMaterial() {
   return new THREE.ShaderMaterial({
     vertexShader, fragmentShader, uniforms: { uFeatherGlow: { value: new THREE.Color(FLAP.glowColor) } },
-    transparent: true, depthWrite: false, side: THREE.DoubleSide,
-    blending: THREE.CustomBlending, blendSrc: THREE.OneFactor, blendDst: THREE.OneMinusSrcAlphaFactor,
+    transparent: true, depthWrite: false, side: THREE.DoubleSide, premultipliedAlpha: true,
+    blending: THREE.CustomBlending, blendEquation: THREE.AddEquation, blendSrc: THREE.OneFactor, blendDst: THREE.OneMinusSrcAlphaFactor,
   });
 }

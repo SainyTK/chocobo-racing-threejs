@@ -117,7 +117,7 @@ export class World {
       this.hero.animate({ t, dt: live, speed: 0, steer: 0, drifting: false, flying: 0, stun: 0, boost: 0, menu: true });
       const a = p.yaw + .6, narrow = innerWidth <= 900, distance = narrow ? 14.5 : 9; target.set(p.x, p.y + 1.8, p.z);
       this.camera.position.set(p.x + Math.sin(a) * distance, p.y + (narrow ? 6.5 : 5.3), p.z + Math.cos(a) * distance); this.camera.lookAt(target); this.camera.setViewOffset(innerWidth, innerHeight, narrow ? -innerWidth * .13 : innerWidth * .23, narrow ? innerHeight * .5 - 205 : 0, innerWidth, innerHeight);
-      if (live && this.hero.smokes) for (const ex of this.hero.exhausts) if (Math.random() < .25) { ex.getWorldPosition(target); this.fx.smoke.emit({ x: target.x, y: target.y, z: target.z, vx: (Math.random() - .5) * .4, vy: .6 + Math.random() * .5, vz: (Math.random() - .5) * .4, life: .9, size: .18, endSize: .8, color: '#d8d2c8', alpha: .35, drag: 1.5, shape: Shape.Smoke }); }
+      if (live) for (const ex of this.hero.exhausts) if (Math.random() < .25) { ex.getWorldPosition(target); this.fx.smoke.emit({ x: target.x, y: target.y, z: target.z, vx: (Math.random() - .5) * .4, vy: .6 + Math.random() * .5, vz: (Math.random() - .5) * .4, life: .9, size: .18, endSize: .8, color: '#d8d2c8', alpha: .35, drag: 1.5, shape: Shape.Smoke }); }
       target.set(p.x, p.y + 1.8, p.z); this.speedLines.update(live, 0, this.camera.aspect);
       if (this.camera.fov !== MENU_FOV) { this.camera.fov = MENU_FOV; this.camera.updateProjectionMatrix(); }
       this.fx.update(live, null, new Map(), playerId, this.camera, paused);

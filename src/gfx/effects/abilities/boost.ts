@@ -6,7 +6,7 @@ import { Glyph } from './flare-material.ts';
 import { DASH_BURST, DASH_FAN, FAN_END, FAN_GROW, HASTE_FAN, HASTE_RING, SPIKE_HOLD, type FanLook } from './looks.ts';
 import type { RacerFrame } from './racer-frame.ts';
 import { drawFans } from './spike-fan.ts';
-import { hashIn, swell, within } from './timing.ts';
+import { activationBurst } from './burst.ts';
 
 /**
  * What started a racer's boost. Dash, start dash and Spin Dash open with the Dash burst; start dash and Spin Dash then
@@ -17,9 +17,8 @@ interface BoostState { kind: BoostKind; age: number; ended: number }
 
 const FANS: Partial<Record<BoostKind, FanLook>> = { dash: DASH_FAN, haste: HASTE_FAN, pad: DASH_FAN };
 const BURSTS = new Set<BoostKind>(['dash', 'start', 'spindash']);
-const B = DASH_BURST, white = new THREE.Color(B.crossColor), glowIn = new THREE.Color(B.glowInner), glowRim = new THREE.Color(B.glowRim);
-const coreColor = new THREE.Color(B.coreColor), rayColor = new THREE.Color(B.rayColor), rayTip = new THREE.Color(B.rayTip), black = new THREE.Color(0), ring = new THREE.Color(HASTE_RING.color);
-const at = new THREE.Vector3(), ax = new THREE.Vector3(), ay = new THREE.Vector3(), back = new THREE.Vector3();
+const black = new THREE.Color(0), ring = new THREE.Color(HASTE_RING.color);
+const at = new THREE.Vector3(), ax = new THREE.Vector3(), ay = new THREE.Vector3();
 
 /** Boost looks: the spike fans, the Dash burst, the Haste ring and the model tint. */
 export class BoostFx {
@@ -50,28 +49,9 @@ export class BoostFx {
     const s = this.states.get(id), fan = s && !s.ended && FANS[s.kind === 'start' || s.kind === 'spindash' ? 'dash' : s.kind];
     if (!fan) return 0; out.set(fan.tint); return fan.tintAmount;
   }
-  /** The Dash burst: a cross of light on the road, a glow spreading round the racer, then a white-hot core with pink rays. */
+  /** The Dash burst, plus grey dust puffs at the feet as its core flares. */
   private burst(batch: FlareBatch, f: RacerFrame, t: number, dt: number, seed: number) {
-    const h = f.height, cross = swell(within(t, B.cross), .2), glow = swell(within(t, B.glow), .4), core = swell(within(t, B.core), .3), rays = swell(within(t, B.rays), .2);
-    if (cross > 0) {
-      at.copy(f.at).y += .04;
-      batch.ray(at, f.forward, f.side, h * 3.2, h * .07, white, white, cross, 1, 1); batch.ray(at, back.copy(f.forward).negate(), f.side, h * 3.2, h * .07, white, white, cross, 1, 1);
-      batch.ray(at, f.side, f.forward, h * 3.2, h * .07, white, white, cross, 1, 1); batch.ray(at, back.copy(f.side).negate(), f.forward, h * 3.2, h * .07, white, white, cross, 1, 1);
-    }
-    if (glow > 0) {
-      const r = h * (.8 + 1.6 * within(t, B.glow));
-      ax.copy(f.side).multiplyScalar(r * 1.25); ay.copy(f.forward).multiplyScalar(r); at.copy(f.at).y += .03;
-      batch.quad(at, ax, ay, Glyph.Disc, glowIn, glowRim, glow * .55, .55, .5);
-    }
-    if (core > 0) {
-      at.copy(f.at).addScaledVector(batch.up, .35 * h).addScaledVector(batch.toward, .6 * h);
-      batch.glow(at, h * (1.2 - .5 * within(t, B.core)), coreColor, glowRim, core, .8, .5, .75);
-    }
-    if (rays > 0) {
-      at.copy(f.at).addScaledVector(batch.up, .3 * h).addScaledVector(batch.toward, .5 * h);
-      for (let i = 0; i < 9; i++) batch.screenRay(at, hashIn(seed * 13 + i, 0, Math.PI * 2), h * hashIn(seed * 17 + i, 1.5, 4.5), h * .045, rayColor, rayTip, rays * .9, .3, .6);
-    }
-    // Grey dust puffs at the feet as the core flares.
+    activationBurst(batch, f, t, DASH_BURST, seed); const h = f.height, B = DASH_BURST;
     if (t >= B.core[0] && t - dt < B.core[0]) this.fx.spray(this.fx.smoke, 6, () => ({ x: f.at.x + (Math.random() - .5) * h * .6, y: f.at.y + .2, z: f.at.z + (Math.random() - .5) * h * .6, vx: (Math.random() - .5) * 2, vy: .8 + Math.random(), vz: (Math.random() - .5) * 2, life: .5 + Math.random() * .3, size: .35 * h, endSize: .7 * h, color: '#9d958c', alpha: .55, drag: 2.5, shape: Shape.Smoke }));
   }
 }

@@ -26,11 +26,10 @@ export function mog(): Build {
   const weights: Record<ClipName, number> = { Idle: 0, Ride: 0, Cast: 0, Win: 0, Lose: 0 };
   // The fork turns about the stem's raked line; the stem and handlebar stay put so the paws keep their grip.
   const fork = driven(m, 'fork', [0, 1.04, -.1], 'y'), front = driven(m, 'wheel_front', [1, 0, 0], 'x'), rear = driven(m, 'wheel_rear', [1, 0, 0], 'x');
-  // Drift sparks and dust come from under the rear wheel.
-  const exhausts = [anchor(m, 'scooter', [.25, .62, -1.14]), anchor(m, 'scooter', [-.25, .62, -1.14])];
+  // A battery scooter has no engine: drift sparks and dust come from under the rear wheel.
   const contacts = [anchor(m, 'scooter', [.13, .02, -1.22]), anchor(m, 'scooter', [-.13, .02, -1.22])];
   let fresh = true, flapping = 0;
-  return { r, head, height: 3.7, wheels: [{ j: front.j, r: FRONT_RADIUS }, { j: rear.j, r: REAR_RADIUS }], steer: [fork.j], exhausts, smokes: false, contacts, outline: m.outline,
+  return { r, head, height: 3.7, wheels: [{ j: front.j, r: FRONT_RADIUS }, { j: rear.j, r: REAR_RADIUS }], steer: [fork.j], contacts, outline: m.outline,
     sync() { turn.sync(); antenna.sync(); },
     update(s, k) {
       const pose = s.pose, ended = pose?.kind === 'win' || pose?.kind === 'lose' ? pose : null;

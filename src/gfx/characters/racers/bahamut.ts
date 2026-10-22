@@ -17,11 +17,10 @@ export function bahamut(): Build {
   const clips = Object.fromEntries([...LOOPS, ...POSED].map(n => [n, action(n)])) as Record<ClipName, ReturnType<typeof action>>, blink = action('Blink');
   for (const a of [...POSED.map(n => clips[n]), blink]) a.timeScale = 0;
   const turn = overlay(m, 'head'), head = turn.j, weights: Record<ClipName, number> = { Hover: 0, Fly: 0, Roar: 0, Win: 0, Lose: 0 };
-  // Boost streams trail from the wing wrists; drift sparks and dust come from under the heels.
-  const exhausts = [anchor(m, 'wing_fore.L', [2.12, 2.98, -.3]), anchor(m, 'wing_fore.R', [-2.12, 2.98, -.3])];
+  // Drift sparks and dust come from under the heels.
   const contacts = [anchor(m, 'foot.L', [.42, .58, -.14]), anchor(m, 'foot.R', [-.42, .58, -.14])];
   let fresh = true;
-  return { r, head, height: 3.9, wheels: [], steer: [], exhausts, smokes: false, contacts, outline: m.outline, sync: turn.sync, update(s, k) {
+  return { r, head, height: 3.9, wheels: [], steer: [], contacts, outline: m.outline, sync: turn.sync, update(s, k) {
     const pose = s.pose, ended = pose?.kind === 'win' || pose?.kind === 'lose' ? pose : null;
     const roar = pose?.kind === 'cast' ? 1 : 0, cruise = ended ? 0 : 1 - roar;
     const target: Record<ClipName, number> = { Hover: cruise * (s.menu ? 1 : 1 - k), Fly: cruise * (s.menu ? 0 : k), Roar: roar, Win: ended?.kind === 'win' ? 1 : 0, Lose: ended?.kind === 'lose' ? 1 : 0 };

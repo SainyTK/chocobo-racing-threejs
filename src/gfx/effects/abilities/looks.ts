@@ -15,9 +15,9 @@ export interface FanLook {
   tint: string; tintAmount: number;
 }
 
-export const DASH_FAN: FanLook = { root: '#ffffff', mid: '#a8dcff', tip: '#3f78ff', spikes: 8, length: 2.3, offset: .14, low: .04, high: 1.25, tint: '#0a3a8c', tintAmount: .5 };
+export const DASH_FAN: FanLook = { root: '#ffffff', mid: '#a8dcff', tip: '#3f78ff', spikes: 8, length: 2.3, offset: .14, low: .04, high: 1.25, tint: '#145270', tintAmount: .5 };
 export const HASTE_FAN: FanLook = { root: '#d8ffcc', mid: '#7ee860', tip: '#2fd814', spikes: 7, length: 2, offset: .14, low: .04, high: 1.2, tint: '#1f9a10', tintAmount: .45 };
-export const CHARGE_FAN: FanLook = { root: '#fffbe8', mid: '#ffe070', tip: '#ff8030', spikes: 9, length: 1.45, offset: .26, low: .12, high: 1.3, tint: '#c04010', tintAmount: .45 };
+export const CHARGE_FAN: FanLook = { root: '#fffbe8', mid: '#ffe070', tip: '#ff8030', spikes: 9, length: 1.45, offset: .26, low: .12, high: 1.3, tint: '#8a0000', tintAmount: .7 };
 
 /** Seconds a spike keeps its random length and angle: the original re-rolls them every 30 fps frame. */
 export const SPIKE_HOLD = 1 / 30;
@@ -26,11 +26,31 @@ export const FAN_END = { hold: .1, fade: .13 } as const;
 /** Fans grow to full size over this many seconds when a boost starts. */
 export const FAN_GROW = { dash: .35, haste: .13, charge: .07 } as const;
 
+/** The activation flash several abilities open with: phase windows in seconds, colours, and sizes in racer heights. */
+export interface BurstLook {
+  cross: readonly [number, number]; glow: readonly [number, number]; core: readonly [number, number]; rays: readonly [number, number];
+  crossColor: string; glowInner: string; glowRim: string; coreColor: string; rayColor: string; rayTip: string;
+  /**
+   * Cross line length, glow radius at the start and end, core radius at the start and end, ray count and ray length
+   * range, in racer heights.
+   */
+  size: { cross: number; glowFrom: number; glowTo: number; core: number; coreEnd: number; rays: number; rayFrom: number; rayTo: number };
+  /**
+   * Where the cross and glow lie: flat on the road round the racer (Dash), or facing the camera round the racer's
+   * middle at `centre` racer heights up (Grip-Up, Mug, Barrier, Magic Plus). A camera-facing glow fills to `fill`
+   * and is `squash` as tall as wide.
+   */
+  plane: 'road' | 'screen'; centre: number; fill: number; squash: number;
+  /** How far the racer's model washes toward white at the burst's height; Dash tints instead. */
+  wash: number;
+}
 /** The Dash burst, scaled from the original's 1.6 s to fit the remake's 2 s Dash. */
-export const DASH_BURST = {
+export const DASH_BURST: BurstLook = {
   cross: [.03, .3], glow: [.1, .55], core: [.45, .8], rays: [.45, .95],
   crossColor: '#ffffff', glowInner: '#c9cbea', glowRim: '#6b5cd8', coreColor: '#ffffff', rayColor: '#ffa8ee', rayTip: '#c08cf7',
-} as const;
+  size: { cross: 3.2, glowFrom: .8, glowTo: 2.4, core: 1.2, coreEnd: .72, rays: 9, rayFrom: 1.5, rayTo: 4.5 },
+  plane: 'road', centre: .35, fill: .55, squash: 1, wash: 0,
+};
 /** Haste: a thin blue-white ring circles the racer for its first frames. */
 export const HASTE_RING = { life: .2, color: '#cfe6ff' } as const;
 
@@ -88,28 +108,28 @@ export const FLARE_STRIKE = {
 export const RACER_HEIGHT = 3.6;
 
 /**
- * The activation flash of Grip-Up, Mug, Barrier and Magic Plus (see `activation.ts`). Windows are seconds since use and
- * must end with `rays`; sizes are in racer heights.
+ * The activation burst of Grip-Up and Barrier, measured on Golem: a camera-facing disc about twice the kart's width that
+ * pulls in to a white ball. Times are seconds since use; the rays end last.
  */
-export interface ActivationLook {
-  cross: readonly [number, number]; disc: readonly [number, number]; shrink: readonly [number, number]; rays: readonly [number, number];
-  centre: number; radius: number; coreRadius: number; crossLength: number; rayCount: number; rayLength: number;
-  /** How far the racer's model washes toward white at the flash's height. */
-  wash: number;
-  /** How strongly the disc fills: the wide Magic Plus disc is fainter. Its height is `squash` of its width. */
-  fill: number; squash: number;
-  inner: string; rim: string; ray: string; rayTip: string;
-}
-/** Golem's, measured at about twice the kart's width. Barrier's is the same flash. */
-export const ACTIVATION: ActivationLook = {
-  cross: [.08, .45], disc: [.1, .4], shrink: [.4, 1], rays: [.15, 1.3],
-  centre: .4, radius: .95, coreRadius: .14, crossLength: 1.6, rayCount: 10, rayLength: 2.6, wash: .6, fill: .6, squash: 1,
-  inner: '#d6d0e8', rim: '#9a7fc4', ray: '#fff4fb', rayTip: '#e48ad8',
+export const ACTIVATION_BURST: BurstLook = {
+  cross: [.08, .45], glow: [.1, .45], core: [.4, 1], rays: [.15, 1.3],
+  crossColor: '#ffffff', glowInner: '#d6d0e8', glowRim: '#9a7fc4', coreColor: '#ffffff', rayColor: '#fff4fb', rayTip: '#e48ad8',
+  size: { cross: 1.6, glowFrom: .3, glowTo: .95, core: .6, coreEnd: .14, rays: 10, rayFrom: 1, rayTo: 2.6 },
+  plane: 'screen', centre: .4, fill: .6, squash: 1, wash: .6,
 };
-/** Mug's flash: a softer white disc with a lavender edge, a little wider. */
-export const MUG_ACTIVATION: ActivationLook = { ...ACTIVATION, cross: [.05, .4], disc: [.08, .5], shrink: [.5, 1.1], rays: [.6, 1.2], radius: 1.1, inner: '#e8ebf9', rim: '#9c9ce4', ray: '#f2d4f0', rayTip: '#b049c6' };
-/** Magic Plus's flash spreads to five or six kart widths before it pulls in. */
-export const MAGIC_ACTIVATION: ActivationLook = { ...ACTIVATION, cross: [.13, .6], disc: [.13, .6], shrink: [.6, 1.1], rays: [.3, 1.35], radius: 2.1, coreRadius: .2, crossLength: 2.6, rayCount: 12, rayLength: 4, fill: .32, squash: .7, inner: '#f0eee8', rim: '#a5a8e8', ray: '#ffd7de', rayTip: '#e4a8c8' };
+/** Mug's burst: a softer white disc with a lavender edge, a little wider. */
+export const MUG_BURST: BurstLook = {
+  ...ACTIVATION_BURST, cross: [.05, .4], glow: [.08, .5], core: [.5, 1.1], rays: [.6, 1.2],
+  glowInner: '#e8ebf9', glowRim: '#9c9ce4', rayColor: '#f2d4f0', rayTip: '#b049c6',
+  size: { ...ACTIVATION_BURST.size, glowFrom: .35, glowTo: 1.1, core: .65 },
+};
+/** Magic Plus's burst spreads to five or six kart widths before it pulls in. */
+export const MAGIC_BURST: BurstLook = {
+  ...ACTIVATION_BURST, cross: [.13, .6], glow: [.13, .6], core: [.6, 1.1], rays: [.3, 1.35],
+  glowInner: '#f0eee8', glowRim: '#a5a8e8', rayColor: '#ffd7de', rayTip: '#e4a8c8',
+  size: { cross: 2.6, glowFrom: .6, glowTo: 2.1, core: .9, coreEnd: .2, rays: 12, rayFrom: 1.6, rayTo: 4 },
+  fill: .32, squash: .7,
+};
 
 /** Grip-Up, fitted to the remake's 7 s: times since use, sizes in racer heights. */
 export const GRIP = {

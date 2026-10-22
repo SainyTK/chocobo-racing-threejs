@@ -25,7 +25,7 @@ export function createCharacter(index: number): Character {
   b.r.root.traverse(o => { o.matrixAutoUpdate = true; });
   let lean = 0, spin = 0;
   return {
-    root: b.r.root, model: b.r.model, skin: b.r.skin, exhausts: b.exhausts, smokes: b.smokes ?? true, contacts: b.contacts, head: b.head, height: b.height,
+    root: b.r.root, model: b.r.model, skin: b.r.skin, exhausts: b.exhausts ?? [], contacts: b.contacts, head: b.head, height: b.height,
     animate(s) {
       const k = clamp(Math.abs(s.speed) / 38, 0, 1);
       lean = damp(lean, -s.steer * (s.drifting ? .16 : .07) * (s.menu ? 0 : 1), 8, s.dt); b.r.model.rotation.z = lean;
