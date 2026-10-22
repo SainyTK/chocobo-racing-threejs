@@ -96,9 +96,8 @@ Deliberate deviations:
 
 | Original | Remake | Reason |
 | --- | --- | --- |
-| Flap spreads big glowing pink and white feathered wings around him | The shared Flap effect (feather shards and the lift) is unchanged, and his own bat wings beat fast | The ability's effect is shared and stays as it was; only his model changed |
 | No win or lose animation is seen in a race | On the podium he waves both paws and calls out with little hops; otherwise he lets go of the bars and droops | Every racer here acts out win and lose reactions |
-| The scooter's motor is unknown | No exhaust smoke; boost flames leave the foot of the batteries | A battery scooter has no engine smoke |
+| The scooter's motor is unknown | No exhaust smoke | A battery scooter has no engine smoke |
 
 ## Golem
 
@@ -177,6 +176,43 @@ Deliberate deviations:
 
 All track stones draw in three instanced draw calls (stones, shadows and pickup bursts, the last only while a burst plays) and every racer's held stones in one more.
 
+## Ability effects: Dash, boosts, Charge, Flap and Megaflare
+
+These effects follow PS1 footage read frame by frame: Chocobo, Cloud, Chubby Chocobo and Black Magician using Dash, three Haste casts, Behemoth's Grand Prix with five Charges and a ram, Mog's Grand Prix with thirteen Flaps, Bahamut's four Megaflares as the player and a CPU Bahamut's Megaflare hitting the player in Story Mode.
+Everything they draw is a flat additive sprite rebuilt every frame, as on the PS1, and all of it goes into one batch in `src/gfx/effects/abilities/`, so these effects together cost one draw call.
+Colours, sizes and phase times live in `abilities/looks.ts`.
+
+Every boost in the original shows the same layout: two mirrored fans of spikes on the road either side of the racer, flat along the road and rising to about 70 degrees, white at the root and coloured at the tips, re-rolled every frame and always facing the camera.
+The racer's whole model is tinted while the boost lasts.
+The colour says what the boost is: blue-white for Dash, green for Haste and yellow-orange for Charge.
+The earlier note that Haste makes the blue-white fan came from a Dash; the Haste stone's fan is green.
+
+| Effect | Original | Remake |
+| --- | --- | --- |
+| Dash start | Blue-violet tint in one frame, a cross of white lines on the road, a lavender glow spreading round the racer, then a white-hot core with long pink rays and dust puffs | Same, in that order, over the first 0.95 s |
+| Dash running | Blue-white fans, 6 to 8 spikes a side, about 2.8 racer widths wide | Same, 8 spikes a side |
+| Dash end | The tint cuts off, the fans hold three frames and fade over 0.13 s | Same |
+| Start dash | The Dash burst without the fans | Same; Spin Dash uses it too |
+| Haste | A thin blue-white ring for a few frames, a green tint and green fans | Same, at every level |
+| Charge | Yellow-orange fans on the first frame, a light column, a pink dome crossed by a flare line, a white-pink flash and long rays, over a red tint; the fans swell every 0.37 s; a hard cut at the end | Same, fitted into the 1 s Charge |
+| Charge ram | Sparks at the contact point, stars and blue twinkles round the victim | Same |
+| Flap start | A white cross flare, a glowing ball with pink rays, the wings appearing inside it already full size as a raised V | Same, over 0.9 s |
+| Flap running | Two glowing wings of pink and white feather plumes, 6 to 7 body widths across, beating 1.9 times a second with a slow sweep down and a snap back up; Mog floats about a body height up | Five plumes a wing with a white quill, bright barbs and a violet halo; same beat and height |
+| Flap end | The wings turn pale lilac and fade over 0.75 s while Mog drops back | Same, over 0.6 s |
+| Megaflare on Bahamut | A glow and cross flare, a ring of red-rimmed fire orbs on the road that spreads, then beams shooting straight up | Same, over the first 0.92 s |
+| Megaflare warning | Starburst shots fall from the sky ahead of each rival, about ten a second, and burst on the road beside them | Same |
+| Megaflare strike | A frame of yellow flame starburst, a fire cone with tall red streaks, smoke and falling stars; the victim falls back charred | Same; the victim is tinted fire orange for 1.4 s |
+
+Deliberate deviations:
+
+| Original | Remake | Reason |
+| --- | --- | --- |
+| Dash lasts about 3.7 s, Charge 1.7 s, Flap 10 s, and the Megaflare warning about 2.6 s | Each effect's phases are scaled into the remake's 2 s Dash, 1 s Charge, 5 s Flap and 1.5 s warning | Timings are gameplay and stay as balanced |
+| Fans are camera-facing sprites, so a racer seen side-on shows two full fans | The fan over the racer's nose shrinks when seen from the side, so it reads as a half sunburst behind | Matches how a charging Behemoth looks from the side in footage, and keeps a 3D racer's face clear |
+| Boost pads and Spin Dash were not found in footage | Pads show the Dash fans without the burst; Spin Dash shows the start dash burst | Every boost keeps the original's one boost layout |
+| Megaflare throws the victim straight up out of view | The existing heavy-crash tumble | The crash reactions are shared by every hit |
+| The old remake drew flame jets from the exhausts and ribbon trails under every boost | Removed | The original shows no exhaust flame, trail or blur on a boost |
+
 ## Goblin
 
 Goblin follows the PS1 in-game model, checked side by side against two Grand Prix played as him and a Cid's Test Track run (the chase view from behind, the GOAL orbit and the Select Racer screen), with the official model sheet for shapes only.
@@ -194,7 +230,7 @@ Deliberate deviations:
 | The pencil sketch draws a tapered hopper on flanged rail wheels | A straight box on plain disc wheels | The game model and the CG model sheet use the straight box |
 | The helmet is a tall, boxy dome with a pale stripe, over a mane about as wide as the helmet is tall | The same tall, boxy helmet with a pale stripe over the crown, a little taller than the CG sheet's rounder dome | The race view is the reference; the CG dome is lower |
 | No win or lose animation is seen in a race | He shakes the club and pumps his fist on the podium, and slumps over the bar when he loses | Every racer here acts out win and lose reactions |
-| The cart has no engine | No exhaust smoke; boost flames leave the back corners of the box | A push cart has no engine smoke |
+| The cart has no engine | No exhaust smoke | A push cart has no engine smoke |
 
 ## Technology choice
 

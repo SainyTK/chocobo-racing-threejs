@@ -28,7 +28,7 @@ export function chubby(): Build {
   const turn = overlay(m, 'head'), head = turn.j, weights: Record<ClipName, number> = { Idle: 0, Ride: 0, Cast: 0, Win: 0, Lose: 0 };
   // The fork turns about its own raked axis, which runs from the front axle up to the steering head.
   const fork = driven(m, 'fork', [0, .87, -.16], 'y'), front = driven(m, 'wheel_front', [1, 0, 0], 'x'), rear = driven(m, 'wheel_rear', [1, 0, 0], 'x');
-  // Boost flames and smoke leave the two exhaust tips; drift sparks and dust come from under the rear wheels.
+  // Smoke leaves the two exhaust tips; drift sparks and dust come from under the rear wheels.
   const exhausts = [anchor(m, 'trike', [.43, 1.76, -1.92]), anchor(m, 'trike', [-.43, 1.76, -1.92])];
   const contacts = [anchor(m, 'wheel_rear', [1.28, .02, -1.05]), anchor(m, 'wheel_rear', [-1.28, .02, -1.05])];
   let fresh = true, flapping = 0;

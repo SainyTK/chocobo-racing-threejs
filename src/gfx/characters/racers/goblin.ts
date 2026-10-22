@@ -24,7 +24,7 @@ export function goblin(): Build {
   // The front wheels steer about upright pivots at their hubs and spin on axles that turn with them; the rear pair shares one axle.
   const steer = ['L', 'R'].map(side => driven(m, `steer.${side}`, [0, 1, 0], 'y'));
   const wheels = [...['L', 'R'].map(side => driven(m, `wheel_front.${side}`, [1, 0, 0], 'x')), driven(m, 'wheel_rear', [1, 0, 0], 'x')];
-  // A push cart has no engine: boost flames leave the back corners of the box, and drift sparks and dust come from under the rear wheels.
+  // A push cart has no engine: drift sparks and dust come from under the rear wheels.
   const exhausts = [anchor(m, 'cart', [.6, .75, -1.26]), anchor(m, 'cart', [-.6, .75, -1.26])];
   const contacts = [anchor(m, 'cart', [1.08, .02, -.78]), anchor(m, 'cart', [-1.08, .02, -.78])];
   let fresh = true;

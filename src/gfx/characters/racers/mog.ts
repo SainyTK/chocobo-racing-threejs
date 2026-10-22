@@ -26,7 +26,7 @@ export function mog(): Build {
   const weights: Record<ClipName, number> = { Idle: 0, Ride: 0, Cast: 0, Win: 0, Lose: 0 };
   // The fork turns about the stem's raked line; the stem and handlebar stay put so the paws keep their grip.
   const fork = driven(m, 'fork', [0, 1.04, -.1], 'y'), front = driven(m, 'wheel_front', [1, 0, 0], 'x'), rear = driven(m, 'wheel_rear', [1, 0, 0], 'x');
-  // Boost flames leave the foot of the batteries; drift sparks and dust come from under the rear wheel.
+  // Drift sparks and dust come from under the rear wheel.
   const exhausts = [anchor(m, 'scooter', [.25, .62, -1.14]), anchor(m, 'scooter', [-.25, .62, -1.14])];
   const contacts = [anchor(m, 'scooter', [.13, .02, -1.22]), anchor(m, 'scooter', [-.13, .02, -1.22])];
   let fresh = true, flapping = 0;

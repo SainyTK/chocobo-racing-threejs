@@ -4,7 +4,6 @@ import { Shape } from '../particles/particles.ts';
 import type { CrashInfo, CrashTier } from '../../race-events.ts';
 import type { Effects } from './index.ts';
 import { rand } from './util.ts';
-import { flareImpact } from './megaflare.ts';
 
 const v = new THREE.Vector3();
 const feet = (at: THREE.Vector3, up = .1) => v.set(at.x, at.y - 1.5 + up, at.z).clone();
@@ -42,10 +41,8 @@ export class SpellFx {
         return;
       }
       case 'haste': {
-        fx.swirl(feet(at, 0), color, 3 + level, 40 + level * 15);
-        for (let i = 0; i < level; i++) fx.bursts.spawn('ring', feet(at, .1 + i * .05), color, 4 + i * 3, .45 + i * .2);
-        fx.spray(fx.glow, 14 + level * 10, () => { const s = rand(-1.2, 1.2); return { x: at.x + fwd.z * s, y: at.y + rand(-1, 1), z: at.z - fwd.x * s, vx: -fwd.x * rand(14, 26), vy: 0, vz: -fwd.z * rand(14, 26), life: rand(.25, .45), size: rand(.25, .4), color: '#ffffff', endColor: color, stretch: .06 }; });
-        fx.racerStatus(casterId)?.boostColor.set(color);
+        // The green spike fans and the ring are the boost's look; see abilities/boost.ts.
+        fx.abilities.boosted(casterId, 'haste');
         return;
       }
       case 'shield': {
@@ -78,7 +75,8 @@ export class SpellFx {
       case 'ice': fx.shatter(at, 20 + info.level * 10); if (s) s.frozenUntil = fx.time + (info.level === 3 ? 1.6 : .7); fx.bursts.spawn('ring', feet(at), '#bfefff', 3 * g, .6); return;
       case 'ultima': fx.ultimaHit(at, info.level, mine); return;
       case 'doom': fx.doomHit(at); return;
-      case 'megaflare': flareImpact(fx, at, mine); return;
+      case 'megaflare': fx.abilities.strike(at, victimId, mine); return;
+      case 'charge': fx.abilities.ram(at); fx.dust(at, 10); return;
       case 'squash': fx.sparkle(at, '#c99bff', 20, 1.4, 1); fx.dust(at, 14); return;
       case 'drift': fx.dust(at, 12); return;
       default: fx.sparkle(v.set(at.x, at.y + 1, at.z), '#ffe27a', 18, 1, 2); fx.dust(at, 10); fx.bursts.spawn('ring', feet(at), '#ffd27a', 3, .35);

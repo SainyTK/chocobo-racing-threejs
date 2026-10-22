@@ -49,11 +49,11 @@ describe('studio registry', () => {
   it('shows every stack level the game can hold, and only one for Reflect and Doom', () => {
     for (const e of ELEMENTS.filter(e => e.id.startsWith('stack.'))) expect(e.variants.map(v => v.id), e.id).toEqual(['stack.shield', 'stack.doom'].includes(e.id) ? ['1'] : ['1', '2', '3']);
   });
-  // Characters need a DOM canvas for some textures, and course race cameras carry a character; the browser covers them.
-  // Courses themselves are built and disposed headless in stage.test.ts. Everything else builds here.
+  // Characters need a DOM canvas for some textures, and course race cameras and ability effects carry characters; the
+  // browser covers them. Courses themselves are built and disposed headless in stage.test.ts. Everything else builds here.
   it('creates, animates and disposes every item, effect and stage variant', () => {
     const scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(), fx = new Effects(scene);
-    for (const e of ELEMENTS.filter(e => e.category !== 'Characters' && e.category !== 'Courses')) for (const v of e.variants) {
+    for (const e of ELEMENTS.filter(e => e.category !== 'Characters' && e.category !== 'Courses' && !e.id.startsWith('fx.ability.'))) for (const v of e.variants) {
       const inst = e.create(v.id, { scene, fx, camera });
       if (inst.object) scene.add(inst.object);
       for (let i = 0; i <= 90; i++) { inst.update?.(i / 30, 1 / 30); fx.preview(1 / 30, camera); }
