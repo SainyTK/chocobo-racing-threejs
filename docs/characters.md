@@ -62,7 +62,7 @@ Measured in the Studio with `createCharacter` (triangles of the body and of the 
 | --- | --- | --- | --- | --- |
 | Chocobo | 11,956 | 4,705 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Chocobo (the procedural model had 12,708, 7,456 and 35) |
 | Mog | 12,632 | 4,902 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Mog (the code-built Mog in his old car had 10,720, 5,844 and 24) |
-| Goblin | 12,740 | 5,448 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Goblin (the code-built Goblin in his plank wagon had 8,220, 4,816 and 20) |
+| Goblin | 12,740 | 5,416 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Goblin (the code-built Goblin in his plank wagon had 8,220, 4,816 and 20) |
 | Chubby Chocobo | 10,994 | 4,552 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Chubby Chocobo (the procedural model had 14,768, 10,024 and 35) |
 | Bahamut | 11,928 | 4,899 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Bahamut |
 | Cloud | 11,032 | 4,570 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Cloud |
@@ -223,7 +223,7 @@ One armature carries the goblin and the cart, and the rest pose is the riding po
 - The cart hangs off `cart`. Each front wheel turns about an upright pivot at its hub (`steer.L`, `steer.R`) and spins on `wheel_front.L` and `wheel_front.R` below it; the rear pair shares `wheel_rear`. `racers/goblin.ts` turns all five through `driven()`, and the front pivots go in `Build.steer`, so the shared animator steers them.
 - The lantern hangs from `lantern`, which `racers/goblin.ts` swings sideways on the spring Mog's pom-pom uses (`spring.ts`) through a second `overlay()`. It does not tip back with speed, which would push it into the front wall.
 - The clips never key the wheels, the steering or the lantern (`DRIVEN` in `clips.py`). Blink squashes the eyeballs on `eye.L` and `eye.R`; the club rides on `club` under the right forearm.
-- The helmet is a `shell` over the skull from a lower edge that follows `BRIM` round the head, with a rolled rim lofted along that edge. The wheels, drum, bracelet and lantern cap are `lathe`s, which give the painter a v along the profile so the wheel's faces, tread and axle caps paint apart.
+- The helmet is a `shell` that rises from a lower edge on the skull, which follows `BRIM` round the head, to straight sides and a broad crown at `HELMET_TOP`, with a rolled rim lofted along that edge and a pale stripe over the crown. The wheels, drum, bracelet and lantern cap are `lathe`s, which give the painter a v along the profile so the wheel's faces, tread and axle caps paint apart.
 
 Pitfalls met on Goblin:
 
@@ -231,4 +231,5 @@ Pitfalls met on Goblin:
 - A raised forearm tips whatever the fist holds back over the shoulder. Pitch the held bone forward by about the forearm's lift so the club stands up.
 - A pupil painted by the loft's v covers far more of an eyeball than it seems: v 0.8 is three quarters of the radius. Keep the pupil to about v 0.93.
 - A hanging part in front of a wall must not swing back with speed, or it disappears into the wall.
-- Seen from the PS1's higher chase camera the mane is about as wide as the helmet. A mane much wider than the helmet looks like a wig from our lower camera.
+- From the PS1's chase camera the helmet is a tall, boxy dome, about as tall as the mane is wide. A helmet that follows the skull reads as a low cap from behind, and a mane much wider than the helmet looks like a wig.
+- Eyes sunk into the face show only as slits under the rim. Bring them forward off the face so the whites read as round balls.

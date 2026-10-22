@@ -20,7 +20,7 @@ from .model import BAND_Z, BODY_BOTTOM, BODY_TOP, WHEEL_PROFILE
 
 SKIN, SKIN_LIGHT, SKIN_DARK = "#d9a074", "#f0c49c", "#a86c48"
 EAR_INNER = "#c27a62"
-HELMET, HELMET_LIGHT, HELMET_DARK = "#d4502a", "#f4844a", "#8c2a0c"
+HELMET, HELMET_LIGHT, HELMET_DARK, HELMET_STRIPE = "#d4502a", "#f4844a", "#8c2a0c", "#f6b07a"
 HAIR, HAIR_LIGHT, HAIR_DARK = "#cc68d0", "#f0b0ee", "#84368e"
 BAND, BAND_DARK = "#3e9a34", "#26641e"
 EYE, PUPIL = "#f8f8f4", "#141014"
@@ -62,10 +62,15 @@ def skin(u: np.ndarray, v: np.ndarray) -> np.ndarray:
 
 
 def helmet(u: np.ndarray, v: np.ndarray) -> np.ndarray:
-    """Red-orange, a touch darker toward the lower edge, with the small vent hole near the crown."""
+    """Red-orange, a touch darker toward the lower edge, with a pale stripe over the crown from front to back and the
+    small vent hole near the top."""
     img = mix(fill(HELMET, u), fill(HELMET_DARK, u), np.clip(0.25 - v, 0, 1) * 1.2)
     a = angle(u)
-    hole = np.clip(1 - np.hypot((v - 0.82) * 14, np.sin((a - 2.0) / 2) * 9), 0, 1)
+    reach = (1 - (1 - (1 - (1 - v) ** 1.3) ** 3)) ** (1 / 3)
+    across = np.abs(np.cos(a)) * (1 - reach * 0.9)
+    stripe = np.clip((0.04 - across) * 60, 0, 1) * np.clip((v - 0.12) * 6, 0, 1)
+    img = mix(img, fill(HELMET_STRIPE, u), stripe)
+    hole = np.clip(1 - np.hypot((v - 0.8) * 14, np.sin((a - 2.0) / 2) * 9), 0, 1)
     return mix(img, fill(HELMET_DARK, u), np.clip(hole * 3, 0, 1))
 
 

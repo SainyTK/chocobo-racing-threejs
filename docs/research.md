@@ -172,7 +172,7 @@ Deliberate deviations:
 | Original | Remake | Reason |
 | --- | --- | --- |
 | The pencil sketch draws a tapered hopper on flanged rail wheels | A straight box on plain disc wheels | The game model and the CG model sheet use the straight box |
-| The chase camera sits higher, so the helmet reads as a tall dome over the mane | The helmet's crown stands a little taller off the skull | Our chase camera is lower and closer; a plain dome looked flat from behind |
+| The helmet is a tall, boxy dome with a pale stripe, over a mane about as wide as the helmet is tall | The same tall, boxy helmet with a pale stripe over the crown, a little taller than the CG sheet's rounder dome | The race view is the reference; the CG dome is lower |
 | No win or lose animation is seen in a race | He shakes the club and pumps his fist on the podium, and slumps over the bar when he loses | Every racer here acts out win and lose reactions |
 | The cart has no engine | No exhaust smoke; boost flames leave the back corners of the box | A push cart has no engine smoke |
 

@@ -18,7 +18,7 @@ from collections.abc import Callable, Sequence
 
 from mathutils import Vector
 
-from pipeline.geometry import Part, box, ellipse, ellipsoid, loft, mirror, spline
+from pipeline.geometry import Part, box, ellipse, ellipsoid, loft, mirror, smoothstep, spline
 from pipeline.scene import BoneSpec
 from pipeline.weights import along, rigid
 
@@ -66,12 +66,13 @@ HEAD_BOTTOM, HEAD_TOP = 1.86, 2.84
 HEAD_WIDTH = ((0, 0.06), (0.1, 0.3), (0.3, 0.42), (0.55, 0.46), (0.78, 0.42), (0.93, 0.26), (1, 0.05))
 HEAD_DEPTH = ((0, 0.06), (0.1, 0.3), (0.3, 0.41), (0.55, 0.44), (0.78, 0.4), (0.93, 0.25), (1, 0.05))
 """Half width and half depth of the skull along its height: a round head, a little narrower at the jaw."""
-HELMET_LIFT, HELMET_CROWN = 0.08, 0.16
-"""The helmet stands off the skull, more toward the crown, so it reads as a tall dome from the chase camera."""
-BRIM = ((0, 0.46), (0.34, 0.57), (0.66, 0.55), (1.1, 0.46), (1.7, 0.44), (2.4, 0.38), (math.pi, 0.34))
+HELMET_LIFT, HELMET_TOP, HELMET_BOX = 0.07, 3.28, 3.5
+"""The helmet stands off the skull and rises to a broad crown well above it, as tall as the mane is wide, so it reads as
+the original's boxy dome from the chase camera. A higher `HELMET_BOX` gives squarer shoulders."""
+BRIM = ((0, 0.52), (0.38, 0.66), (0.7, 0.6), (1.1, 0.46), (1.7, 0.44), (2.4, 0.38), (math.pi, 0.34))
 """Height (as head t) of the helmet's lower edge by angle from the front: it dips to a V between the eyes, lifts over
 them like a frown, runs over the ears and comes down low over the mane at the back."""
-EYE_ANGLE, EYE_T = 0.36, 0.43
+EYE_ANGLE, EYE_T = 0.43, 0.38
 """The eyes sit either side of the front, just under the brim, which covers their tops."""
 NOSE = Vector((0, -0.5, 2.13))
 MOUTH = Vector((0, -0.38, 1.96))
@@ -193,22 +194,29 @@ def eye(s: int) -> tuple[Vector, Vector]:
     p = head_point(EYE_T, a)
     out = (p - Vector((0, HEAD_CENTRE.y, p.z))).normalized()
     look = (out + Vector((0, -1.6, 0))).normalized()
-    return p + out * 0.04, look
+    return p + out * 0.08 + Vector((0, -0.1, 0.02)), look
 
 
-def shell(name: str, skin: str, bottom: Callable[[float], float], lift: float, crown: float, around: int, along: int) -> Part:
-    """A cap over the skull from a lower edge that varies with the ring angle up to the crown, closed with a pole. It
-    stands `lift` off the skull at the edge, growing by `crown` toward the top."""
+def shell(name: str, skin: str, bottom: Callable[[float], float], lift: float, around: int, along: int) -> Part:
+    """The helmet: a tall, boxy dome standing `lift` off the skull. It rises from a lower edge on the skull that varies
+    with the ring angle, swells out to straight sides as wide as the head, and rounds over into a broad, flat crown."""
     seam = -math.pi / 2
+    width, depth = spline(HEAD_WIDTH, 0.55) + lift, spline(HEAD_DEPTH, 0.55) + lift
     verts: list[Vector] = []
     params: list[tuple[float, float]] = []
     for i in range(along + 1):
+        s = 1 - (1 - i / along) ** 1.3
         for j in range(around):
             a = seam + 2 * math.pi * j / around
-            t = bottom(a) + (0.985 - bottom(a)) * (1 - (1 - i / along) ** 1.4)
-            verts.append(head_point(t, a, lift + crown * (i / along) ** 2))
+            edge = head_point(bottom(a), a, lift)
+            side = Vector((width * math.cos(a), HEAD_CENTRE.y - depth * math.sin(a), 0))
+            flank = edge.lerp(side + Vector((0, 0, edge.z)), smoothstep(0, 0.35, s))
+            taper = (1 - s**HELMET_BOX) ** (1 / HELMET_BOX)
+            centre = Vector((0, HEAD_CENTRE.y, 0))
+            p = centre + (Vector((flank.x, flank.y, 0)) - centre) * taper
+            verts.append(Vector((p.x, p.y, edge.z + (HELMET_TOP - edge.z) * s)))
             params.append((j / around, i / along))
-    verts.append(Vector((0, HEAD_CENTRE.y, HEAD_TOP + lift + crown)))
+    verts.append(Vector((0, HEAD_CENTRE.y, HELMET_TOP)))
     params.append((0.5, 1.0))
     pole = len(verts) - 1
     faces: list[tuple[int, ...]] = []
@@ -240,7 +248,7 @@ def head_parts() -> list[Part]:
         20,
         (0, -1, 0),
     )
-    helmet = shell("helmet", "helmet", brim_t, HELMET_LIFT, HELMET_CROWN, 36, 14)
+    helmet = shell("helmet", "helmet", brim_t, HELMET_LIFT, 36, 14)
     ring = [head_point(brim_t(a), a, HELMET_LIFT - 0.01) for a in (-math.pi / 2 + 2 * math.pi * k / 48 for k in range(49))]
     rim = loft("helmet_rim", "rim", ring, ellipse(lambda t: 0.075, lambda t: 0.075), 8, 56, (0, 0, 1), caps=(False, False))
     nose = ellipsoid("nose", "skin", NOSE, (0.27, 0.23, 0.22), axis=(0, -1, -0.25), around=18, along=12)
@@ -248,7 +256,7 @@ def head_parts() -> list[Part]:
     mouth.outline = False
     parts = [rigid(skull, "head"), rigid(helmet, "head"), rigid(rim, "head"), rigid(nose, "head"), rigid(mouth, "mouth")]
     centre, look = eye(1)
-    ball = rigid(ellipsoid("eye", "eye", centre, (0.15, 0.22, 0.24), axis=look, around=16, along=8), "eye.L")
+    ball = rigid(ellipsoid("eye", "eye", centre, (0.16, 0.26, 0.27), axis=look, around=16, along=8), "eye.L")
     left = [ball, rigid(ear(), "ear.L")]
     return parts + left + [mirror(p, p.name + ".R") for p in left]
 
