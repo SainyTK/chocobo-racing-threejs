@@ -15,7 +15,7 @@ import numpy as np
 
 from pipeline.atlas import Painter, band, fill, hex_rgb, mix, value_noise
 
-from .model import CARPET_POWER
+from .model import CARPET_POWER, HAIR_SWEEP
 
 HAIR, HAIR_LIGHT, HAIR_DARK, HAIR_SHADE, HAIR_INSIDE = "#f03aa8", "#ff7ccd", "#a8186a", "#6c1a44", "#40142a"
 SKIN, SKIN_SHADE, CHEEK = "#ffece8", "#f4c4bc", "#ff8aa4"
@@ -65,9 +65,12 @@ def hair(u: np.ndarray, v: np.ndarray) -> np.ndarray:
     down from the crown; the ends are darker and the inside darker still."""
     out = v < 0.5
     down = np.where(out, v * 2, 1.0)
-    # The modelled locks are 11 ridges round the head from the seam; their hollows are the darkest grooves.
-    ridge = (0.5 + 0.5 * np.cos(2 * np.pi * 11 * u)) ** 0.5
-    groove = 0.45 * ridge + 0.55 * (0.7 + 0.3 * strands(u, down, 40))
+    # The modelled locks are 11 ridges round the head from the seam, sweeping over the face; their hollows are the
+    # darkest grooves.
+    front = 1 - np.clip((np.abs(2 * np.pi * u - np.pi) - 0.5) * 2, 0, 1)
+    ridge = (0.5 + 0.5 * np.cos(2 * np.pi * 11 * u + 11 * HAIR_SWEEP * front * (1 - down))) ** 0.5
+    # The locks part from the crown, so their grooves fade in from it rather than meeting there like an onion's.
+    groove = 0.55 + 0.45 * (0.7 + 0.3 * strands(u, down, 40)) + (ridge - 1) * 0.45 * np.clip(down * 2.2 - 0.2, 0, 1)
     img = mix(fill(HAIR_DARK, u), fill(HAIR, u), 0.55 + 0.45 * groove)
     img = mix(img, fill(HAIR_LIGHT, u), np.clip(0.4 - np.abs(down - 0.35) * 2.2, 0, 1) * groove * 0.7)
     # The ends round the nape sit in the hair's own shade, as the PS1's chase view shows them.
@@ -116,7 +119,8 @@ def eye(u: np.ndarray, v: np.ndarray) -> np.ndarray:
 
 
 def mouth(u: np.ndarray, v: np.ndarray) -> np.ndarray:
-    return mix(fill(MOUTH, u), fill(MOUTH_DARK, u), np.clip((0.75 - v) * 3, 0, 1))
+    """The smile: dark at its middle, pinker toward the corners."""
+    return mix(fill(MOUTH_DARK, u), fill(MOUTH, u), np.clip(np.abs(v - 0.5) * 3, 0, 1))
 
 
 def zigzag(x: np.ndarray, count: int) -> np.ndarray:

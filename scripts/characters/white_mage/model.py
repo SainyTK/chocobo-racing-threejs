@@ -49,21 +49,28 @@ COWL_Z, COWL_RADII, COWL_THICK = 1.78, (0.22, 0.2), 0.11
 
 HEAD_CENTRE = Vector((0, SEAT_Y, 2.34))
 HEAD_BOTTOM, HEAD_TOP = 1.9, 2.8
-HEAD_WIDTH = ((0, 0.06), (0.08, 0.3), (0.25, 0.42), (0.48, 0.47), (0.7, 0.45), (0.88, 0.33), (1, 0.05))
-HEAD_DEPTH = ((0, 0.06), (0.08, 0.27), (0.25, 0.38), (0.48, 0.43), (0.7, 0.42), (0.88, 0.31), (1, 0.05))
-"""The skull: a round face with a small chin. The hair shell covers all but the face."""
+HEAD_WIDTH = ((0, 0.12), (0.08, 0.32), (0.25, 0.45), (0.48, 0.48), (0.7, 0.46), (0.88, 0.34), (1, 0.06))
+HEAD_DEPTH = ((0, 0.12), (0.08, 0.3), (0.25, 0.42), (0.48, 0.44), (0.7, 0.43), (0.88, 0.32), (1, 0.06))
+"""The skull: a soft, round face with full cheeks and a rounded chin. The hair covers all but the face."""
 HAIR_CENTRE = HEAD_CENTRE + Vector((0, 0.06, 0.06))
-HAIR_RADII = (0.63, 0.58, 0.52)
+HAIR_RADII = (0.63, 0.58, 0.47)
 """(side, front-back, up) of the bob's outer surface before the flare."""
-HAIR_EDGE = ((0, 0.5), (0.55, 0.42), (0.88, 0.2), (1.0, -0.42), (1.3, -0.6), (1.7, -0.74), (math.pi, -0.86))
-"""Elevation of the hair's lower edge, by the angle from straight ahead: the forehead in front, then straight down past
-the cheeks to the jaw, where the bob frames the face, and down to the nape behind."""
+HAIR_FRONT = 0.53
+"""Front-back radius of the bob over the face: smaller than behind, so the bangs lie close over the forehead."""
+HAIR_EDGE = ((0, 0.1), (0.35, 0.12), (0.56, 0.06), (0.68, -0.3), (0.8, -1.0), (1.0, -1.02), (1.35, -0.86), (1.7, -0.8), (math.pi, -0.86))
+"""Elevation of the hair's lower edge, by the angle from straight ahead: the bangs just above the eyes, then side locks
+falling past the cheeks to the jaw, and down to the nape behind."""
+PART, PART_LIFT = math.pi / 2 + 0.28, 0.16
+"""The gentle part in the bangs, over her right eye, where the edge rises a little."""
 HAIR_FLARE = 0.22
 """How far the ends of the bob flare out round the nape, as the chase view shows."""
 HAIR_LOBES, HAIR_LOBE, HAIR_SCALLOP = 11, 0.08, 0.16
 """The bob is made of chunky locks: `HAIR_LOBES` ridges round the head swell out by up to `HAIR_LOBE` toward the
 ends, and each ends in a tip hanging `HAIR_SCALLOP` radians lower than the hollows between them."""
 HAIR_SEAM = -math.pi / 2
+HAIR_SWEEP = 0.35
+"""Over the face the locks sweep from her right toward her left: a lock's crest is this many radians further right at
+the crown than at its tip, so the bangs flow from the part instead of hanging straight."""
 EYE_AZIMUTH, EYE_Z = 0.4, 2.22
 MOUTH_Z = 2.03
 TIE = HAIR_CENTRE + Vector((0.34, 0.22, 0.47))
@@ -142,6 +149,11 @@ def eye(s: int) -> tuple[Vector, Vector]:
     return p, (out + Vector((0, -1.4, 0))).normalized()
 
 
+def sweep(a: float) -> float:
+    """How strongly the locks sweep at ring angle a: fully over the face, not at all from the sides back."""
+    return 1 - smoothstep(0.5, 1.0, from_front(a))
+
+
 def lobe(a: float) -> float:
     """1 on the crest of a lock and 0 in the hollow between two, by ring angle; whole waves from the seam, so the
     painter can lay its grooves in the hollows."""
@@ -150,7 +162,8 @@ def lobe(a: float) -> float:
 
 def hair_edge(a: float) -> float:
     """Elevation of the hair's lower edge at ring angle a: lock tips hang lower than the hollows, except over the face."""
-    return spline(HAIR_EDGE, from_front(a)) - HAIR_SCALLOP * lobe(a) * smoothstep(0.7, 1.2, from_front(a))
+    tips = HAIR_SCALLOP * lobe(a) * (0.7 + 0.3 * smoothstep(0.7, 1.2, from_front(a)))
+    return spline(HAIR_EDGE, from_front(a)) - tips + PART_LIFT * math.exp(-(((a - PART) / 0.15) ** 2))
 
 
 def hair_point(a: float, e: float, scale: float = 1.0) -> Vector:
@@ -158,8 +171,10 @@ def hair_point(a: float, e: float, scale: float = 1.0) -> Vector:
     swelling into locks toward it."""
     edge = hair_edge(a)
     low = 1 - smoothstep(edge, edge + 0.9, e)
-    flare = 1 + HAIR_FLARE * low * smoothstep(0.8, 1.4, from_front(a)) + HAIR_LOBE * lobe(a) * (0.3 + 0.7 * low)
+    crest = lobe(a + HAIR_SWEEP * sweep(a) * (1 - low))
+    flare = 1 + HAIR_FLARE * low * smoothstep(0.8, 1.4, from_front(a)) + HAIR_LOBE * crest * (0.1 + 0.9 * low)
     rx, ry, rz = HAIR_RADII
+    ry = HAIR_FRONT + (ry - HAIR_FRONT) * smoothstep(0.6, 1.6, from_front(a))
     c = math.cos(e) * flare * scale
     return HAIR_CENTRE + Vector((rx * c * math.cos(a), -ry * c * math.sin(a), rz * math.sin(e) * scale))
 
@@ -218,37 +233,12 @@ def lerp_e(a: float, s: float) -> float:
     return edge + (math.pi / 2 * 0.97 - edge) * (1 - (1 - s) ** 1.15)
 
 
-def lock(name: str, points: list[Vector], width: float, thick: float, across: Vector) -> Part:
-    """One flat lock of hair that narrows to a point; its flat faces along `across`."""
-    return loft(name, "lock", points, ellipse(lambda t: width * (1 - 0.85 * t**1.6) + 0.006, lambda t: thick * (1 - 0.6 * t) + 0.006), 10, 8, across)
-
-
-def bangs() -> list[Part]:
-    """Broad bangs swept from her right toward her left, overlapping and ending just above the eyes. They lie on the
-    hair and the face, so they draw no outline."""
-    out = []
-    for i, (az, length, sweep, width) in enumerate(((-0.42, 0.15, -0.14, 0.27), (-0.08, 0.2, -0.2, 0.28), (0.26, 0.17, -0.2, 0.26), (0.55, 0.1, -0.12, 0.2))):
-        a = math.pi / 2 + az
-        root = hair_point(a, 0.75)
-        tip = head_point(head_t(2.42 + 0.2 - length), a + sweep, 0.025)
-        mid = head_point(head_t(root.z * 0.4 + tip.z * 0.6), a + sweep * 0.5, 0.05)
-        bang = lock(f"bang{i}", [root, mid, tip], width, 0.05, Vector((0, -1, 0.3)))
-        bang.outline = False
-        out.append(rigid(bang, "head"))
-    return out
-
-
 def crown_tuft() -> Part:
-    """The single upright tuft on the crown, curling forward."""
-    base = HAIR_CENTRE + Vector((0, -0.16, HAIR_RADII[2] - 0.08))
-    pts = [
-        base + Vector((0, -0.08, -0.02)),
-        base + Vector((0, -0.06, 0.18)),
-        base + Vector((0, -0.14, 0.32)),
-        base + Vector((0, -0.28, 0.36)),
-        base + Vector((0, -0.36, 0.3)),
-    ]
-    return rigid(loft("crown_tuft", "lock", pts, ellipse(lambda t: 0.05 * (1 - t) + 0.006, lambda t: 0.03 * (1 - t) + 0.005), 8, 10, (1, 0, 0)), "head")
+    """The tuft on the crown: a soft lock that rises and curls back."""
+    base = HAIR_CENTRE + Vector((0, -0.1, HAIR_RADII[2] - 0.05))
+    pts = [base + Vector(p) for p in ((0, 0.02, -0.03), (0, 0.0, 0.14), (0, 0.06, 0.26), (0, 0.17, 0.3), (0, 0.25, 0.25))]
+    curl = loft("crown_tuft", "lock", pts, ellipse(lambda t: 0.045 * (1 - 0.6 * t) + 0.008, lambda t: 0.08 * (1 - 0.6 * t) + 0.008), 10, 12, (1, 0, 0))
+    return rigid(curl, "head")
 
 
 def hair_tie() -> list[Part]:
@@ -276,13 +266,15 @@ def face_parts() -> list[Part]:
         "skin",
         [(0, HEAD_CENTRE.y, HEAD_BOTTOM), (0, HEAD_CENTRE.y, HEAD_TOP)],
         lambda t, a: (spline(HEAD_WIDTH, t) * math.cos(a), spline(HEAD_DEPTH, t) * math.sin(a)),
-        30,
-        20,
+        40,
+        28,
         (0, -1, 0),
     )
     nose = ellipsoid("nose", "hand", head_point(head_t(2.13), math.pi / 2, -0.02), (0.05, 0.045, 0.04), axis=(0, -1, -0.3), around=10, along=6)
     nose.outline = False
-    mouth = ellipsoid("mouth", "mouth", mouth_centre(), (0.02, 0.05, 0.016), axis=(0, -1, 0), around=12, along=6)
+    # A small smile: a thin arc curving up at its corners. It opens by growing taller.
+    smile = [head_point(head_t(MOUTH_Z + 0.025 * k * k), math.pi / 2 - 0.16 * k, 0.004) for k in (-1, -0.5, 0, 0.5, 1)]
+    mouth = loft("mouth", "mouth", smile, ellipse(lambda t: 0.014 * math.sin(math.pi * t) + 0.004, lambda t: 0.01), 8, 10, (0, -1, 0))
     mouth.outline = False
     centre, look = eye(1)
     ball = ellipsoid("eye", "eye", centre, (0.04, 0.098, 0.124), axis=look, around=18, along=10)
@@ -394,7 +386,7 @@ def carpet() -> Part:
 
 def parts(_spec: dict[str, BoneSpec]) -> list[Part]:
     left = [*arm_parts(), *leg_parts()]
-    rider = [*face_parts(), rigid(bob(), "head"), *bangs(), crown_tuft(), *hair_tie(), *robe_parts(), *staff_parts()]
+    rider = [*face_parts(), rigid(bob(), "head"), crown_tuft(), *hair_tie(), *robe_parts(), *staff_parts()]
     rider += left + [mirror(p, p.name + ".R") for p in left]
     for p in rider:
         p.verts = [grown(v) for v in p.verts]
