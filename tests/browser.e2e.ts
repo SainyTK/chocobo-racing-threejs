@@ -38,7 +38,7 @@ async function pilot(page: Page) {
 }
 async function finish(page: Page, timeout = 160000) { await expect(page.getByRole('dialog', { name: 'Race results' })).toBeVisible({ timeout }); const d = await debug(page), p = d.race.racers.find((p: any) => p.id === d.playerId); expect(p.finishTime).toBeGreaterThan(0); expect(p.gates).toBe(d.race.laps * 12); return d; }
 
-test('nine distinct racers, eight courses, independent abilities, options and honest help', async ({ page }) => {
+test('ten distinct racers, nine courses, independent abilities, options and honest help', async ({ page }) => {
   const errors: string[] = []; page.on('pageerror', e => errors.push(e.message)); await ready(page);
   await page.screenshot({ path: 'output/testing/v2-home-desktop.png' });
   for (const name of ['Mog', 'Golem', 'Goblin', 'Black Magician', 'White Mage', 'Chubby Chocobo', 'Behemoth', 'Bahamut', 'Cloud', 'Chocobo']) { await page.getByRole('button', { name: `Choose ${name}`, exact: true }).click(); await expect(page.locator('.vehicle-label h1')).toHaveText(name); if (name === 'Black Magician') await page.screenshot({ path: 'output/testing/v2-black-magician.png' }); }

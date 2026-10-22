@@ -14,7 +14,7 @@ import numpy as np
 
 from pipeline.atlas import Painter, band, fill, hex_rgb, mix
 
-HAIR, HAIR_ROOT, HAIR_TIP = "#ecd545", "#b39f22", "#fff6a8"
+HAIR, HAIR_ROOT, HAIR_TIP = "#e6d244", "#aa9a24", "#fbf3a2"
 SKIN, SKIN_SHADE, MOUTH = "#f6d2b0", "#e2ac8a", "#8a4a3a"
 NAVY, NAVY_LIGHT, NAVY_DARK = "#252d5a", "#3a4682", "#161b3a"
 TROUSERS, TROUSERS_DARK = "#2f3a6c", "#1d2448"
