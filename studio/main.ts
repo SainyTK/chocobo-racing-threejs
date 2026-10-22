@@ -2,7 +2,6 @@ import './style.css';
 import { ELEMENTS, elementById } from './registry.ts';
 import { searchElements } from './search.ts';
 import { BACKGROUNDS, MAX_PANES, SPEEDS, decodeState, encodeState, type Background, type PaneState, type Quality, type StudioState } from './state.ts';
-import { setOrbDetail } from '../src/gfx/orbs/index.ts';
 import { CATEGORIES, type StudioElement } from './types.ts';
 import { Viewport, defaultView, type ViewState } from './viewport.ts';
 import { StudioMusicPlayer } from './music-player.ts';
@@ -51,7 +50,7 @@ function commit() {
   history.replaceState(null, '', encodeState(state));
   document.querySelectorAll<HTMLButtonElement>('.seg').forEach(b => b.classList.toggle('on', Number(b.dataset.count) === state.panes.length));
   document.querySelectorAll<HTMLButtonElement>('.toggle').forEach(b => { const on = state[b.dataset.flag as 'link' | 'spin' | 'ground']; b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); });
-  $<HTMLSelectElement>('#bg').value = state.background; $<HTMLSelectElement>('#quality').value = state.quality; setOrbDetail(state.quality === 'high' ? 1 : .5); $<HTMLSelectElement>('#speed').value = String(state.speed);
+  $<HTMLSelectElement>('#bg').value = state.background; $<HTMLSelectElement>('#quality').value = state.quality; $<HTMLSelectElement>('#speed').value = String(state.speed);
   $('#play').textContent = paused ? 'Play' : 'Pause';
   syncPanes();
   const activePane = state.panes[state.active];
