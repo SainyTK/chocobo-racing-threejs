@@ -154,7 +154,7 @@ export const MAGIC_PLUS = {
   /** The original flips the stone black every 30 fps frame (15 blinks a second); a little slower stays visible at any frame rate. */
   curtain: [1.37, 1.87], glint: [1.8, 2.1], flicker: 2.9, flickerRate: 12.5,
   drop: 2.6, width: 1.6, glintSize: .22,
-  core: '#9be698', edge: '#b7f4bc',
+  core: '#9be698', edge: '#b7f4bc', cover: .55,
 } as const;
 
 /** Receive: times since the catch; sizes in racer heights. */

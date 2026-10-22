@@ -34,7 +34,7 @@ export class MagicPlusFx {
         const span = h * MAGIC_PLUS.drop * (1 - k * .55), width = h * MAGIC_PLUS.width * (1 - k) ** 1.6 + h * .04;
         at.copy(stone.at).setY(stone.at.y + h * MAGIC_PLUS.drop * (1 - k) + span / 2);
         ax.copy(batch.right).multiplyScalar(width / 2); ay.copy(batch.up).multiplyScalar(span / 2);
-        batch.quad(at, ax, ay, Glyph.Curtain, MAGIC_PLUS.edge, MAGIC_PLUS.core, Math.min(1, k * 6) * 1.4, k, 0);
+        batch.quad(at, ax, ay, Glyph.Curtain, MAGIC_PLUS.edge, MAGIC_PLUS.core, Math.min(1, k * 6), k, 0, MAGIC_PLUS.cover);
       }
       if (glint > 0) {
         batch.glow(stone.at, h * MAGIC_PLUS.glintSize, '#ffffff', MAGIC_PLUS.edge, glint, .8, .2);

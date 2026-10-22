@@ -161,7 +161,7 @@ The remake bursts the stone the same way over 0.22 s and drops the earlier star 
 In the original a taken stone leaves an empty slot, and the slot is full again by the next lap, sometimes with a different kind. The refill itself is never on screen; the remake keeps its fixed kinds and 3.5 s respawn and grows the stone back in over 0.25 s.
 Held stones in the original roll on the road in a short chain right behind the racer's rear wheels, about half a track stone across, symbol facing the camera.
 The manual says a stack "will flash" to show its level, and one FAQ says level two "will start to blink" and level three "will start to blink rapidly"; the footage shows held stones blinking to black.
-In 30 fps captures a held stone alternates with black every frame for bursts of two to three seconds; footage does not separate the levels. The remake blinks level two four times a second and level three eight times a second, steadily, so the level is always readable.
+In 30 fps captures a held stone alternates with black every frame for bursts of about 2.9 s; the ability effects research found these bursts are the Magic Plus trigger, and the footage shows no level blink at all. The remake blinks level two four times a second and level three eight times a second, steadily, so the level is always readable.
 The original HUD shows no held-stone icons; the remake keeps its MAGIC slots, now drawn from the same stone model.
 
 Deliberate deviations:
@@ -212,6 +212,53 @@ Deliberate deviations:
 | Boost pads and Spin Dash were not found in footage | Pads show the Dash fans without the burst; Spin Dash shows the start dash burst | Every boost keeps the original's one boost layout |
 | Megaflare throws the victim straight up out of view | The existing heavy-crash tumble | The crash reactions are shared by every hit |
 | The old remake drew flame jets from the exhausts and ribbon trails under every boost | Removed | The original shows no exhaust flame, trail or blur on a boost |
+
+## Ability effects: Grip-Up, Mug, Magic Plus, Barrier and Receive
+
+These follow PS1 footage read frame by frame: Golem's two Grand Prix runs (17 Grip-Ups), Goblin's Grand Prix (14 Mugs) and a Chocobo run where a CPU Goblin mugs the player about every 20 s, Goblin and Black Magician with Magic Plus (7 triggers), a White Mage Grand Prix with Barrier (9 raises, 3 blocks) and Chubby Chocobo's Grand Prix (8 catches).
+They draw into the same flare batch as the effects above, so they add no draw call of their own; stones carried by Mug's helper or caught by Receive add one while they are on screen, and Mug's helper adds four while it runs.
+Colours, sizes and phase times live in `abilities/looks.ts`, next to the others.
+
+Grip-Up, Mug, Barrier and Magic Plus open with the same flash in the frame after the gauge empties: a thin white cross of light through the racer, a pale disc with a violet rim about twice the kart's width, the racer washing out to white, then the disc pulling in to a white ball while thin white and pink rays shoot out.
+The remake draws that flash in `abilities/activation.ts`, with one look per ability: Mug's is softer and lavender, and Magic Plus's spreads to five or six kart widths.
+
+| Effect | Original | Remake |
+| --- | --- | --- |
+| Grip-Up start | The flash, then a thin pink ellipse at each side at hub height, flung out a kart width as crescents with streaky trails, then snapped back in within 2 to 3 frames | Same, 1.3 to 2 s after use |
+| Grip-Up running | One magenta ring per side wrapping the wheels, a white outer rim, a jagged and streaky inner edge fading to clear, alpha blended; its height pulses every 0.5 s | Same, drawn as camera-facing crescents with the hollow side toward the kart |
+| Grip-Up end | A smooth fade over 8 frames | Same, over 0.27 s |
+| Mug, thief | The flash; a little goblin with purple spiky hair, one big eye, an orange vest and dark legs pops up beside the kart, hops off the right of the screen, and comes back from the left 0.6 s later carrying the stone, which joins the line 1.57 s after use | Same: the helper is a small toon model with an ink outline, and the stone stays hidden in the line until it arrives |
+| Mug, victim | The held stone vanishes in one frame inside a thin near-white ring that widens and turns pink; the helper runs past from right to left | Same |
+| Mug with nobody to rob | The helper comes back with a stone all the same | Same |
+| Magic Plus | The wide flash; then a green U-shaped curtain drops from high above, narrows to a thread and ends on the raised stone with a glint; the stone flips to flat black every frame for 2.9 s | Same; the stone flickers 12.5 times a second |
+| Barrier raise | The flash, with a darker blue-violet halo | Same |
+| Barrier up | Nothing stays on screen: every 0.71 s a frosty pale-cyan bowl rises from the carpet, closes into a nearly opaque white oval round her, lifts off as a cap with a small ring on top and leaves a clear cyan sphere that fades in 0.3 s; small sparkle crosses near the carpet between pulses | Same |
+| Barrier block | The spell's own effect plays, she rides on, at most one more pulse plays and the Barrier is gone; no block sprite | Same |
+| Receive waiting | Nothing on the racer | Same |
+| Receive catch | A white orb swells above his head on a faint light pillar, with a horizontal streak on the road, a lavender glow and pink rays round him; the orb clears with a cross flare to show the caught stone, which hovers and sinks to the end of his line about 1.7 s after the hit | Same, over 1.5 s |
+
+What a rival sees: no footage shows a CPU Golem, Goblin, Black Magician, White Mage or Chubby Chocobo using these abilities in view of the player.
+The remake draws every one of them in the world round the racer, so a rival behind or beside sees the same sprites at its own distance, and the Studio shows each from the chase camera, the side and 20 m behind.
+The original's held stones show no level blink in any checked span of the footage: the black flicker the Magic Stones notes describe is the Magic Plus trigger.
+The remake keeps its steady level blink on stacks and adds the Magic Plus flicker on top.
+
+Deliberate deviations:
+
+| Original | Remake | Reason |
+| --- | --- | --- |
+| Grip-Up shows its rings for about 10.2 s | The rings last the remake's 7 s Grip-Up | Timings are gameplay |
+| Barrier pulses for as long as it stays up | The 4 s Barrier pulses from 0.9 s after it rises, about four pulses | Timings are gameplay |
+| The Mug helper is a 2D sprite seen from one angle | A small 3D model; each leg of its trip is drawn in the frame of the racer it visits | It has to read from any camera, and a victim far ahead must see it pass |
+| The Magic Plus stone flips black every 30 fps frame | It flickers 12.5 times a second | A 15 a second blink can line up with a 30 fps or 60 fps frame clock and vanish |
+| Receive is usually caught after the hit reaction | The catch plays without a crash | Receive cancels the hit in the simulation |
+
+Gameplay differences found, left unchanged for a later decision:
+
+- Barrier: the original has no timer. It stays up until it blocks one spell or the race ends (up to at least 31.7 s in footage), and the gauge refills only after it ends, so the next Barrier comes 15 to 16 s after the last one went down. The remake raises it for 4 s and recharges in 16 s.
+- Receive: in 5 of the 7 catches checked, Chubby still spun out or was launched, then got the stone. Only two catches of one spell showed no slowdown. The remake cancels the hit.
+- Grip-Up: the original lasts about 10.2 s and its gauge refills only after it ends, a cycle of about 19 to 20 s. The remake lasts 7 s and recharges in 11 s.
+- Magic Plus: the original fired every 12.75 s while a stone was held. The remake recharges in 20 s, as measured in all-CPU races.
+- Mug: the stolen stone reaches the thief 1.57 s after use in the original. The remake moves it at once and only hides it until the helper arrives.
 
 ## Goblin
 
