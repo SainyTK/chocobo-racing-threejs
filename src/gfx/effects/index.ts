@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { HANDLING, ITEMS, stackPositions, type Race, type Racer, type Item } from '../../../shared/game/index.ts';
+import { HANDLING, ITEMS, RACERS, stackPositions, type Race, type Racer, type Item } from '../../../shared/game/index.ts';
 import { TRACKS } from '../../../shared/track/index.ts';
 import { Particles, Shape, type Emit } from '../particles/particles.ts';
 import type { Character } from '../characters/index.ts';
@@ -14,6 +14,7 @@ import { makeHeldStack } from '../orbs/stack.ts';
 import { rand, floorY } from './util.ts';
 import { SpellFx } from './spells.ts';
 import { castInfo, crashInfo } from '../../race-events.ts';
+import { FLARE_COLOR, flareRain } from './megaflare.ts';
 
 const v = new THREE.Vector3(), v2 = new THREE.Vector3();
 /** Fireball scale per spell level. */
@@ -124,7 +125,7 @@ export class Effects {
       case 'pickup': { const kind = (Object.keys(ITEMS) as Item[]).find(k => e.text.startsWith(ITEMS[k].name)); this.sparkle(at, kind ? ITEMS[kind].color : '#ffffff', 20, 1.2); return; }
       case 'pad': case 'start': case 'spindash': s.boostColor.set(e.type === 'spindash' ? '#7fd8ff' : '#ffb347'); this.bursts.spawn('ring', ground, e.type === 'spindash' ? '#7fd8ff' : '#ffc45a', 3.5, .4); return;
       case 'ability': {
-        const id = text.includes('magic plus') ? 'magic' : p.abilityId, color = id === 'flap' ? '#ffffff' : id === 'grip' ? '#8cff7a' : id === 'charge' ? '#ff5a3a' : id === 'mug' ? '#ffd84a' : id === 'magic' ? '#c58bff' : '#ffc45a';
+        const id = text.includes('magic plus') ? 'magic' : p.abilityId, color = id === 'flap' ? '#ffffff' : id === 'grip' ? '#8cff7a' : id === 'charge' ? '#ff5a3a' : id === 'mug' ? '#ffd84a' : id === 'magic' ? '#c58bff' : id === 'megaflare' ? FLARE_COLOR : '#ffc45a';
         if (id === 'dash' || id === 'charge') s.boostColor.set(color);
         this.bursts.spawn('ring', ground, color, 4, .5);
         if (id === 'flap') this.spray(this.smoke, 18, () => ({ x: at.x + rand(), y: at.y + rand(), z: at.z + rand(), vx: rand() * 3, vy: rand(1, 4), vz: rand() * 3, life: rand(.9, 1.5), size: .35, color: '#fff6d8', alpha: .9, drag: 2, gravity: 1.5, shape: Shape.Shard }));
@@ -149,6 +150,7 @@ export class Effects {
     this.syncFireballs(dt, race.projectiles.map(o => ({ key: `f${o.id}`, x: o.px, y: floorY(race, o.px, o.pz) + 1.3, z: o.pz, level: o.level })));
     this.syncTraps(dt, race.traps.map(o => ({ key: `t${o.id}`, x: o.px, y: floorY(race, o.px, o.pz), z: o.pz, radius: o.radius })));
     this.updateRacers(dt, race, chars);
+    flareRain(this, race, dt);
     this.animate(dt, camera, race);
   }
   /** Advances effects with no race running. The studio previews one-shot effects, fireballs and traps through this. */
@@ -234,7 +236,7 @@ export class Effects {
         c.contacts.forEach(ct => { ct.getWorldPosition(v); for (let i = 0; i < 2; i++) this.glow.emit({ x: v.x, y: v.y + .05, z: v.z, vx: -fwd.x * rand(3, 7) + side.x * rand(-3, 3), vy: rand(1.5, 4.5), vz: -fwd.z * rand(3, 7) + side.z * rand(-3, 3), life: rand(.18, .35), size: .07, color: '#ffffff', endColor: col, gravity: 14, stretch: .035, shape: Shape.Shard }); if (Math.random() < .35) this.smoke.emit({ x: v.x, y: v.y + .2, z: v.z, vx: rand(), vy: rand(.3, 1), vz: rand(), life: rand(.6, 1), size: .5, endSize: 1.8, color: '#d9d4cc', alpha: .3, drag: 1.5, shape: Shape.Smoke }); });
       }
       // Off-road dust.
-      if (live && Math.abs(p.x) > width && Math.abs(p.speed) > 6 && p.flying <= 0 && p.character !== 4 && p.character !== 5 && Math.random() < .5) { const ct = c.contacts[Math.floor(Math.random() * c.contacts.length)]; if (ct) { ct.getWorldPosition(v); this.smoke.emit({ x: v.x, y: v.y + .1, z: v.z, vx: -fwd.x * 2 + rand(), vy: rand(.5, 1.6), vz: -fwd.z * 2 + rand(), life: rand(.6, 1.1), size: .5, endSize: 1.9, color: '#a8916a', alpha: .4, drag: 1.4, gravity: .2, shape: Shape.Smoke }); } }
+      if (live && Math.abs(p.x) > width && Math.abs(p.speed) > 6 && p.flying <= 0 && !RACERS[p.character].hovers && Math.random() < .5) { const ct = c.contacts[Math.floor(Math.random() * c.contacts.length)]; if (ct) { ct.getWorldPosition(v); this.smoke.emit({ x: v.x, y: v.y + .1, z: v.z, vx: -fwd.x * 2 + rand(), vy: rand(.5, 1.6), vz: -fwd.z * 2 + rand(), life: rand(.6, 1.1), size: .5, endSize: 1.9, color: '#a8916a', alpha: .4, drag: 1.4, gravity: .2, shape: Shape.Smoke }); } }
       // Stun stars circling the head.
       if (live && p.stun > 0) { c.head.getWorldPosition(v); const a = this.time * 7; for (let i = 0; i < 3; i++) { const b = a + i * 2.09; this.glow.emit({ x: v.x + Math.cos(b) * .9 * scale, y: v.y + .8 * scale, z: v.z + Math.sin(b) * .9 * scale, life: .18, size: .45 * scale, color: '#fff3a0', endColor: '#ffb340', shape: Shape.Star }); } }
       // Status auras.

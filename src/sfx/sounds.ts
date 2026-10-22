@@ -24,6 +24,8 @@ export const SOUNDS = {
   grip: arpeggio('square', [1600, 1600, 2000], .05, .05, .3),
   doomPass: [noise(.4, .8, 'bandpass', 300, 1200, 2), tone('sawtooth', 160, .4, .25, 0, 90)],
   select: [tone('triangle', 660, .08, .25), tone('triangle', 990, .12, .2, .06)],
+  /** Megaflare charging: a low roar under a rising whine while the warning shots fall. */
+  megaflare: [tone('sawtooth', 70, 1.3, .22, 0, 150), noise(1.3, .35, 'bandpass', 300, 2600, 1), tone('sine', 440, 1.5, .14, .1, 1760)],
 } satisfies Record<string, Sound>;
 
 const LEVEL = (level: number) => Math.max(1, Math.min(3, level));
@@ -44,7 +46,7 @@ export function castSound(kind: Item, level: number): Sound {
 }
 
 /** The sound of a spell landing on a racer, scaled by crash tier (1 spin-out, 2 crash, 3 big crash). */
-export function impactSound(kind: Item | 'charge' | 'doom', tier: number): Sound {
+export function impactSound(kind: Item | 'charge' | 'doom' | 'megaflare', tier: number): Sound {
   const t = LEVEL(tier), boom = (len: number, vol: number) => [tone('sine', 110, len, vol, 0, 32), noise(len * 1.2, vol * .8, 'lowpass', 2400, 120)];
   switch (kind) {
     case 'fire': return [...boom(.45 + t * .2, .5 + t * .12), noise(.3, .3, 'highpass', 1800, 600)];
@@ -52,6 +54,7 @@ export function impactSound(kind: Item | 'charge' | 'doom', tier: number): Sound
     case 'thunder': return [noise(.09, .8, 'highpass', 1200), noise(.5 + t * .25, .55, 'lowpass', 500, 90, 1, .05), tone('sawtooth', 60, .35 + t * .1, .14, .02, 45)];
     case 'ultima': return [...boom(.7 + t * .3, .7), { wave: 'sine', freq: 1568, length: .9, volume: .14, vibrato: { rate: 6, depth: 20 } }];
     case 'doom': return [...boom(1.1, .75), tone('sawtooth', 220, 1, .12, 0, 55)];
+    case 'megaflare': return [...boom(.9, .8), tone('sawtooth', 1200, .5, .12, 0, 200), noise(.7, .45, 'bandpass', 3200, 700, 1.5)];
     case 'mini': return [tone('square', 640, .14, .22, 0, 150), { wave: 'sine', freq: 420, to: 900, length: .35, volume: .3, at: .12, vibrato: { rate: 16, depth: 50 } }];
     default: return [...boom(.3 + t * .1, .45), ...SOUNDS.spin];
   }

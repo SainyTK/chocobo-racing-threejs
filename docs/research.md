@@ -26,7 +26,7 @@ These describe this repository's behavior, not a claim of exact original code.
 | --- | --- | --- |
 | Driving | World position, heading, velocity, a lateral grip limit of about 4 g per racer, brake-tap sharp turns, short drifts with a 1.9 s over-drift spin, boost kicks that bleed off, wall hits that cost speed by impact, mass-based bumps, falls and recovery | Hand-tuned arcade solver, no bit-for-bit physics match |
 | Race validation | Twelve sequential gates per lap, reverse-crossing rejection, split times, finish ordering | Newly authored track layouts and gate locations |
-| Racers | Eight distinct handmade low-poly character/vehicle models, with driving stats balanced against the original's top speeds (84 to 88 MPH), and hit, cast, overtake, win and lose reactions | No ripped meshes, original animations or textures; simplified silhouettes |
+| Racers | Eight distinct handmade low-poly character/vehicle models and a skinned, textured Bahamut who flies on his own wings, with driving stats balanced against the original's top speeds (84 to 88 MPH), and hit, cast, overtake, win and lose reactions | No ripped meshes, original animations or textures; simplified silhouettes |
 | Inventory | Three stones trailing behind the racer, LIFO use, matching stones merged into one stack up to level three with every stone still taking a place, theft by driving into a trailing stack | Numeric timing and some defensive interactions are interpretations |
 | Magic | All eight main spell families, per-course stone sets from the original's Story chapters in fixed-colour lanes, position-weighted "?" stones, targeting by race progress, the original's three hit tiers with a 2.5 s safe window, single-target Mini in 25% steps, Doom transfer, and CPU casting habits per character | Cid's Test Track has Moogle Forest's stones, where the original's first course had none. Durations are hand-tuned; no original effect assets |
 | Abilities | Dash, Flap, Grip-Up, Mug, Magic Plus, Barrier, Receive and Charge with the original's recharge times; each racer defaults to its own, and the player can choose another | Magic Plus recharges in 20 s and Charge in 14 s, both measured in all-CPU races. Dash lasts 2 s and Charge 1 s, shorter than the original, because boosts are worth more with this grip model. Barrier is a timed 4 s shield |
@@ -38,7 +38,7 @@ These describe this repository's behavior, not a claim of exact original code.
 | Online | Six-player private rooms with AI fill, authoritative simulation, recovery and rematches | Browser addition, not emulation of the original multiplayer |
 | Presentation | Gold title, blue beveled menus, animated portrait order, MPH, stone slots, ability gauge, minimap, one callout at a time, a finish sequence with slow motion, orbit and podium, and synthesized engines, spell sounds and character barks | Newly authored interface, fonts, synthesized music, sounds and scenery |
 
-Not implemented: Story, Relay, secret characters, bonus courses, custom stat editing, original cutscenes, original soundtrack, exact maps, split-screen, public matchmaking or ranked online leaderboards. The in-game About screen states these limits.
+Not implemented: Story, Relay, secret characters other than Bahamut, bonus courses, custom stat editing, original cutscenes, original soundtrack, exact maps, split-screen, public matchmaking or ranked online leaderboards. The in-game About screen states these limits.
 
 ## Technology choice
 

@@ -7,6 +7,9 @@ import { CATEGORIES, type StudioElement } from './types.ts';
 import { Viewport, defaultView, type ViewState } from './viewport.ts';
 import { StudioMusicPlayer } from './music-player.ts';
 import { musicForVariant } from './music/review.ts';
+import { loadCharacterModels } from '../src/gfx/characters/index.ts';
+
+await loadCharacterModels();
 
 const LETTERS = 'ABCD';
 const $ = <T extends HTMLElement>(sel: string, root: ParentNode = document) => root.querySelector<T>(sel)!;

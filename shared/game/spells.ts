@@ -19,6 +19,11 @@ export const BARRIER_SECONDS = 4;
 /** Seconds of the shield a cast Reflect stone raises. A held Reflect stone protects on its own. */
 export const REFLECT_SECONDS = 5;
 
+/**
+ * Megaflare throws every rival into the air like a heavy crash (`tier` picks the reaction), but stalls them for the
+ * shorter crash time: with the heavy crash's 2.4 s, Bahamut won over a third of all-CPU races even with a 100 s recharge.
+ */
+export const MEGAFLARE = { tier: 3, stun: CRASH.crash } as const;
 /** Hit tier of a crashing spell: 1 spin-out, 2 crash, 3 heavy crash. Blizzard sheets, Thunder, Ultima and Charge spin; every level 3 spell is heavy. */
 export function crashTier(kind: Item | 'charge', level: number): 1 | 2 | 3 {
   if (level >= 3) return 3;

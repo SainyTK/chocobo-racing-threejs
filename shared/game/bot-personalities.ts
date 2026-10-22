@@ -19,4 +19,5 @@ export const BOT_MAGIC: BotMagic[] = [
   { hold: 'quick', favourite: 'mini' }, // White Mage
   { hold: 'hoard', favourite: 'ice' }, // Chubby Chocobo
   { hold: 'specialist', favourite: 'fire' }, // Behemoth
+  { hold: 'build', favourite: 'fire' }, // Bahamut: no source; builds Fire, the nearest thing to his Flare
 ];

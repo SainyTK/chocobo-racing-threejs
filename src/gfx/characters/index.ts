@@ -11,11 +11,13 @@ import { blackMage } from './racers/black-mage.ts';
 import { whiteMage } from './racers/white-mage.ts';
 import { chubby } from './racers/chubby.ts';
 import { behemoth } from './racers/behemoth.ts';
+import { bahamut } from './racers/bahamut.ts';
 
 export type { AnimState, Character } from './types.ts';
 export { POSE_SECONDS, type Pose } from './poses.ts';
+export { loadCharacterModels } from './models.ts';
 
-const BUILDERS: ((c: RacerProfile) => Build)[] = [chocobo, mog, golem, goblin, blackMage, whiteMage, chubby, behemoth];
+const BUILDERS: ((c: RacerProfile) => Build)[] = [chocobo, mog, golem, goblin, blackMage, whiteMage, chubby, behemoth, bahamut];
 
 export function createCharacter(index: number): Character {
   const c = RACERS[index], b = BUILDERS[index](c); b.r.finish(b.outline);
@@ -40,7 +42,7 @@ export function createCharacter(index: number): Character {
       if (s.pose) applyPose(b.r.model, b.head, s.pose);
     },
     dispose() {
-      b.r.root.traverse(o => { if (o instanceof THREE.Mesh) { o.geometry.dispose(); for (const m of Array.isArray(o.material) ? o.material : [o.material]) m.dispose(); } });
+      b.r.root.traverse(o => { if (o instanceof THREE.Mesh) { if (!o.geometry.userData.shared) o.geometry.dispose(); for (const m of Array.isArray(o.material) ? o.material : [o.material]) m.dispose(); } });
     },
   };
 }

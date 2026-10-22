@@ -9,7 +9,7 @@ import { HANDLING } from '../handling.ts';
 import { ITEMS, drawStone, inBackHalf } from '../items.ts';
 import { addStone, canAddStone, levelUpLatest } from '../inventory.ts';
 import { BARRIER_SECONDS, DOOM, STONE_RESPAWN } from '../spells.ts';
-import { aboveGround, crash, hit } from '../combat.ts';
+import { aboveGround, crash, hit, megaflare } from '../combat.ts';
 import { recover, useAbility, useItem } from '../actions.ts';
 import { event } from '../events.ts';
 import { stepFinished } from './finished.ts';
@@ -27,6 +27,7 @@ export function stepRacer(r: Race, p: Racer, dt: number) {
   const input = p.input;
   for (const key of ['boost', 'shield', 'barrier', 'stun', 'invincible', 'flying', 'gripUp', 'charging', 'mini', 'contactCooldown', 'wallCooldown', 'pickupCooldown'] as const) p[key] = Math.max(0, p[key] - dt);
   if (p.doom > 0) { p.doom = Math.max(0, p.doom - dt); if (p.doom <= 0) crash(r, p, DOOM.stun, 'Doom!'); }
+  if (p.flare > 0) { p.flare = Math.max(0, p.flare - dt); if (p.flare <= 0) megaflare(r, p); }
   p.ability = Math.min(100, p.ability + dt * 100 / ABILITIES[p.abilityId].recharge);
   if (p.abilityId === 'magic' && p.ability >= 100 && levelUpLatest(p)) { p.ability = 0; event(r, p, 'ability', 'Magic Plus!'); }
   if (p.abilityId === 'barrier' && p.ability >= 100) { p.ability = 0; p.barrier = BARRIER_SECONDS; event(r, p, 'ability', 'Barrier!'); }

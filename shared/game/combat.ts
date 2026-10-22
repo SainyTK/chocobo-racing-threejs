@@ -1,12 +1,14 @@
 import { spellName, type Item } from './items.ts';
 import { addStone, takeStack } from './inventory.ts';
 import { event } from './events.ts';
-import { DOOM, MINI_SECONDS, SAFE_WINDOW, crashSeconds } from './spells.ts';
+import { DOOM, MEGAFLARE, MINI_SECONDS, SAFE_WINDOW, crashSeconds } from './spells.ts';
+import { RACERS } from './racers.ts';
+import { activeRivals } from './targeting.ts';
 import type { Race, Racer } from './types.ts';
 
 export function crash(r: Race, p: Racer, seconds: number, text: string) { p.stun = Math.max(p.stun, seconds); p.vx *= .25; p.vz *= .25; p.drifting = false; p.drift = 0; p.invincible = Math.max(p.invincible, seconds + SAFE_WINDOW); event(r, p, 'crash', text); }
 
-export const aboveGround = (p: Racer) => p.flying > 0 || p.character === 4 || p.character === 5;
+export const aboveGround = (p: Racer) => p.flying > 0 || RACERS[p.character].hovers;
 /** Reflect returns level 1 and 2 spells; level 3 spells, Ice and Ultima are only blocked. */
 const reflectable = (kind: Item, level: number) => level < 3 && kind !== 'ice' && kind !== 'ultima';
 export function hit(r: Race, target: Racer, source: Racer, kind: Item | 'charge' = 'fire', level = 1, reflected = false) {
@@ -27,4 +29,15 @@ export function hit(r: Race, target: Racer, source: Racer, kind: Item | 'charge'
   if (kind === 'ice' && aboveGround(target) && level < 3) return;
   crash(r, target, crashSeconds(kind, level), `${source.name}: ${kind === 'charge' ? 'Charge' : spellName(kind, level)}!`);
   event(r, source, 'hit', `${source.name} hit ${target.name}`, target.id);
+}
+/**
+ * Megaflare: every rival is thrown into the air and crashes. Barrier, Reflect and Receive cannot stop it,
+ * as in the original; only the post-crash safe window and a fall protect a racer.
+ */
+export function megaflare(r: Race, source: Racer) {
+  for (const target of activeRivals(r, source)) {
+    if (target.invincible > 0 || target.falling > 0) continue;
+    crash(r, target, MEGAFLARE.stun, `${source.name}: Megaflare!`);
+    event(r, source, 'hit', `${source.name} hit ${target.name}`, target.id);
+  }
 }

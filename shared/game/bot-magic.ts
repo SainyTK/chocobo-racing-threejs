@@ -72,6 +72,6 @@ export function botMagic(r: Race, p: Racer) {
   // A full leader with no use for its latest stack spends it to make room.
   const item = !!top && !p.lastItem && decide && !holding(r, p, top.kind, top.level) && (worthCasting(r, p, top) || heldStones(p) >= MAX_STONES && !racerAhead(r, p));
   const id = p.abilityId, ready = p.ability >= 100 && !p.lastAbility;
-  const ability = ready && (id === 'dash' || id === 'charge' ? p.boost <= 0 && boostHolds(r, p, ABILITY_SECONDS[id]) : id === 'mug' ? canAddStone(p) : id === 'flap' || id === 'grip');
+  const ability = ready && (id === 'dash' || id === 'charge' ? p.boost <= 0 && boostHolds(r, p, ABILITY_SECONDS[id]) : id === 'mug' ? canAddStone(p) : id === 'megaflare' ? activeRivals(r, p).some(q => q.invincible <= 0) : id === 'flap' || id === 'grip');
   return { item, ability };
 }
