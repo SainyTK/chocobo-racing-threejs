@@ -11,7 +11,7 @@ import numpy as np
 from bird import paint as bird
 from pipeline.atlas import Painter, band, fill, hex_rgb, mix
 
-CREAM, CREAM_LIGHT, CREAM_SHADE, CREAM_TIP = "#f8f6ea", "#fffefa", "#e3e0d3", "#f1eee2"
+CREAM, CREAM_LIGHT, CREAM_SHADE, CREAM_TIP = "#fafbf5", "#ffffff", "#e3e4d8", "#f3f4ec"
 ORANGE, ORANGE_LIGHT, ORANGE_DARK, MOUTH = "#f5821c", "#ffa245", "#c65a10", "#b0262a"
 EYE = "#2b1d16"
 PINK, PINK_LIGHT, PINK_DARK = "#d63c8e", "#f27fc2", "#8e1f5e"
