@@ -60,7 +60,9 @@ export function pointAt(id: TrackId, s: number, offset = 0): TrackPoint {
   const dx = b.x - a.x, dz = b.z - a.z, length = Math.hypot(dx, dz), nx = dz / length, nz = -dx / length;
   const before = table[mod(i - 3, N)], after = table[(i + 4) % N];
   const y1 = Math.atan2(a.x - before.x, a.z - before.z), y2 = Math.atan2(after.x - b.x, after.z - b.z);
-  return { x: a.x + dx * t + nx * offset, y: a.y + (b.y - a.y) * t, z: a.z + dz * t + nz * offset, nx, nz, yaw: Math.atan2(dx, dz), curve: angleDelta(y2, y1) / Math.max(.01, Math.hypot(after.x - before.x, after.z - before.z)) };
+  // Curvature: the turn between the two chords over the distance between their midpoints, where each heading holds.
+  const span = Math.hypot(b.x + after.x - before.x - a.x, b.z + after.z - before.z - a.z) / 2;
+  return { x: a.x + dx * t + nx * offset, y: a.y + (b.y - a.y) * t, z: a.z + dz * t + nz * offset, nx, nz, yaw: Math.atan2(dx, dz), curve: angleDelta(y2, y1) / Math.max(.01, span) };
 }
 export function projectOnTrack(id: TrackId, x: number, z: number, hint?: number): Projection {
   const table = trackTable(id), center = hint === undefined ? 0 : indexAt(id, hint), span = hint === undefined ? N : 55;

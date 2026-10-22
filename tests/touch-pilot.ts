@@ -84,7 +84,7 @@ export async function driveLapByTouch(context: BrowserContext, page: Page, timeo
     const delta = ((Math.atan2(target.x - p.px, target.z - p.pz) - p.yaw + Math.PI) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2) - Math.PI;
     const curve = Math.max(...[12, 25, 40].map(v => Math.abs(point(p.s + v).curve)));
     const steer = Math.max(-1, Math.min(1, delta * 2.1));
-    const pedal = p.speed > Math.max(13, Math.min(34, Math.sqrt(14 / Math.max(.001, curve))) + 1) ? 'brake' : curve > .02 && p.speed > 18 && Math.abs(steer) > .45 ? 'drift' : 'drive';
+    const pedal = p.speed > Math.max(13, Math.min(34, Math.sqrt(24.5 / Math.max(.001, curve))) + 1) ? 'brake' : curve > .02 && p.speed > 18 && Math.abs(steer) > .45 ? 'drift' : 'drive';
     // Positive steer turns left, so the thumb slides left. The offset includes the deadzone so small corrections still turn.
     await touch.move([steerAt(-Math.sign(steer) * (.15 + Math.abs(steer) * .85)), pedals[pedal]]);
     used[pedal]++;

@@ -51,7 +51,7 @@ function chase(id: TrackId, course: Course, root: THREE.Group): Pick<Instance, '
     s = t * CRUISE - 12;
     // Weave gently across the road, as a racer taking lines through corners would.
     const off = Math.sin(t * .35) * TRACKS[id].width * .35, p = pointAt(id, s, off), q = pointAt(id, s + 1.5, Math.sin((t + .05) * .35) * TRACKS[id].width * .35);
-    const yaw = Math.atan2(q.x - p.x, q.z - p.z); steer = THREE.MathUtils.clamp(p.curve * 30, -1, 1);
+    const yaw = Math.atan2(q.x - p.x, q.z - p.z); steer = THREE.MathUtils.clamp(p.curve * 17, -1, 1);
     rider.root.position.set(p.x, p.y, p.z); rider.root.rotation.y = yaw; return yaw;
   };
   return {

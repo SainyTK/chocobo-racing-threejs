@@ -8,12 +8,6 @@ import type { Race, Racer } from './types.ts';
 
 const PLAN_BRAKE = 34, PLAN_AHEAD = 96, PLAN_STEP = 6;
 
-/**
- * `pointAt().curve` reads about 4/7 of the true curvature: it divides the turn between two chord midpoints by the longer span
- * between the chords' far ends. CPU plans scale it back up, so they brake for bends as tight as they really are.
- */
-const TRUE_CURVE = 7 / 4;
-
 /** Fastest speed that holds a bend of `curve`, by the lateral acceleration and by the yaw rate `turn` (rad/s at walking pace,
  * falling with speed as in steerRate). */
 function holdSpeed(curve: number, lateral: number, turn: number) {
@@ -21,7 +15,7 @@ function holdSpeed(curve: number, lateral: number, turn: number) {
   const steered = (Math.sqrt(1 + 4 * turn / (115 * curve)) - 1) * 115 / 2;
   return Math.sqrt(Math.min(lateral / curve, steered * steered));
 }
-const bend = (r: Race, p: Racer, d: number) => Math.max(1e-4, Math.abs(pointAt(r.track, p.s + d).curve) * TRUE_CURVE);
+const bend = (r: Race, p: Racer, d: number) => Math.max(1e-4, Math.abs(pointAt(r.track, p.s + d).curve));
 
 /** Fastest speed now that still lets the racer brake into every corner ahead. */
 export function cornerSpeed(r: Race, p: Racer, lateral: number, turn: number) {

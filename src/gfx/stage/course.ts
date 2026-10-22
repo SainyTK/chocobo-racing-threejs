@@ -132,7 +132,7 @@ function signs(kit: Kit, art: CourseArt) {
   const { board, arrow, post } = art.signs;
   for (let s = 60; s < kit.len - 30; s += 6) {
     const p = kit.at(s + 18), q = kit.at(s + 34), turn = (p.curve + q.curve) / 2;
-    if (Math.abs(turn) < .012) continue;
+    if (Math.abs(turn) < .021) continue;
     const dir = turn > 0 ? 1 : -1, sign = kit.prop(`chevron${dir}`, () => { const g = chevronSign(board, arrow, post); if (dir < 0) g.layers.forEach(list => list.forEach(x => x.rotateY(Math.PI))); return g; });
     const off = -dir * (kit.w + (kit.def.wall ? 1.6 : 2.6));
     kit.onTrack(sign, s, off, { yaw: Math.PI + (dir < 0 ? Math.PI : 0), onGround: !kit.def.cliff });

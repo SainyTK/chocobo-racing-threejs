@@ -173,7 +173,7 @@ function walls(kit: Kit) {
   // Red and white rumble curbs, white edge lines on the straights.
   kit.extrude([[-1.25, .05], [-1.05, .1], [.05, .12], [.3, .05], [.65, .05]], {
     mirror: true, step: 1.6, paint: (s, k, i, out) => {
-      const bend = Math.abs(kit.at(s).curve) > .006 || Math.abs(kit.at(s + 12).curve) > .006 || Math.abs(kit.at(s - 12).curve) > .006;
+      const bend = Math.abs(kit.at(s).curve) > .0105 || Math.abs(kit.at(s + 12).curve) > .0105 || Math.abs(kit.at(s - 12).curve) > .0105;
       out.set(k === 3 ? '#62656d' : bend ? (i % 2 ? C.red : C.white) : k === 1 ? C.white : '#e8e6e0');
     },
   });
@@ -258,7 +258,7 @@ export const test: CourseArt = {
     for (let s = 170; s < kit.len - 40; s += r.range(70, 110)) { const p = kit.at(s, -(w + 3.4)); if (kit.road(p.x, p.z).d < w + 2.5) continue; kit.onTrack(kit.prop('board', () => billboard(board % 5), board % 5), s, -(w + 3.4), { faceRoad: true, onGround: true }); board++; }
     for (let s = 150; s < kit.len; s += 125) for (const side of [-1, 1]) { const off = side * (w + 6.5), p = kit.at(s + side * 30, off); if (kit.road(p.x, p.z).d < w + 4) continue; kit.onTrack(kit.prop('light', lightTower), s + side * 30, off, { faceRoad: true, onGround: true }); }
     for (let s = 0; s < kit.len; s += 7) {
-      const c = kit.at(s).curve; if (Math.abs(c) < .012) continue;
+      const c = kit.at(s).curve; if (Math.abs(c) < .021) continue;
       const off = -Math.sign(c) * (w + 2.3 + r.range(0, .6)), p = kit.at(s, off); if (kit.road(p.x, p.z).d < w + 1.6) continue;
       kit.onTrack(kit.prop('tyres', rr => tyreStack(rr() < .5 ? ['#2a2a30', '#2a2a30', C.red] : ['#2a2a30', C.white, '#2a2a30'], 3), r.int(0, 1)), s, off, { onGround: true, yaw: r() * 6 });
       kit.onTrack(kit.prop('tyres', rr => tyreStack(['#2a2a30', '#2a2a30', C.red], 3), 0), s + 1, off - Math.sign(off) * .9, { onGround: true });
