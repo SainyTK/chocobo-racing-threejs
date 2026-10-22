@@ -20,8 +20,8 @@ export function cloud(): Build {
   const head = m.bone('head'), weights: Record<ClipName, number> = { Idle: 0, Ride: 0, Cast: 0, Win: 0, Lose: 0 };
   // The fork turns about its own raked axis, which runs from the front axle up to the steering head.
   const fork = driven(m, 'fork', [0, 1.04, -.44], 'y'), front = driven(m, 'wheel_front', [1, 0, 0], 'x'), rear = driven(m, 'wheel_rear', [1, 0, 0], 'x');
-  const exhausts = [anchor(m, 'bike', [.41, .76, -1.62]), anchor(m, 'bike', [-.41, .76, -1.62])];
-  const contacts = [anchor(m, 'wheel_rear', [.2, .04, -1.3]), anchor(m, 'wheel_rear', [-.2, .04, -1.3])];
+  const exhausts = [anchor(m, 'bike', [.41, .78, -2.22]), anchor(m, 'bike', [-.41, .78, -2.22])];
+  const contacts = [anchor(m, 'wheel_rear', [.2, .04, -1.9]), anchor(m, 'wheel_rear', [-.2, .04, -1.9])];
   let fresh = true;
   return { r, head, height: 3.6, wheels: [{ j: front.j, r: FRONT_RADIUS }, { j: rear.j, r: REAR_RADIUS }], steer: [fork.j], exhausts, contacts, outline: m.outline, update(s, k) {
     const pose = s.pose, ended = pose?.kind === 'win' || pose?.kind === 'lose' ? pose : null;

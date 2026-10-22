@@ -2,8 +2,8 @@
 
 A super-deformed Cloud riding the Hardy-Daytona: a big head with spiky blond hair, a navy sleeveless SOLDIER top,
 one round pauldron on his left shoulder, bare upper arms, brown gauntlets and boots, and the Buster Sword across his
-back from above the right shoulder down past the left hip. The bike is a long, low, dark olive and black cruiser with
-fat wheels, a tall ribbed front cowl and a red taillight on the rear fender.
+back from above the right shoulder down past the left hip. The bike is a long, low, dark olive and black cruiser,
+about one and a half times his height in length as in the original, with fat wheels, a tall ribbed front cowl and a red taillight on the rear fender.
 
 One armature carries rider and bike. The wheels and the fork have their own bones, which the game turns in code;
 the clips never key them. The rest pose is the riding pose, so the hands sit on the grips without help.
@@ -16,13 +16,13 @@ import math
 
 from mathutils import Vector
 
-from pipeline.geometry import Part, claw, curve, ellipse, ellipsoid, loft, mirror, superellipse
+from pipeline.geometry import Part, curve, ellipse, ellipsoid, loft, mirror, superellipse
 from pipeline.scene import BoneSpec
 from pipeline.weights import along, rigid
 
-FRONT_AXLE, FRONT_RADIUS = Vector((0, -1.42, 0.46)), 0.46
-REAR_AXLE, REAR_RADIUS = Vector((0, 1.24, 0.5)), 0.5
-STEER_TOP = Vector((0, -0.98, 1.5))
+FRONT_AXLE, FRONT_RADIUS = Vector((0, -2.02, 0.46)), 0.46
+REAR_AXLE, REAR_RADIUS = Vector((0, 1.84, 0.5)), 0.5
+STEER_TOP = Vector((0, -1.58, 1.5))
 """Top of the steering axis; the fork bone runs from here down to the front axle."""
 HEAD_CENTRE, HEAD_RADII = Vector((0, 0.1, 2.44)), (0.45, 0.41, 0.42)
 """Centre of the skull and its radii (side, front-back, up)."""
@@ -125,34 +125,41 @@ def skull() -> Part:
     return rigid(head, "head")
 
 
-SPIKES = [
-    # (azimuth, elevation, direction, length, base radius, curl). From behind the PS1 model is a smooth dome with a tall
-    # crown spike leaning to his right, a few top spikes and side spikes at ear level, so the back stays smooth.
-    (180, 70, (-0.25, 0.3, 1.0), 0.72, 0.21, (0, 1, 0.2)),
-    (40, 62, (0.7, -0.05, 1.0), 0.42, 0.18, (0.3, 1, 0)),
-    (-40, 62, (-0.1, 0.05, 1.0), 0.4, 0.18, (0.5, 1, 0)),
-    (95, 20, (1.0, 0.25, 0.35), 0.5, 0.17, (0, 0.3, 1)),
-    (-95, 20, (-1.0, 0.25, 0.35), 0.5, 0.17, (0, 0.3, 1)),
-    (-120, 45, (-0.85, 0.3, 0.7), 0.34, 0.17, (0, 0.3, 1)),
-    (120, 45, (0.8, 0.3, 0.7), 0.3, 0.17, (0, 0.3, 1)),
-    # Fringe: thick spikes hanging over the forehead, and side bangs framing the face.
-    (0, 48, (0.0, -0.55, -1.0), 0.3, 0.13, (0, -1, 0)),
-    (26, 50, (0.35, -0.5, -1.0), 0.28, 0.12, (0, -1, 0)),
-    (-24, 50, (-0.3, -0.5, -1.0), 0.3, 0.12, (0, -1, 0)),
-    (56, 26, (0.3, -0.45, -1.0), 0.42, 0.12, (0.4, -1, 0)),
-    (-56, 26, (-0.3, -0.45, -1.0), 0.44, 0.12, (-0.4, -1, 0)),
-    # Front tufts lifting up and back over the forehead.
-    (10, 72, (0.15, -0.6, 0.8), 0.42, 0.15, (0, 1, 0.5)),
-    (-16, 70, (-0.25, -0.6, 0.75), 0.38, 0.14, (0, 1, 0.5)),
+LOCKS = [
+    # (azimuth, elevation, direction, length, base radius, curl). The PS1 hair is a swept mass, not a crown: a few big
+    # blunt locks sweep up and back, one dominant lock rising to his right (upper right from behind), and bangs fall
+    # over the forehead in front.
+    (-150, 58, (-0.55, 0.5, 1.0), 0.95, 0.27, (0, 1, 0.3)),
+    (165, 45, (0.15, 1.0, 0.35), 0.55, 0.26, (0, 0, -1)),
+    (-110, 30, (-0.95, 0.6, 0.45), 0.62, 0.24, (0, 1, 0.2)),
+    (115, 30, (0.9, 0.65, 0.35), 0.54, 0.23, (0, 1, 0)),
+    (15, 70, (0.25, 0.9, 0.45), 0.45, 0.22, (0, 0, -1)),
+    (40, 55, (0.55, 0.45, 0.8), 0.4, 0.21, (0, 1, 0)),
+    # Bangs over the forehead and locks framing the face.
+    (0, 46, (0.0, -0.5, -1.0), 0.36, 0.15, (0, -1, 0)),
+    (28, 48, (0.35, -0.45, -1.0), 0.34, 0.14, (0, -1, 0)),
+    (-26, 48, (-0.3, -0.45, -1.0), 0.38, 0.14, (0, -1, 0)),
+    (58, 26, (0.3, -0.4, -1.0), 0.44, 0.14, (0.4, -1, 0)),
+    (-58, 26, (-0.3, -0.4, -1.0), 0.46, 0.14, (-0.4, -1, 0)),
 ]
+
+
+def lock(name: str, base: Vector, direction: Vector, length: float, radius: float, bend: Vector) -> Part:
+    """One blunt lock of hair: a curved, slightly flattened tube that narrows to a rounded tip, not a needle."""
+    d, c = direction.normalized(), bend.normalized()
+    pts = [base, base + d * length * 0.5 + c * length * 0.08, base + d * length * 0.92 + c * length * 0.3]
+    across = d.cross(c) if d.cross(c).length > 1e-3 else Vector((1, 0, 0))
+
+    def width(t: float) -> float:
+        return radius * (1 - 0.72 * t**1.2)
+
+    return loft(name, "hair", pts, ellipse(width, lambda t: width(t) * 0.72), 8, 6, across)
 
 
 def hair() -> list[Part]:
     out = []
-    for i, (az, el, d, length, radius, bend) in enumerate(SPIKES):
-        base = on_head(az, el, 0.12)
-        spike = claw(f"spike{i}", "hair", base, d, length * 0.68 + 0.06, radius * 1.15, bend, around=7)
-        out.append(rigid(spike, "head"))
+    for i, (az, el, d, length, radius, bend) in enumerate(LOCKS):
+        out.append(rigid(lock(f"lock{i}", on_head(az, el, 0.12), Vector(d), length * 0.85, radius, Vector(bend)), "head"))
     return out
 
 
@@ -255,10 +262,11 @@ def sword() -> list[Part]:
         "blade",
         "blade",
         [g + d * 0.04, g + d * BLADE],
-        superellipse(width, lambda t: 0.028, 6, lambda t: 0.21 - width(t)),
+        superellipse(width, lambda t: 0.055, 5, lambda t: 0.21 - width(t)),
         10,
         8,
-        (0, 1, 0),
+        # The flat turns a little toward his left, so the broad blade still reads from the side.
+        (0.6, 1, 0),
     )
     guard = loft("guard", "hilt", [g - d * 0.02, g + d * 0.06], superellipse(lambda t: 0.25, lambda t: 0.06, 5), 10, 1, (0, 1, 0))
     grip = loft("grip", "grip", [g - d * 0.02, g - d * 0.3], ellipse(lambda t: 0.042, lambda t: 0.042), 8, 6, (0, 1, 0))
@@ -321,17 +329,17 @@ def bike() -> list[Part]:
     cowl = loft(
         "cowl",
         "cowl",
-        [(0, -1.32, 1.06), (0, -1.2, 1.5), (0, -1.06, 1.94)],
+        [(0, -1.92, 1.06), (0, -1.8, 1.5), (0, -1.66, 1.94)],
         superellipse(lambda t: curve([(0, 0.22), (1, 0.3)], t), lambda t: curve([(0, 0.18), (0.5, 0.2), (1, 0.16)], t), 3.5),
         12,
         10,
         (0, -1, 0),
     )
-    tank = ellipsoid("tank", "tank", (0, -0.5, 1.22), (0.56, 0.3, 0.22), axis=(0, -1, 0.22), around=16, along=10)
+    tank = ellipsoid("tank", "tank", (0, -0.78, 1.22), (0.82, 0.3, 0.22), axis=(0, -1, 0.16), around=16, along=10)
     seat = loft(
         "seat",
         "seat",
-        [(0, -0.08, 1.12), (0, 0.4, 1.1), (0, 0.9, 1.14), (0, 1.2, 1.2)],
+        [(0, -0.08, 1.12), (0, 0.5, 1.1), (0, 1.25, 1.14), (0, 1.8, 1.2)],
         superellipse(lambda t: curve([(0, 0.2), (0.5, 0.25), (1, 0.15)], t), lambda t: 0.09, 3),
         12,
         10,
@@ -340,27 +348,27 @@ def bike() -> list[Part]:
     engine = loft(
         "engine",
         "engine",
-        [(0, -0.82, 0.8), (0, -0.2, 0.76), (0, 0.45, 0.84)],
+        [(0, -1.1, 0.8), (0, -0.3, 0.74), (0, 0.6, 0.84)],
         superellipse(lambda t: curve([(0, 0.26), (0.4, 0.32), (1, 0.26)], t), lambda t: curve([(0, 0.26), (0.5, 0.34), (1, 0.28)], t), 3),
         14,
         10,
         (0, 0, 1),
     )
-    light = loft("taillight", "light", [(0, 1.58, 1.08), (0, 1.66, 1.02)], superellipse(lambda t: 0.16, lambda t: 0.05, 4), 8, 1, (0, 0, 1))
+    light = loft("taillight", "light", [(0, 2.18, 1.08), (0, 2.26, 1.02)], superellipse(lambda t: 0.16, lambda t: 0.05, 4), 8, 1, (0, 0, 1))
     light.outline = False
     parts += [rigid(cowl, "bike"), rigid(tank, "bike"), rigid(seat, "bike"), rigid(engine, "bike"), rigid(light, "bike")]
     parts += [
         tube("bars", "metal", [(0.6, -0.54, 1.62), (0.3, -0.64, 1.67), (0, -0.7, 1.66), (-0.3, -0.64, 1.67), (-0.6, -0.54, 1.62)], 0.035, "bike", 6, 12),
-        tube("riser", "metal", [(0, -0.98, 1.5), (0, -0.82, 1.62), (0, -0.7, 1.66)], 0.05, "bike", 6, 4),
+        tube("riser", "metal", [(0, -1.58, 1.5), (0, -1.1, 1.66), (0, -0.7, 1.66)], 0.05, "bike", 6, 6),
         # The frame's thick down tube ties the steering head to the engine, so the side view reads as one machine.
-        tube("downtube", "metal", [(0, -1.02, 1.5), (0, -0.98, 1.1), (0, -0.82, 0.78)], 0.11, "bike", 10, 6, (0, -1, 0)),
+        tube("downtube", "metal", [(0, -1.62, 1.5), (0, -1.5, 1.1), (0, -1.12, 0.78)], 0.11, "bike", 10, 6, (0, -1, 0)),
     ]
     left = [
-        tube("fork_leg", "chrome", [(0.16, -1.0, 1.42), (0.18, -1.42, 0.46)], 0.05, "fork", 8, 4, (0, -1, 0)),
-        tube("swingarm", "metal", [(0.2, 0.2, 0.68), (0.28, 0.8, 0.58), (0.3, 1.24, 0.5)], 0.055, "bike", 8, 6),
-        tube("exhaust", "metal", [(0.24, -0.5, 0.56), (0.32, 0.0, 0.5), (0.38, 0.6, 0.6), (0.39, 1.0, 0.68)], 0.06, "bike", 8, 10),
-        tube("muffler", "metal", [(0.39, 0.95, 0.67), (0.41, 1.58, 0.76)], 0.1, "bike", 10, 4, (0, 0, 1)),
-        rigid(ellipsoid("side_cover", "panel", (0.34, 0.95, 0.92), (0.4, 0.13, 0.26), axis=(0, 1, 0.15), around=12, along=8), "bike"),
+        tube("fork_leg", "chrome", [(0.16, -1.6, 1.42), (0.18, -2.02, 0.46)], 0.05, "fork", 8, 4, (0, -1, 0)),
+        tube("swingarm", "metal", [(0.2, 0.4, 0.68), (0.28, 1.2, 0.58), (0.3, 1.84, 0.5)], 0.055, "bike", 8, 6),
+        tube("exhaust", "metal", [(0.24, -0.7, 0.56), (0.32, 0.0, 0.5), (0.38, 0.9, 0.6), (0.39, 1.4, 0.68)], 0.06, "bike", 8, 10),
+        tube("muffler", "metal", [(0.39, 1.35, 0.67), (0.41, 2.18, 0.78)], 0.1, "bike", 10, 4, (0, 0, 1)),
+        rigid(ellipsoid("side_cover", "panel", (0.34, 1.4, 0.92), (0.55, 0.13, 0.26), axis=(0, 1, 0.15), around=12, along=8), "bike"),
         tube("peg", "metal", [(0.2, -0.08, 0.52), (0.52, -0.08, 0.52)], 0.04, "bike", 6, 2, (0, -1, 0)),
     ]
     return parts + left + [mirror(p, p.name + ".R") for p in left]

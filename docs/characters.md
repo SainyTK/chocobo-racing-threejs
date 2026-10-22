@@ -56,9 +56,9 @@ Measured in the Studio with `createCharacter` (triangles of the body and of the 
 | Behemoth | 12,192 | 9,308 | 23 | none |
 | Chubby Chocobo | 14,768 | 10,024 | 35 | none |
 | Bahamut | 11,928 | 4,899 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Bahamut |
-| Cloud | 10,756 | 4,394 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Cloud |
+| Cloud | 11,032 | 4,570 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Cloud |
 
-The Bahamut GLB is 469 KB with 36 bones and six clips; the Cloud GLB is 326 KB with 24 bones and six clips.
+The Bahamut GLB is 469 KB with 36 bones and six clips; the Cloud GLB is 329 KB with 24 bones and six clips.
 A new racer should stay near 12,000 body triangles and one atlas.
 
 ## Pitfalls
@@ -71,7 +71,8 @@ A new racer should stay near 12,000 body triangles and one atlas.
 - Compare against the PS1 in-game model, not the CG art: colours, head shape and pose differ.
 - Bones the game turns in code (wheels, a fork) must be left out of every clip with `skip=`, or the mixer overwrites the code's rotation each frame.
 - Model a rider in the riding pose, so the hands rest on the grips with no clip; clips then only add motion. A clip that lifts the torso also lifts the hands off the bars, so keep such offsets small.
-- Hair for a toon character is solid spikes on a skull whose back swells into the hair mass. Many spikes pointing at the chase camera read as a sea urchin; the PS1 Cloud's back of the head is a smooth dome.
+- Hair for a toon character is a few solid, blunt, slightly flattened locks on a skull whose back swells into the hair mass. An even ring of spikes reads as a sunflower or a sea urchin; the PS1 Cloud's hair is a swept mass with one dominant lock.
+- A flat part such as a sword blade lying on the back is seen edge-on from the side. Turn its flat a little toward the side camera and give it real thickness, or it reads as a pole.
 
 ## Adding the next racer
 

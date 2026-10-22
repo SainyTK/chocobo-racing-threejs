@@ -16,6 +16,7 @@ import { statusFor } from './hud/messages.ts';
 import { FinishSequence } from './finish-sequence.ts';
 import { Network, type RoomView } from './network.ts';
 import { RACERS, HANDLING, DIFFICULTIES, DIFFICULTY_IDS, DEFAULT_DIFFICULTY, ABILITIES, ABILITY_IDS, TICK, createRace, makeRacer, placeRacer, neutralInput, stepRace, spellName, type AbilityId, type DifficultyId, type Input, type Race } from '../shared/game/index.ts';
+import { WIRE_VERSION } from '../shared/wire.ts';
 import { TRACKS, TRACK_IDS, trackLength, pointAt, type TrackId } from '../shared/track/index.ts';
 import { clamp, angleDelta } from '../shared/math.ts';
 import { stoneSlotsHtml } from './stone-slots.ts';
@@ -112,7 +113,7 @@ function lobby(room: RoomView) {
   stopFinish(); screen = 'lobby'; race = null; online = true; playerId = net.id; world.menu(); world.setGhost(null); document.body.classList.remove('racing'); scrollTo(0, 0); if (world.track !== room.track) world.buildTrack(room.track); const host = room.host === net.id;
   app.innerHTML = `<main class="home">${header()}<section class="panel lobby"><div class="section-title">ONLINE · ${room.members.filter(m => m.connected).length} / 6 PLAYERS</div><h1>Race Lobby</h1><div class="room-code"><span>ROOM CODE<strong id="room-code">${room.code}</strong></span><button data-action="copy">Copy invite</button></div><div class="roster">${Array.from({ length: 6 }, (_, i) => { const m = room.members[i]; return `<div>${portrait(m?.character ?? i)}<span><strong>${m ? esc(m.name) : 'CPU racer'}</strong><small>${m ? `${RACERS[m.character].name} · ${ABILITIES[m.abilityId].name} · ${!m.connected ? 'Reconnecting' : m.id === room.host ? 'HOST' : 'Ready'}` : 'A friend can take this place'}</small></span></div>`; }).join('')}</div><div class="fields"><label>COURSE<select id="lobby-track" aria-label="Lobby course" ${host ? '' : 'disabled'}>${TRACK_IDS.map(id => `<option value="${id}" ${room.track === id ? 'selected' : ''}>${TRACKS[id].name}</option>`).join('')}</select></label><label>LAPS<select id="lobby-laps" aria-label="Lobby laps" ${host ? '' : 'disabled'}>${[1, 2, 3].map(n => `<option ${room.laps === n ? 'selected' : ''}>${n}</option>`).join('')}</select></label></div>${host ? '<button class="primary" data-action="start">START ONLINE RACE ▶</button>' : '<p>Waiting for the host to start.</p>'}<button class="secondary" data-action="leave">Leave room</button><p class="fine">Friends must be able to reach this server. Use its LAN address on other devices. Disconnections have a 60-second rejoin window.</p></section></main>`;
 }
-async function leaveGame() { closeModal(); clearInput(); if (net.room) { try { if (net.connected) await net.request('leave'); else { net.socket.disconnect(); sessionStorage.removeItem('cbr-session'); net.socket.auth = { wire: 2 }; } } catch {} net.clear(); } online = false; race = null; history.replaceState(null, '', location.pathname); if (world.track !== track) world.buildTrack(track); home(); }
+async function leaveGame() { closeModal(); clearInput(); if (net.room) { try { if (net.connected) await net.request('leave'); else { net.socket.disconnect(); sessionStorage.removeItem('cbr-session'); net.socket.auth = { wire: WIRE_VERSION }; } } catch {} net.clear(); } online = false; race = null; history.replaceState(null, '', location.pathname); if (world.track !== track) world.buildTrack(track); home(); }
 function results() {
   if (!race) return; closeModal(); screen = 'results'; clearInput(); const p = race.racers.find(p => p.id === playerId)!;
   if (mode === 'time' && !online && p.finishTime !== null && (!savedGhost || p.finishTime < savedGhost.time)) {
@@ -165,6 +166,7 @@ function updateHUD(now: number) {
 net.onRoom = room => { online = true; mode = 'online'; playerId = net.id; if (room.phase === 'lobby') { closeModal(); lobby(room); } };
 net.onState = state => { if (!online && !net.room) return; online = true; playerId = net.id; const fresh = race?.id !== state.id; race = state; if (fresh || screen === 'home' || screen === 'lobby') { cup = null; savedGhost = null; world.setGhost(null); closeModal(); world.enterRace(state); hud(); } };
 net.onStatus = connected => { $('network-banner')?.classList.toggle('hidden', connected || !online); };
+net.onOutdated = () => { online = false; closeModal(); home(); toast('This game was updated. Reload the page to play online.', 20000); };
 net.onExpired = () => { online = false; closeModal(); home(); toast('Your room expired. Create or join another room.'); };
 document.addEventListener('click', async e => {
   const button = e.target instanceof Element ? e.target.closest<HTMLElement>('[data-action],[data-character],[data-mode]') : null;

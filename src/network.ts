@@ -2,26 +2,27 @@ import { io, type Socket } from 'socket.io-client';
 import type { AbilityId, Input, Race } from '../shared/game/index.ts';
 import type { TrackId } from '../shared/track/index.ts';
 import { Interpolation } from './interpolation.ts';
-import { decodeSnapshot, type Snapshot } from '../shared/wire.ts';
+import { WIRE_VERSION, decodeSnapshot, type Snapshot } from '../shared/wire.ts';
 import { Prediction } from './prediction.ts';
 import { NetDiagnostics, Delivery } from './net-diagnostics.ts';
 export interface RoomView { code: string; host: string; track: TrackId; laps: number; members: { id: string; name: string; character: number; abilityId: AbilityId; connected: boolean }[]; phase: string }
 export class Network {
   socket: Socket; id = ''; connected = false; latency = 0; room: RoomView | null = null;
-  onRoom: (room: RoomView) => void = () => { }; onState: (race: Race) => void = () => { }; onStatus: (online: boolean) => void = () => { }; onExpired: () => void = () => { };
+  onRoom: (room: RoomView) => void = () => { }; onState: (race: Race) => void = () => { }; onStatus: (online: boolean) => void = () => { }; onExpired: () => void = () => { }; onOutdated: () => void = () => { };
   diagnostics = new NetDiagnostics(); private delivery = new Delivery(); private receivedAt = 0; private metadata: Race | null = null; private latestTick = -1; prediction = new Prediction();
   private actionSeq = 0; private actionHeld = { item: false, ability: false, rescue: false }; private pendingActions = new Map<number, ReturnType<typeof setTimeout>>();
   private interpolation = new Interpolation(); private lastSend = 0;
   constructor() {
     let token = ''; try { token = sessionStorage.getItem('cbr-session') || ''; } catch { /* Private browsing may disable storage. */ }
-    this.socket = io({ autoConnect: false, auth: { token, wire: 2 }, transports: ['websocket'], reconnectionDelay: 500, reconnectionDelayMax: 2500, timeout: 6000 });
+    this.socket = io({ autoConnect: false, auth: { token, wire: WIRE_VERSION }, transports: ['websocket'], reconnectionDelay: 500, reconnectionDelayMax: 2500, timeout: 6000 });
     this.socket.on('connect', () => { this.connected = true; this.onStatus(true); });
     this.socket.on('disconnect', () => { this.connected = false; this.delivery.clear(); this.clearActions(); this.onStatus(false); });
     this.socket.on('welcome', data => {
       const lostRoom = this.room !== null && !data.room;
-      this.id = data.id; this.socket.auth = { token: data.token, wire: 2 }; try { sessionStorage.setItem('cbr-session', data.token); } catch { }
+      this.id = data.id; this.socket.auth = { token: data.token, wire: WIRE_VERSION }; try { sessionStorage.setItem('cbr-session', data.token); } catch { }
       if (lostRoom) { this.clear(); this.onExpired(); }
     });
+    this.socket.on('outdated', () => this.onOutdated());
     this.socket.on('room', (room: RoomView) => { this.room = room; this.onRoom(room); });
     this.socket.on('race', (race: Race) => { this.delivery.clear(); this.metadata = race; this.latestTick = -1; this.interpolation.reset(); this.prediction.reset(); this.clearActions(); this.actionSeq = 0; this.prediction.reconcile(race, this.id, 0); this.accept(race); });
     this.socket.on('snapshot', (s: Snapshot) => this.delivery.run('down', () => {

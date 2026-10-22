@@ -59,9 +59,9 @@ Deliberate deviations, kept for balance or because the remake lacks the original
 ## Cloud
 
 Cloud follows the PS1 in-game model, checked side by side against footage of the original (a longplay of every course with Cloud: the chase camera from behind, the orbit after the finish and the course intro sweep), not FFVII art.
-He is super-deformed, with a head about as wide as his shoulders: bright yellow hair that is a smooth dome from behind with a tall crown spike and side spikes at ear level, and a thick fringe and side bangs in front; small blue eyes; a navy sleeveless top; one round light blue-grey pauldron on his left shoulder; bare upper arms and brown gauntlets; navy trousers and brown boots.
+He is super-deformed, with a head about as wide as his shoulders: bright yellow hair that is a swept mass of a few blunt locks, one dominant lock rising to his right as seen from behind, with bangs falling over the forehead in front; small blue eyes; a navy sleeveless top; one round light blue-grey pauldron on his left shoulder; bare upper arms and brown gauntlets; navy trousers and brown boots.
 The Buster Sword rides on his back from above his right shoulder down past his left hip, the largest light shape in the race view.
-He rides the Hardy-Daytona as the original draws it: a long, low, dark olive and black machine with fat wheels, a tall ribbed front cowl that reaches his chin, a ribbed rear fender and a red taillight under the sword.
+He rides the Hardy-Daytona as the original draws it: a long, low, dark olive and black machine about one and a half times his height in length with fat wheels, a tall ribbed front cowl that reaches his chin, a ribbed rear fender and a red taillight under the sword.
 
 Deliberate deviations:
 
@@ -72,8 +72,8 @@ Deliberate deviations:
 | No portrait: a black "?" icon in the HUD and results, Squall's portrait on the ability screen | A rendered portrait like every racer | The roster and HUD are built from 3D portraits |
 | 90 MPH and "very bad" cornering, the same as Goblin; acceleration not stated | Goblin's driving stats (top speed, acceleration, loose grip, steering); no other tuning | The original gives him Goblin's numbers. In 540 all-CPU races with Dash he won 15.1% with a mean place of 3.56, where an even share is about 16.7% and 3.5 |
 | No victory pose; he keeps riding after the finish | On a podium finish he sits up and rests the Buster Sword on his right shoulder; otherwise he slumps over the bars | Every racer here acts out win and lose reactions on the podium and after the finish, so his stay calm |
-| Bike length about 1.5 times his seated height | About 1.2 times | Keeps him near the other racers' footprint for bumps and the start grid |
 | No voice lines found | Short synthesized grunts | Every racer here has barks |
+| The long bike's collision is unknown | The model is about 1.5 times his height long, as in the original, but the physics body stays the standard contact circle for size 1.05 (about 1.2 m radius) | Bumps and the start grid stay fair against shorter karts. In a nose-to-tail bump his front wheel or tail can overlap the other racer by up to about 1 m before they part; side bumps line up |
 
 
 
