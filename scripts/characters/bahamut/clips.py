@@ -64,7 +64,8 @@ def fly(t: float) -> Pose:
     p = t / 0.6
     beat = math.sin(TAU * p)
     pose = wing_pose(p, 0.3, 0.5, sweep=0.12)
-    pose |= tail_pose(t, 1 / 0.6, 0.06, 0.38)
+    # The tail hangs below the pitched body, as in the original, so it never hides the legs from the chase camera.
+    pose |= tail_pose(t, 1 / 0.6, 0.06, -0.5)
     pose |= {
         "root": ((0, 0, 0), (0, 0, 0.1 * -math.cos(TAU * p))),
         "hips": ((0.6 + 0.03 * beat, 0, 0), (0, 0, 0)),
