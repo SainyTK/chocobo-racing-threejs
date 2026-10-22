@@ -70,6 +70,7 @@ A new racer should stay near 12,000 body triangles and one atlas.
 - The Studio and the game must await `loadCharacterModels()` before building a racer, but after any hook that tests read on startup.
 - Compare against the PS1 in-game model, not the CG art: colours, head shape and pose differ.
 - Bones the game turns in code (wheels, a fork) must be left out of every clip with `skip=`, or the mixer overwrites the code's rotation each frame.
+- A crouched rider can be modelled upright and pitched forward about the hips in the build script (`crouched()` in `cloud/model.py`); keep the head bone and its parent upright, because the shared animator zeroes the head's x rotation every frame and a tilted parent turns that into a large head flip.
 - Model a rider in the riding pose, so the hands rest on the grips with no clip; clips then only add motion. A clip that lifts the torso also lifts the hands off the bars, so keep such offsets small.
 - Hair for a toon character is a few solid, blunt, slightly flattened locks on a skull whose back swells into the hair mass. An even ring of spikes reads as a sunflower or a sea urchin; the PS1 Cloud's hair is a swept mass with one dominant lock.
 - A flat part such as a sword blade lying on the back is seen edge-on from the side. Turn its flat a little toward the side camera and give it real thickness, or it reads as a pole.

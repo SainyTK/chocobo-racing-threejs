@@ -24,25 +24,47 @@ FRONT_AXLE, FRONT_RADIUS = Vector((0, -2.02, 0.46)), 0.46
 REAR_AXLE, REAR_RADIUS = Vector((0, 1.84, 0.5)), 0.5
 STEER_TOP = Vector((0, -1.58, 1.5))
 """Top of the steering axis; the fork bone runs from here down to the front axle."""
-HEAD_CENTRE, HEAD_RADII = Vector((0, 0.1, 2.44)), (0.45, 0.41, 0.42)
+CROUCH, CROUCH_PIVOT = 0.45, Vector((0, 0.36, 1.26))
+"""He rides hunched low over the tank as in the original: the upper body is modelled upright, then pitched forward by
+`CROUCH` radians about the hips. The head keeps its upright orientation and only moves with the neck."""
+
+
+def crouched(p: Vector | tuple[float, float, float]) -> Vector:
+    """A point of the upright upper body moved into the riding crouch."""
+    v = Vector(p) - CROUCH_PIVOT
+    c, s = math.cos(CROUCH), math.sin(CROUCH)
+    return CROUCH_PIVOT + Vector((v.x, v.y * c - v.z * s, v.y * s + v.z * c))
+
+
+def leaned(d: Vector) -> Vector:
+    """A direction of the upright upper body turned into the crouch."""
+    return crouched(CROUCH_PIVOT + d) - CROUCH_PIVOT
+
+
+UPRIGHT_HEAD = Vector((0, 0.1, 2.44))
+HEAD_CENTRE, HEAD_RADII = crouched(UPRIGHT_HEAD), (0.45, 0.41, 0.42)
 """Centre of the skull and its radii (side, front-back, up)."""
 BACK_BULGE = 1.18
 """How much deeper the back of the head is than the front: the hair mass."""
-SWORD_GUARD = Vector((-0.42, 0.6, 2.12))
-SWORD_DIR = Vector((0.76, 0.04, -0.64)).normalized()
+SWORD_GUARD = crouched((-0.42, 0.6, 2.12))
+SWORD_DIR = leaned(Vector((0.76, 0.04, -0.64))).normalized()
 """The Buster Sword's guard sits behind the right shoulder; the blade runs down across the back to past the left hip."""
 BLADE = 1.65
 
+HEAD_SHIFT = HEAD_CENTRE - UPRIGHT_HEAD
+SHOULDER = crouched((0.32, 0.18, 1.86))
+WRIST = Vector((0.54, -0.44, 1.64))
+"""The hands stay on the grips; the shoulders come down and forward with the crouch, and the elbows bend out."""
 J = {
-    "hips": (0, 0.36, 1.26),
-    "chest": (0, 0.28, 1.6),
-    "neck": (0, 0.18, 1.94),
+    "hips": tuple(CROUCH_PIVOT),
+    "chest": tuple(crouched((0, 0.28, 1.6))),
+    "neck": tuple(crouched((0, 0.18, 1.94))),
     # The head pivots low in the skull, so the game's head point (portraits, stun stars) sits on the face.
-    "head": (0, 0.12, 2.3),
-    "head_end": (0, 0.12, 2.9),
-    "shoulder": (0.32, 0.18, 1.86),
-    "elbow": (0.5, -0.1, 1.72),
-    "wrist": (0.54, -0.44, 1.64),
+    "head": tuple(Vector((0, 0.12, 2.3)) + HEAD_SHIFT),
+    "head_end": tuple(Vector((0, 0.12, 2.9)) + HEAD_SHIFT),
+    "shoulder": tuple(SHOULDER),
+    "elbow": tuple((SHOULDER + WRIST) / 2 + Vector((0.12, 0, 0.07))),
+    "wrist": tuple(WRIST),
     "hand_end": (0.55, -0.6, 1.62),
     "hip": (0.17, 0.34, 1.22),
     "knee": (0.54, -0.12, 1.1),
@@ -65,7 +87,9 @@ def skeleton() -> dict[str, BoneSpec]:
         "wheel_rear": (ra, (ra[0], ra[1], ra[2] + 0.4), "bike"),
         "hips": (J["hips"], J["chest"], "bike"),
         "chest": (J["chest"], J["neck"], "hips"),
-        "neck": (J["neck"], J["head"], "chest"),
+        # The neck bone stays upright although the crouch tips the neck forward, so the head's rest rotation relative
+        # to it is the identity: the shared animator zeroes the head's x rotation every frame.
+        "neck": (J["neck"], tuple(Vector(J["neck"]) + Vector((0, 0, 0.2))), "chest"),
         "head": (J["head"], J["head_end"], "neck"),
         "sword": (tuple(SWORD_GUARD), tuple(SWORD_GUARD + SWORD_DIR * 0.6), "chest"),
     }
@@ -129,12 +153,12 @@ LOCKS = [
     # (azimuth, elevation, direction, length, base radius, curl). The PS1 hair is a swept mass, not a crown: a few big
     # blunt locks sweep up and back, one dominant lock rising to his right (upper right from behind), and bangs fall
     # over the forehead in front.
-    (-150, 58, (-0.55, 0.5, 1.0), 0.95, 0.27, (0, 1, 0.3)),
+    (-150, 58, (-0.65, 1.0, 0.95), 1.0, 0.27, (0, 1, -0.3)),
     (165, 45, (0.15, 1.0, 0.35), 0.55, 0.26, (0, 0, -1)),
-    (-110, 30, (-0.95, 0.6, 0.45), 0.62, 0.24, (0, 1, 0.2)),
-    (115, 30, (0.9, 0.65, 0.35), 0.54, 0.23, (0, 1, 0)),
+    (-110, 30, (-0.8, 0.9, 0.4), 0.62, 0.24, (0, 1, 0.1)),
+    (115, 30, (0.75, 0.95, 0.3), 0.54, 0.23, (0, 1, 0)),
     (15, 70, (0.25, 0.9, 0.45), 0.45, 0.22, (0, 0, -1)),
-    (40, 55, (0.55, 0.45, 0.8), 0.4, 0.21, (0, 1, 0)),
+    (40, 55, (0.5, 0.8, 0.6), 0.4, 0.21, (0, 1, 0)),
     # Bangs over the forehead and locks framing the face.
     (0, 46, (0.0, -0.5, -1.0), 0.36, 0.15, (0, -1, 0)),
     (28, 48, (0.35, -0.45, -1.0), 0.34, 0.14, (0, -1, 0)),
@@ -173,7 +197,7 @@ def eyes() -> list[Part]:
 
 def torso() -> list[Part]:
     """Pelvis to neck in one loft, the seat of the trousers at the bottom and the turtleneck at the top."""
-    path = [(0, 0.4, 1.12), (0, 0.36, 1.32), (0, 0.3, 1.6), (0, 0.22, 1.86), (0, 0.16, 2.1)]
+    path = [crouched(p) for p in ((0, 0.4, 1.12), (0, 0.36, 1.32), (0, 0.3, 1.6), (0, 0.22, 1.86), (0, 0.16, 2.1))]
     rx = [(0, 0.22), (0.12, 0.27), (0.32, 0.25), (0.62, 0.3), (0.8, 0.26), (0.9, 0.12), (1, 0.1)]
     front = [(0, 0.2), (0.12, 0.22), (0.32, 0.2), (0.62, 0.23), (0.8, 0.2), (0.9, 0.11), (1, 0.1)]
     body = loft("torso", "torso", path, ellipse(lambda t: curve(rx, t), lambda t: curve(front, t)), 20, 16, (0, -1, 0))
@@ -203,13 +227,13 @@ def arms() -> list[Part]:
 
 def pauldron() -> list[Part]:
     """The round SOLDIER pauldron, on his left shoulder only."""
-    shell = ellipsoid("pauldron", "pauldron", (0.37, 0.18, 1.94), (0.2, 0.24, 0.22), axis=(1, 0, 0.35), around=14, along=8)
+    shell = ellipsoid("pauldron", "pauldron", crouched((0.37, 0.18, 1.94)), (0.2, 0.24, 0.22), axis=leaned(Vector((1, 0, 0.35))), around=14, along=8)
     return [rigid(shell, "arm.L")]
 
 
 def strap() -> list[Part]:
     """The brown harness from the left shoulder across the chest to the right hip, which holds the sword."""
-    pts = [(0.24, 0.2, 1.92), (0.12, -0.06, 1.78), (-0.08, -0.1, 1.5), (-0.22, 0.04, 1.3), (-0.24, 0.3, 1.24)]
+    pts = [crouched(p) for p in ((0.24, 0.2, 1.92), (0.12, -0.06, 1.78), (-0.08, -0.1, 1.5), (-0.22, 0.04, 1.3), (-0.24, 0.3, 1.24))]
     band = loft("strap", "strap", pts, superellipse(lambda t: 0.065, lambda t: 0.018), 8, 12, (0, 0, 1))
     along(band, [("chest", 0), ("hips", 0.55)], 0.1)
     belt = loft(

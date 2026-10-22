@@ -36,8 +36,8 @@ def head(u: np.ndarray, v: np.ndarray) -> np.ndarray:
     """Face in front below the fringe, hair everywhere else. The loft's up hint is forward, its side is his left."""
     a = angle(u)
     front, side = np.sin(a), np.cos(a)
-    hairline = 0.64 - 0.12 * np.abs(side)
-    face = np.clip((front - 0.2) * 6, 0, 1) * np.clip((hairline - v) * 25, 0, 1)
+    hairline = 0.56 - 0.12 * np.abs(side)
+    face = np.clip((front - 0.3) * 6, 0, 1) * np.clip((hairline - v) * 25, 0, 1)
     face = np.maximum(face, np.clip((0.08 - v) * 30, 0, 1))
     hair = mix(fill(HAIR, u), fill(HAIR_ROOT, u), np.clip((0.55 - v) * 2, 0, 1) * 0.6)
     skin = mix(fill(SKIN, u), fill(SKIN_SHADE, u), np.clip((np.abs(side) - 0.45) * 2.5, 0, 1) * 0.6 + np.clip((0.18 - v) * 4, 0, 1) * 0.4)
@@ -45,9 +45,9 @@ def head(u: np.ndarray, v: np.ndarray) -> np.ndarray:
     # A small, firm mouth and the shadow of a nose.
     img = mix(img, fill(MOUTH, u), band(v, 0.215, 0.018, 0.008) * band(side, 0, 0.13, 0.03) * (front > 0.8))
     img = mix(img, fill(SKIN_SHADE, u), np.clip(1 - np.hypot((v - 0.32) * 14, side * 18), 0, 1) * (front > 0.8) * 0.7)
-    # Brows under the fringe, angled down toward the nose: his usual stern look.
+    # Brows just under the hairline, angled down toward the nose: his usual stern look.
     for s in (-1, 1):
-        y = 0.535 - 0.06 * (0.38 - np.abs(side))
+        y = 0.51 - 0.05 * (0.38 - np.abs(side))
         img = mix(img, fill("#7a5a1e", u), band(v, y, 0.022, 0.008) * band(side, s * 0.25, 0.22, 0.04) * (front > 0.5))
     return img
 
