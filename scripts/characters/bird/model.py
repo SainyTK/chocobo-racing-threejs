@@ -32,6 +32,20 @@ class Feather:
 
 
 @dataclass(frozen=True)
+class Clump:
+    """A feather clump raised out of the body surface at (t, angle), `size` metres across and `height` metres proud.
+
+    Its lower edge is steeper than its upper one, so it reads as feathers lying down the body. Clumps off the middle
+    are mirrored to the right side.
+    """
+
+    t: float
+    angle: float
+    size: float
+    height: float
+
+
+@dataclass(frozen=True)
 class Bird:
     """Proportions and attachments of one bird, in game metres. Positions along the body are loft parameters t."""
 
@@ -67,12 +81,34 @@ class Bird:
     """Wing feathers, rooted at the outer end of the wing lobe: t is the height offset in metres and angle is unused."""
     scarf: tuple[float, float, float] | None
     """t of the scarf's top edge, its width at the back and the depth of the front point; None for no scarf."""
+    clumps: tuple[Clump, ...] = ()
+    """Feather clumps that make the outline bumpy, given for the middle and the left side."""
 
 
 def point(bird: Bird, t: float, angle: float) -> Vector:
     rx = spline(bird.width, t)
     ry = spline(bird.front, t) if math.sin(angle) >= 0 else spline(bird.back, t)
-    return Vector((rx * math.cos(angle), -ry * math.sin(angle), bird.base + bird.height * t))
+    k = 1 + raise_by(bird, t, angle) / max(0.05, (rx + ry) / 2)
+    return Vector((rx * math.cos(angle) * k, -ry * math.sin(angle) * k, bird.base + bird.height * t))
+
+
+def mirrored_clumps(bird: Bird) -> list[Clump]:
+    out = list(bird.clumps)
+    out += [Clump(c.t, math.pi - c.angle, c.size, c.height) for c in bird.clumps if abs(math.cos(c.angle)) > 1e-3]
+    return out
+
+
+def raise_by(bird: Bird, t: float, angle: float) -> float:
+    """How far the feather clumps lift the surface at (t, angle). Overlapping clumps take the highest, not the sum."""
+    best = 0.0
+    r = spline(bird.width, t)
+    for c in mirrored_clumps(bird):
+        dz = (t - c.t) * bird.height
+        dz *= 1.5 if dz < 0 else 0.8
+        d = math.hypot(dz, math.remainder(angle - c.angle, math.tau) * r) / (c.size / 2)
+        if d < 1:
+            best = max(best, c.height * (1 - d * d) ** 1.5)
+    return best
 
 
 def normal(bird: Bird, t: float, angle: float) -> Vector:
@@ -91,7 +127,7 @@ def at(bird: Bird, z: float) -> float:
 
 
 def skeleton(bird: Bird) -> dict[str, BoneSpec]:
-    """Root, body chain, head with jaw, crest and eyes, scarf, wings, tail and legs. Legs end at the ankles."""
+    """Root, body chain, head with jaw, crest and eyes, wings, tail and legs. Legs end at the ankles."""
     z = bird.base + bird.height
     # The head pivots in the middle of the head, so portraits and stun stars centre on the face.
     head = (0, 0, bird.base + bird.height * (bird.neck + 1) / 2)
@@ -113,9 +149,6 @@ def skeleton(bird: Bird) -> dict[str, BoneSpec]:
     for s, side in ((1, "L"), (-1, "R")):
         head_ = Vector((centre.x * s, centre.y, centre.z))
         bones[f"eye.{side}"] = (tuple(head_), tuple(head_ + Vector((gaze.x * s, gaze.y, gaze.z)) * 0.15), "head")
-    if bird.scarf:
-        knot = point(bird, bird.scarf[0], -math.pi / 2)
-        bones["scarf"] = (tuple(knot), tuple(knot + Vector((0, 0.3, -0.12))), "chest")
     wing_root, wing_mid, wing_tip = wing_joints(bird)
     hip_x, hip_t = bird.hip
     hip = Vector((hip_x, 0.0, bird.base + bird.height * hip_t))
@@ -160,17 +193,14 @@ def wing_joints(bird: Bird) -> tuple[Vector, Vector, Vector]:
     return root, mid, mid + Vector((0.42, 0.1, 0.0))
 
 
-def body(bird: Bird, around: int = 32, along_: int = 30) -> Part:
-    """Head and body in one loft, from the bottom pole to the crown."""
-    part = loft(
-        "body",
-        "body",
-        [(0, 0, bird.base), (0, 0, bird.base + bird.height)],
-        ellipse(lambda t: spline(bird.width, t), lambda t: spline(bird.front, t), lambda t: spline(bird.back, t)),
-        around,
-        along_,
-        (0, -1, 0),
-    )
+def body(bird: Bird, around: int = 38, along_: int = 32) -> Part:
+    """Head and body in one loft, from the bottom pole to the crown, with the feather clumps raised out of it."""
+
+    def profile(t: float, a: float) -> tuple[float, float]:
+        p = point(bird, t, a)
+        return p.x, -p.y
+
+    part = loft("body", "body", [(0, 0, bird.base), (0, 0, bird.base + bird.height)], profile, around, along_, (0, -1, 0))
     return along(part, chain(bird), 0.06)
 
 
@@ -189,21 +219,26 @@ def body_weights(bird: Bird, t: float) -> dict[str, float]:
     return along(probe, chain(bird), 0.06).weights[0]
 
 
-def blade(name: str, skin: str, base: Vector, direction: Vector, length: float, width: float, thickness: float, flat: Vector, curl: Vector) -> Part:
-    """A plump pointed feather: rounded near the root and tapering to a soft point, flat across `flat`."""
+def blade(
+    name: str, skin: str, base: Vector, direction: Vector, length: float, width: float, thickness: float, flat: Vector, curl: Vector, sharp: bool = False
+) -> Part:
+    """A pointed feather, flat across `flat`: plump with a soft point, or `sharp`, widest near the root and tapering
+    straight to a spike."""
     d = direction.normalized()
     pts = [base, base + d * length * 0.5 + curl * length * 0.08, base + d * length + curl * length * 0.22]
 
     def shape(t: float) -> float:
+        if sharp:
+            return math.sin(math.pi / 2 * (0.3 + 0.7 * t / 0.25)) if t < 0.25 else 1 - (t - 0.25) / 0.75 * 0.97
         return math.sin(math.pi * (0.1 + 0.9 * t)) ** 0.55 + 0.03
 
     hint = flat - d * flat.dot(d)
     return loft(name, skin, pts, ellipse(lambda t: width * shape(t), lambda t: thickness * shape(t)), 8, 7, hint)
 
 
-def feather(bird: Bird, name: str, skin: str, f: Feather, thickness: float, flat: Vector) -> Part:
+def feather(bird: Bird, name: str, skin: str, f: Feather, thickness: float, flat: Vector, sharp: bool = False) -> Part:
     base = point(bird, f.t, f.angle) - normal(bird, f.t, f.angle) * f.width * 0.5
-    return blade(name, skin, base, Vector(f.direction), f.length, f.width, thickness, flat, Vector((0, 0, -0.4)))
+    return blade(name, skin, base, Vector(f.direction), f.length, f.width, thickness, flat, Vector((0, 0, -0.4)), sharp)
 
 
 def head_parts(bird: Bird) -> list[Part]:
@@ -259,7 +294,7 @@ def wing_parts(bird: Bird) -> list[Part]:
     parts = [lobe]
     for i, f in enumerate(bird.wing):
         base = mid + Vector((-0.12, 0.0, f.t))
-        p = blade(f"wing_feather{i}", "feather", base, Vector(f.direction), f.length, f.width, f.width * 0.45, flat, Vector((0, 0.4, 0)))
+        p = blade(f"wing_feather{i}", "feather", base, Vector(f.direction), f.length, f.width, f.width * 0.45, flat, Vector((0, 0.4, 0)), sharp=True)
         parts.append(along(p, [("wing.L", 0), ("wing_tip.L", 0.2)], 0.1))
     return parts + [mirror(p, p.name + ".R") for p in parts]
 
@@ -269,12 +304,13 @@ def tail_parts(bird: Bird) -> list[Part]:
     for i, f in enumerate(bird.tail):
         d = Vector(f.direction).normalized()
         flat = Vector((1, 0, 0)).cross(d).normalized()
-        parts.append(along(feather(bird, f"tail{i}", "feather", f, f.width * 0.5, flat), [("hips", 0), ("tail", 0.25)], 0.12))
+        parts.append(along(feather(bird, f"tail{i}", "feather", f, f.width * 0.5, flat, sharp=True), [("hips", 0), ("tail", 0.25)], 0.12))
     return parts
 
 
 def scarf_parts(bird: Bird, around: int = 32, rows: int = 6) -> list[Part]:
-    """A bandana tied round the neck: a band with a triangle hanging under the beak, a knot and two tails behind."""
+    """A bandana tied round the neck: a thin band behind and a triangle hanging under the beak. Its knot hides under the
+    feathers at the back, as in the original's race view."""
     if not bird.scarf:
         return []
     top, back_width, drop = bird.scarf
@@ -300,13 +336,7 @@ def scarf_parts(bird: Bird, around: int = 32, rows: int = 6) -> list[Part]:
     outer, inner = thicken(sheet, 0.035, "scarf", "scarf", (0, 0, 0))
     for p in (outer, inner):
         p.weights = [body_weights(bird, at(bird, v.z)) for v in p.verts]
-    knot_at = point(bird, top, -math.pi / 2) + Vector((0, 0.06, -0.06))
-    knot = rigid(ellipsoid("scarf_knot", "scarf", knot_at, (0.06, 0.08, 0.06), axis=(0, 1, 0), around=10, along=6), "scarf")
-    tails = []
-    for s in (1, -1):
-        tip = Vector((0.32 * s, 0.85, -0.28)).normalized()
-        tails.append(rigid(blade(f"scarf_tail{s}", "scarf", knot_at, tip, 0.3, 0.075, 0.025, Vector((0, 0.3, 1)), Vector((0, 0, -0.5))), "scarf"))
-    return [outer, inner, knot, *tails]
+    return [outer, inner]
 
 
 def leg_parts(bird: Bird, skin: str = "leg") -> list[Part]:

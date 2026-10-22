@@ -31,13 +31,12 @@ def idle(t: float) -> Pose:
         "hips": ((0.02 * breathe, 0, 0), (0, 0, 0)),
         "head": ((-0.04 * breathe, 0, 0.05 * math.sin(TAU * p)), (0, 0, 0)),
         "crest": ((-0.06 * math.sin(TAU * p * 2 + 0.6), 0, 0), (0, 0, 0)),
-        "scarf": ((0.1 * math.sin(TAU * p * 2), 0, 0.08 * breathe), (0, 0, 0)),
     }
     return pose
 
 
 def skate(t: float) -> Pose:
-    """Racing: alternate skating strides, body bobbing over the pushing foot, wings out for balance, scarf streaming."""
+    """Racing: alternate skating strides, body bobbing over the pushing foot, wings out for balance, ."""
     p = t / 0.9
     s = math.sin(TAU * p)
     bob = abs(math.sin(TAU * p))
@@ -53,7 +52,6 @@ def skate(t: float) -> Pose:
         "hips": ((0.1, -0.05 * s, 0), (0, 0, 0)),
         "head": ((-0.1, 0.04 * s, 0), (0, 0, 0)),
         "crest": ((-0.22 + 0.05 * math.sin(TAU * p * 2), 0, 0), (0, 0, 0)),
-        "scarf": ((-0.35 + 0.15 * math.sin(TAU * p * 3), 0, 0.15 * math.sin(TAU * p * 2)), (0, 0, 0)),
     }
     return pose
 
@@ -72,7 +70,6 @@ def cast(t: float) -> Pose:
         "head": ((-0.1 * k, 0, 0), (0, 0, 0)),
         "jaw": ((0.5 * k, 0, 0), (0, 0, 0)),
         "crest": ((-0.3 * k, 0, 0), (0, 0, 0)),
-        "scarf": ((-0.3 * k, 0, 0), (0, 0, 0)),
     }
     return pose
 
@@ -91,7 +88,6 @@ def win(t: float) -> Pose:
         "head": ((-0.05 - 0.08 * call, 0, 0.12 * math.sin(TAU * p)), (0, 0, 0)),
         "jaw": ((0.55 * call, 0, 0), (0, 0, 0)),
         "crest": ((-0.15 * call, 0, 0), (0, 0, 0)),
-        "scarf": ((0.15 * beat, 0, 0), (0, 0, 0)),
     }
     return pose
 
@@ -107,7 +103,6 @@ def lose(t: float) -> Pose:
         "root": ((0, 0, 0), (0, 0, -0.02 + 0.02 * sigh)),
         "head": ((0.06 + 0.04 * sigh, 0, 0.08 * math.sin(TAU * p * 0.5)), (0, 0, 0)),
         "crest": ((0.45, 0, 0), (0, 0, 0)),
-        "scarf": ((0.25, 0, 0), (0, 0, 0)),
     }
     return pose
 

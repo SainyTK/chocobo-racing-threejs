@@ -53,7 +53,7 @@ Measured in the Studio with `createCharacter` (triangles of the body and of the 
 
 | Racer | Triangles | Outline triangles | Meshes | Texture |
 | --- | --- | --- | --- | --- |
-| Chocobo | 11,988 | 4,702 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Chocobo (the procedural model had 12,708, 7,456 and 35) |
+| Chocobo | 12,548 | 4,958 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Chocobo (the procedural model had 12,708, 7,456 and 35) |
 | Behemoth | 12,192 | 9,308 | 23 | none |
 | Chubby Chocobo | 14,768 | 10,024 | 35 | none |
 | Bahamut | 11,928 | 4,899 | 2 | one 1024 x 1024 WebP atlas, 5.3 MB on the GPU with mipmaps, shared by every Bahamut |
@@ -90,13 +90,13 @@ A new racer should stay near 12,000 body triangles and one atlas.
 npm run character -- chocobo
 ```
 
-Chocobo on the Jet-Blades CR is one skinned GLB (332 KB, 22 bones, seven clips) for the bird and both rocket skates.
+Chocobo on the Jet-Blades CR is one skinned GLB (341 KB, 21 bones, seven clips) for the bird and both rocket skates.
 It is built from two packages:
 
-- `scripts/characters/bird/` is a reusable super-deformed bird. `model.py` takes a `Bird` (proportions as spline keys along one vertical loft for the head and body, plus the eye, beak, crest, tufts, wings, tail, scarf and legs) and returns its skeleton and parts. `paint.py` makes painters from a palette, and `clips.py` has pose helpers (`wings`, `tail`, `flap`, `blink`).
+- `scripts/characters/bird/` is a reusable super-deformed bird. `model.py` takes a `Bird` (proportions as spline keys along one vertical loft for the head and body, feather `clumps` raised out of that surface, plus the eye, beak, crest, tufts, wings, tail, scarf and legs) and returns its skeleton and parts. `paint.py` makes painters from a palette, and `clips.py` has pose helpers (`wings`, `tail`, `flap`, `blink`).
 - `scripts/characters/chocobo/` holds Chocobo's `BIRD` proportions, the Jet-Blades (boots, chassis, engine, exhausts and wheels on `foot` and `wheel_*` bones), his palette and his clips.
 
-The bird's bones are `root`, `hips`, `chest`, `head` (pivoting in the middle of the head), `jaw`, `crest`, `eye.L/R`, `scarf`, `tail`, `wing.L/R`, `wing_tip.L/R` and `thigh.L/R`, which end at the ankle.
+The bird's bones are `root`, `hips`, `chest`, `head` (pivoting in the middle of the head), `jaw`, `crest`, `eye.L/R`, `tail`, `wing.L/R`, `wing_tip.L/R` and `thigh.L/R`, which end at the ankle.
 At rest the wings stick straight out sideways with their flat faces to the front and back: a positive Y angle lowers the left wing and a positive Z angle sweeps it back, so a wingbeat is a clean roll about the forward axis.
 
 `src/gfx/characters/racers/chocobo.ts` blends Idle and Skate by speed and plays Cast, Win and Lose on the reaction's clock.
@@ -112,4 +112,7 @@ Pitfalls met on Chocobo:
 - A big head pivoting at the neck puts the portrait camera, which frames `Build.head`, on the chest. Pivot the head bone inside the head.
 - Wings raised much above level vanish into a big head. Keep raised poses diagonal, and remember the shared poses already pitch the model and the head for cast and lose, so a clip adds only a little.
 - Clips that already raise the wings stack with the additive Flap on a win. Keep the Win wings level and let the overlay beat them.
+- From the chase camera a smooth egg reads wrong: the original's back is a bumpy mass of feather clumps. `Clump`s displace the body loft itself, so the outline is bumpy; keep them off the face and put the biggest ones where the outline is seen from behind (upper corners and the sides of the head).
+- A feather fan pointing straight back is seen end-on from the chase camera as a row of dark triangles. Keep the tail small and low.
+- The race view is decided by the skates: big black rear wheels set under the edges of the body, slim red engine pods either side, the blue boots visible above. A red cowl over the wheel hides the boots.
 
