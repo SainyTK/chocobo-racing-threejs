@@ -35,8 +35,8 @@ export const PUFF_SECONDS = .22;
 export const RESPAWN_GROW_SECONDS = .25;
 /**
  * A held stack flashes white to show its level, as read frame by frame from 30 fps footage of the original. At level 2 a
- * white glint covers the lower half of the ball for `glint` seconds once every `period[0]`; at level 3 the whole ball
- * turns white for `flash` seconds once every `period[1]`, a pale rim fades out over `rim` seconds, and the glint
- * comes just before the next flash. A level 1 stone is steady.
+ * white glint covers the lower half of the ball for `glint` seconds once every `period[0]`. At level 3 the whole ball
+ * turns white for `flash` seconds once every `period[1]` and a pale rim fades out over `rim` seconds; a short glint of
+ * `leadGlint` seconds comes `lead` seconds before each flash. A level 1 stone is steady. Times in seconds.
  */
-export const LEVEL_FLASH = { period: [.53, .44], glint: .22, flash: .1, rim: .3 } as const;
+export const LEVEL_FLASH = { period: [.53, .44], glint: .22, flash: .1, rim: .3, lead: .15, leadGlint: .08 } as const;

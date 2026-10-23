@@ -28,9 +28,9 @@ varying vec3 vN; varying vec3 vView; varying vec3 vF; varying vec3 vR; varying v
 ${GLYPHS}
 /** The symbol spans this much of the ball's face. */
 const float GLYPH_SCALE = 1.22;
-const float FLASH_PERIOD_2 = ${LEVEL_FLASH.period[0]}, FLASH_PERIOD_3 = ${LEVEL_FLASH.period[1]}, GLINT = ${LEVEL_FLASH.glint}, FLASH = ${LEVEL_FLASH.flash}, RIM = ${LEVEL_FLASH.rim};
-/** How strongly the level glint shows s seconds into its cycle: a quick rise, a hold and a quick fall. */
-float glint(float s) { return smoothstep(0., .05, s) * (1. - smoothstep(GLINT - .07, GLINT, s)); }
+const float FLASH_PERIOD_2 = ${LEVEL_FLASH.period[0]}, FLASH_PERIOD_3 = ${LEVEL_FLASH.period[1]}, GLINT = ${LEVEL_FLASH.glint}, FLASH = ${LEVEL_FLASH.flash}, RIM = ${LEVEL_FLASH.rim}, LEAD = ${LEVEL_FLASH.lead}, LEAD_GLINT = ${LEVEL_FLASH.leadGlint};
+/** 1 for len seconds from s = 0, with quick ramps at both ends. */
+float pulse(float s, float len) { return smoothstep(0., .03, s) * (1. - smoothstep(len - .03, len, s)); }
 void main() {
   vec3 n = normalize(vN), v = normalize(vView);
   vec2 q = vec2(dot(n, vR), dot(n, vU)) / GLYPH_SCALE;
@@ -48,9 +48,9 @@ void main() {
   float lower = (1. - smoothstep(-.5, .1, dot(n, vU))) * smoothstep(0., .4, dot(n, v));
   if (vState.w > 2.5) {
     float s = mod(uTime + vState.x * .16, FLASH_PERIOD_3), edge = smoothstep(.4, 1., rim);
-    col = mix(col, vec3(1.), step(s, FLASH) * .92 + glint(s - FLASH_PERIOD_3 + GLINT + .03) * lower * .85);
+    col = mix(col, vec3(1.), step(s, FLASH) * .92 + pulse(s - FLASH_PERIOD_3 + LEAD, LEAD_GLINT) * lower * .85);
     col += vec3(1., 1., .78) * edge * (1. - smoothstep(FLASH, FLASH + RIM, s)) * step(FLASH, s) * .9;
-  } else if (vState.w > 1.5) col = mix(col, vec3(1.), glint(mod(uTime + vState.x * .16, FLASH_PERIOD_2)) * lower * .85);
+  } else if (vState.w > 1.5) col = mix(col, vec3(1.), pulse(mod(uTime + vState.x * .16, FLASH_PERIOD_2), GLINT) * lower * .85);
 #endif
   // Magic Plus flips the raised stone to black while it works.
   if (vState.y > 0. && fract(uTime * vState.y + vState.x * .16) > .5) col *= .07;

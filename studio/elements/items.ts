@@ -4,7 +4,7 @@ import { heldStonePreview, trackStonePreview } from '../../src/gfx/stones/previe
 import type { StudioElement, Variant } from '../types.ts';
 
 const TRACK: Variant[] = [{ id: 'stone', label: 'On the track', inGame: true }];
-const LEVELS: Variant[] = [{ id: '1', label: 'Level 1', inGame: true }, { id: '2', label: 'Level 2 (blinks)', inGame: true }, { id: '3', label: 'Level 3 (blinks fast)', inGame: true }];
+const LEVELS: Variant[] = [{ id: '1', label: 'Level 1', inGame: true }, { id: '2', label: 'Level 2 (white glint)', inGame: true }, { id: '3', label: 'Level 3 (white flash)', inGame: true }];
 
 /** A Magic Stone as it floats over the road, with its shadow. */
 const pickups: StudioElement[] = STONE_KINDS.map(kind => ({
@@ -17,7 +17,7 @@ const pickups: StudioElement[] = STONE_KINDS.map(kind => ({
   },
 }));
 
-/** A stack as it trails behind a racer. Matching stones merge into one stack that blinks to show its level. */
+/** A stack as it trails behind a racer. Matching stones merge into one stack that flashes white to show its level. */
 const stacks: StudioElement[] = (Object.keys(ITEMS) as Item[]).map(kind => ({
   id: `stack.${kind}`, name: `${ITEMS[kind].name} Stack`, category: 'Items',
   tags: ['magic stone', 'held', 'stack', 'level', ...ITEMS[kind].names],
