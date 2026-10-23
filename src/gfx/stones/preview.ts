@@ -15,6 +15,6 @@ export function trackStonePreview(kind: StoneKind): StonePreview {
 
 /** A held stack of `level` stones for a racer of size 1, centred on the root's origin. */
 export function heldStonePreview(kind: Item, level: number): StonePreview {
-  const held = new HeldStones(1), root = new THREE.Group(), at = new THREE.Vector3(); root.add(held.mesh);
+  const held = new HeldStones(1), root = new THREE.Group(), at = new THREE.Vector3(); root.add(held.root);
   return { root, update: t => { held.begin(t); held.add(at, kind, level, 1, 0); held.end(); }, dispose: () => held.dispose() };
 }

@@ -43,7 +43,7 @@ export class Effects {
   private frozenMat = crystalMaterial('#9fe3ff', { opacity: .55, intensity: 1.15 });
   constructor(scene: THREE.Scene) {
     this.bolts = Array.from({ length: 24 }, () => new Bolt(this.boltMat)); this.bursts = new Bursts(this.group);
-    this.group.add(this.glow.mesh, this.smoke.mesh, this.held.mesh, this.abilities.batch.mesh, ...this.bolts.map(b => b.mesh)); scene.add(this.group);
+    this.group.add(this.glow.mesh, this.smoke.mesh, this.held.root, this.abilities.batch.mesh, ...this.bolts.map(b => b.mesh)); scene.add(this.group);
   }
   /** Emits `n` particles from a template, randomised per particle. Scaled by `density` on lower quality settings. */
   spray(pool: Particles, n: number, f: (i: number) => Emit) { n = Math.max(1, Math.round(n * this.density)); for (let i = 0; i < n; i++) pool.emit(f(i)); }

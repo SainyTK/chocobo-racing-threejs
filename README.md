@@ -112,7 +112,7 @@ A taken stone bursts into a bright smear of its colour and grows back in after 3
 You hold up to three stones, as small balls rolling in a short chain on the road right behind your racer's rear wheels, oldest first.
 A stone picked up right after a matching one merges into it for a stronger spell, up to level three, but every stone still takes a place until you cast.
 A level three stack fills all three HUD slots, and you drive through stones until you cast it.
-As in the original, a stack looks like one stone and flashes white to show its level: a white glint every half second at level two, and a full white flash a little faster at level three.
+As in the original, a stack looks like one stone and shows its level: at level two a bright band sweeps down the stone from top to bottom every half second, and at level three the stone flashes white and a ring grows out of it and fades, a little faster.
 The latest stack casts first, at its full level.
 Reflect and Doom never merge.
 Bump into a rival's chain from behind to take the stack you touch, whole.

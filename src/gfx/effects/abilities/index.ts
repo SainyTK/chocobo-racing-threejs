@@ -42,7 +42,7 @@ export class AbilityFx {
   private frames = new Map<string, RacerFrame>(); private racers: readonly AbilityRacer[] = [];
   constructor(fx: Effects) {
     this.boost = new BoostFx(fx); this.charge = new ChargeFx(fx); this.flare = new MegaflareFx(fx);
-    this.barrier = new BarrierFx(fx); this.mug = new MugFx(fx, this.cues, this.carried); fx.group.add(this.carried.mesh);
+    this.barrier = new BarrierFx(fx); this.mug = new MugFx(fx, this.cues, this.carried); fx.group.add(this.carried.root);
   }
   /** Starts the look of a racer's ability. Returns false for abilities drawn elsewhere. Mug and Magic Plus start through `mugged` and `raised`. */
   used(ability: AbilityId, racerId: string) {

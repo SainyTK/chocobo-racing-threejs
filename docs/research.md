@@ -180,7 +180,7 @@ Deliberate deviations:
 | Symbols are low-resolution textures | Symbols are drawn per pixel | Crisp at phone and desktop resolutions |
 | Slots refill within a lap, possibly with another kind | Fixed kinds and a 3.5 s respawn | Keeps the existing simulation |
 
-All track stones draw in three instanced draw calls (stones, shadows and pickup bursts, the last only while a burst plays) and every racer's held stones in one more.
+All track stones draw in three instanced draw calls (stones, shadows and pickup bursts, the last only while a burst plays) and every racer's held stones in one more, plus one for the level 3 flashes and rings while any racer holds a level 3 stack.
 
 ### Spell stack
 
@@ -194,12 +194,12 @@ These rules were checked against the manual (pages 14, 18 and 19), the Story tut
 - Reflect and Doom never power up; Fire, Ice, Thunder, Haste, Mini and Ultima do (manual).
 - A "?" stone becomes its spell the moment it is picked up; the held ball shows the real stone at once (White Mage Grand Prix, 8:20).
 - The chain starts right at the rear wheels with the oldest stone, and each newer stone rolls nearly touching the one before it; the backmost stone is the one cast next (Chubby Chocobo's Grand Prix, 1:52: Thunder under the kart, then two newer stones; the backmost goes first).
-- A stack flashes white to show its level.
-  At level 2 a white glint covers the lower half of the ball for about 0.22 s every 0.53 s (Moogle Forest, 37.5 s to 44.4 s and 62 s to 70 s; the same glint on Goblin's Fire after Magic Plus).
-  At level 3 the whole ball turns white for four frames every 0.44 s, a pale rim fades out after it, and a short glint comes just before the next flash (Moogle Forest, 44.8 s to 47.8 s).
+- A stack shows its level with light that moves.
+  At level 2 a bright white band about a quarter of the ball high sweeps down the ball from top to bottom in about 0.3 s, once every 0.53 s (Moogle Forest, 37.5 s to 44.4 s and 63.07 s to 63.43 s frame by frame; the same band on Goblin's Fire after Magic Plus).
+  At level 3, once every 0.44 s, a white disc swells out of the ball to about 1.3 times its radius over four frames, then opens into a pale yellow ring that grows to about 1.5 times the radius, turns yellow-green and fades within about four frames; a quicker band sweeps down the ball just before the next flash (Moogle Forest, 45.25 s to 45.85 s frame by frame).
   A level 1 stone is steady.
   The FAQ's "blink" and "blink rapidly" describe this.
-- Magic Plus raises the backmost stack by one level (FAQ, and the glint that starts on Goblin's Fire after the trigger).
+- Magic Plus raises the backmost stack by one level (FAQ, and the band that starts sweeping Goblin's Fire after the trigger).
 - Mug takes the latest stack whole: a CPU Goblin's Mug takes the player's flashing level 2 Thunder and leaves nothing (Chocobo Grand Prix, 5:37).
   In the remake the thief gets the stack at its level and loses the stones that do not fit.
 - A rival steals by bumping into the racer from behind (manual, Story chapter 2).
@@ -210,7 +210,7 @@ Deliberate deviations:
 | Original | Remake | Reason |
 | --- | --- | --- |
 | The chain snakes along the racer's past path through corners | The chain is a straight line behind the racer's direction of travel, eased so it sways a little | The simulation places the stacks for stealing, and a path history would add racer state to every network update |
-| The level 3 rim glows yellow-green outside the ball | A pale rim inside the ball's edge | Drawn by the stone shader in the same draw call |
+| The level 2 band follows the ball's curve | The band is level across the screen | Reads the same at held-stone size |
 | No source shows what Mug does when the thief has less room than the stolen stack | The stones that do not fit are lost | Same rule as every other way of gaining stones |
 | No source shows Magic Plus on a full inventory, a level 3 stack, Reflect or Doom | Magic Plus waits until the latest stack can rise | Keeps the charge for a stone it can raise |
 
@@ -278,7 +278,7 @@ The remake draws it with the same `activationBurst()` as Dash (`abilities/burst.
 What a rival sees: no footage shows a CPU Golem, Goblin, Black Magician, White Mage or Chubby Chocobo using these abilities in view of the player.
 The remake draws every one of them in the world round the racer, so a rival behind or beside sees the same sprites at its own distance, and the Studio shows each from the chase camera, the side and 20 m behind.
 The black flicker the earlier Magic Stones notes described is the Magic Plus trigger.
-A stack's own level shows as white flashes; see "Spell stack" above.
+A stack's own level shows as a sweeping band or a growing ring; see "Spell stack" above.
 
 Deliberate deviations:
 
