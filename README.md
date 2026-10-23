@@ -109,13 +109,13 @@ A black "?" stone with a yellow question mark, as in the original, rolls a rando
 Racers in the back half of the field get stronger random spells, and only they can roll Ultima from one.
 A taken stone bursts into a bright smear of its colour and grows back in after 3.5 s.
 
-You hold up to three stones, as small balls rolling in a line on the road behind your racer.
-A stone that matches your latest stack merges into it for a stronger spell, up to level three, but every stone still takes a place until you cast.
-A level three stack fills all three HUD slots.
-As in the original, a level two stack blinks and a level three stack blinks fast.
+You hold up to three stones, as small balls rolling in a short chain on the road right behind your racer's rear wheels, oldest first.
+A stone picked up right after a matching one merges into it for a stronger spell, up to level three, but every stone still takes a place until you cast.
+A level three stack fills all three HUD slots, and you drive through stones until you cast it.
+As in the original, a stack looks like one stone and flashes white to show its level: a white glint every half second at level two, and a full white flash a little faster at level three.
 The latest stack casts first, at its full level.
 Reflect and Doom never merge.
-Drive into a rival's trailing stack to take it.
+Bump into a rival's chain from behind to take the stack you touch, whole.
 
 Single-target spells pick their victim by race progress, so from first place they hit second place.
 
@@ -149,7 +149,7 @@ Every ability gauge starts empty and fills at a constant rate.
 | Dash | Chocobo | 16 s | A 2 s boost |
 | Flap | Mog | 11 s | Fly over ice and rough ground for 5 s |
 | Grip-Up | Golem | 11 s | Extra grip, steering and acceleration for 7 s |
-| Mug | Goblin | 18 s | Takes one stone from the best placed rival who holds one, or gives a random stone; it waits while your inventory is full |
+| Mug | Goblin | 18 s | Takes the latest stack, whole, from the best placed rival who holds one, or gives a random stone; it waits while your inventory is full |
 | Magic Plus | Black Magician | 20 s | Automatically adds a level to your latest stack |
 | Barrier | White Mage | 16 s | Automatically raises a shield for 4 s or until it blocks one hit |
 | Receive | Chubby Chocobo | 18 s | Automatically catches the next spell that hits you as a stone of the same level, if there is room |
@@ -394,8 +394,8 @@ Reports are in `output/playwright-report/`; screenshots are in `output/testing/`
 - `src/gfx/effects/`: spell and race effects: fireballs, ice traps, lightning, Ultima, Reflect bubbles, Doom runes, drift sparks and status auras. `abilities/` draws the boost spike fans (Dash, Haste, Charge, pads, start dash), Mog's Flap wings, Bahamut's Megaflare, Golem's Grip-Up rings, Goblin's Mug helper, Black Magician's Magic Plus, White Mage's Barrier pulses and Chubby Chocobo's Receive as one batch of sprites; see the ability effects section in `docs/research.md`.
   `index.ts` holds the `Effects` controller; `spells.ts` draws each spell's cast and impact by level; `speed-lines.ts` draws the screen-space speed streaks; `bolt.ts`, `bursts.ts` and `status.ts` each hold one effect component.
 - `src/gfx/particles/`: instanced billboard particle pools and their shaders.
-- `src/gfx/orbs/`: Magic Stone orbs. Each stone is a glass sphere with its element ray-marched inside it: a flame, a turning cluster of ice crystals, plasma-globe lightning, a speed dash with trailing spikes, a mirror ball, shrinking rings, a Doom skull in smoke, a star core and a white question mark in black smoke.
-  `interiors.ts` holds one shader per stone, `glass.ts` the shell and `index.ts` builds an orb. Track pickups, held stones and HUD slots all use them. `stack.ts` wraps a held orb in its level two or three aura.
+- `src/gfx/stones/`: Magic Stones, glossy toon balls with a symbol drawn per pixel on the side facing the camera.
+  `looks.ts` holds each stone's colours, sizes and the level flash timing, `glyphs.ts` the symbols, `material.ts` the shader, `field.ts` the track stones with their shadows and pickup bursts, `held.ts` every racer's held chain in one draw call, and `preview.ts` single stones for the Studio and the HUD slots.
 - `src/gfx/stage/`: course scenery.
   `course.ts` assembles a course; `kit.ts` places and merges props; `patches.ts`, `ramps.ts`, `rails.ts`, `shortcuts.ts` and `hazards.ts` draw the course gimmicks; `terrain.ts` builds the ground heightfield and textured road; `sky.ts` the sky dome and distant mountains; `liquid.ts` water, lava and cloud seas; `ambient.ts` drifting particles; `textures.ts` procedural road and ground textures; `props/` shared props; `courses/` one file per course.
 - `src/gfx/pipeline.ts`: renderer settings, bloom composer and lights shared by the game and the studio.

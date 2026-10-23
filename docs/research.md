@@ -27,7 +27,7 @@ These describe this repository's behavior, not a claim of exact original code.
 | Driving | World position, heading, velocity, a lateral grip limit of about 4 g per racer, brake-tap sharp turns, short drifts with a 1.9 s over-drift spin, boost kicks that bleed off, wall hits that cost speed by impact, mass-based bumps, falls and recovery | Hand-tuned arcade solver, no bit-for-bit physics match |
 | Race validation | Twelve sequential gates per lap, reverse-crossing rejection, split times, finish ordering | Newly authored track layouts and gate locations |
 | Racers | Eight distinct handmade low-poly character/vehicle models a skinned, textured Bahamut who flies on his own wings and a skinned Cloud on the Hardy-Daytona, with driving stats balanced against the original's top speeds (84 to 88 MPH), and hit, cast, overtake, win and lose reactions | No ripped meshes, original animations or textures; simplified silhouettes |
-| Inventory | Three stones rolling on the road behind the racer, blinking to show a stack's level, LIFO use, matching stones merged into one stack up to level three with every stone still taking a place, theft by driving into a trailing stack | Numeric timing and some defensive interactions are interpretations |
+| Inventory | Three stones rolling in a short chain right behind the racer's rear wheels, flashing white to show a stack's level, LIFO use, a stone merged into the latest stack when it matches, up to level three, with every stone still taking a place, and Mug or a bump from behind taking a whole stack | Numeric timing and some defensive interactions are interpretations |
 | Magic | All eight main spell families, per-course stone sets from the original's Story chapters in fixed-colour lanes, position-weighted "?" stones, targeting by race progress, the original's three hit tiers with a 2.5 s safe window, single-target Mini in 25% steps, Doom transfer, and CPU casting habits per character | Cid's Test Track has Moogle Forest's stones, where the original's first course had none. Durations are hand-tuned; no original effect assets |
 | Abilities | Dash, Flap, Grip-Up, Mug, Magic Plus, Barrier, Receive and Charge with the original's recharge times; each racer defaults to its own, and the player can choose another | Magic Plus recharges in 20 s and Charge in 14 s, both measured in all-CPU races. Dash lasts 2 s and Charge 1 s, shorter than the original, because boosts are worth more with this grip model. Barrier is a timed 4 s shield |
 | Race classes | Chocobo, Behemoth and Bahamut Class set CPU pace, cornering, brake taps, hazard misreads and shortcut use; Bahamut also makes every racer 10% faster. Mild catch-up keyed on the leading human | Every class is available from the start |
@@ -168,21 +168,51 @@ On pickup the held stone appears at once, and the track stone turns into a brigh
 The remake bursts the stone the same way over 0.22 s and drops the earlier star sparkles.
 In the original a taken stone leaves an empty slot, and the slot is full again by the next lap, sometimes with a different kind. The refill itself is never on screen; the remake keeps its fixed kinds and 3.5 s respawn and grows the stone back in over 0.25 s.
 Held stones in the original roll on the road in a short chain right behind the racer's rear wheels, about half a track stone across, symbol facing the camera.
-The manual says a stack "will flash" to show its level, and one FAQ says level two "will start to blink" and level three "will start to blink rapidly"; the footage shows held stones blinking to black.
-In 30 fps captures a held stone alternates with black every frame for bursts of about 2.9 s; the ability effects research found these bursts are the Magic Plus trigger, and the footage shows no level blink at all. The remake blinks level two four times a second and level three eight times a second, steadily, so the level is always readable.
-The original HUD shows no held-stone icons; the remake keeps its MAGIC slots, now drawn from the same stone model.
+How the chain behaves, how stacks level up and how they flash is in "Spell stack" below.
+The original HUD shows no held-stone icons; the remake keeps its MAGIC slots, drawn from the same stone model.
 
 Deliberate deviations:
 
 | Original | Remake | Reason |
 | --- | --- | --- |
-| Held stones sit right under and behind the rear wheels | Held stones roll on the road 2.1 m behind the racer's centre, then every 1.3 m, scaled by racer size | The simulation places stacks there and a rival steals one by driving into it; moving them would change gameplay. Drawn small and at road level, they read like the original's chain |
 | Rows hold five stones on the roads seen in footage | Rows keep three to five lanes per course | Lane counts are gameplay layout, outside this visual pass |
 | Ultima stones also lie on the road in Grand Prix races on Moogle Forest and The Black Manor | Only Fantasia lays Ultima stones | Stone sets are gameplay layout, outside this visual pass |
 | Symbols are low-resolution textures | Symbols are drawn per pixel | Crisp at phone and desktop resolutions |
-| Slots refill within a lap, possibly with another kind; held stacks blink in bursts | Fixed kinds, 3.5 s respawn, steady 4 and 8 blinks a second | Keeps the existing simulation; a steady blink always shows the level |
+| Slots refill within a lap, possibly with another kind | Fixed kinds and a 3.5 s respawn | Keeps the existing simulation |
 
 All track stones draw in three instanced draw calls (stones, shadows and pickup bursts, the last only while a burst plays) and every racer's held stones in one more.
+
+### Spell stack
+
+These rules were checked against the manual (pages 14, 18 and 19), the Story tutorials (every chapter's dialogue in a full playthrough, https://www.youtube.com/watch?v=rFEEId_J4SI), the GameFAQs guides and footage read frame by frame: a Story chapter 2 race in Moogle Forest with only Haste stones (https://www.youtube.com/watch?v=lw-HoHbH43g), a Goblin race with Magic Plus, a Chocobo Grand Prix where a CPU Goblin mugs the player, Chubby Chocobo's Grand Prix and a White Mage Grand Prix.
+
+- A racer holds up to three stones and casts the latest first (manual, Story chapter 2, every FAQ).
+- A stone picked up right after a matching one is absorbed into it: "the second and third Stones will become a part of the first Stone" (manual).
+  A stack looks like one stone, so three Haste pickups in Moogle Forest leave one held ball (about 22 s, 32.6 s and 44.8 s in the chapter 2 race).
+- Every stone in a stack still takes a place: "if you have collected 3 FIRE Stones ... you won't be able to pick up any more Stones until you cast it" (manual).
+  The remake lets a racer drive through stones while full.
+- Reflect and Doom never power up; Fire, Ice, Thunder, Haste, Mini and Ultima do (manual).
+- A "?" stone becomes its spell the moment it is picked up; the held ball shows the real stone at once (White Mage Grand Prix, 8:20).
+- The chain starts right at the rear wheels with the oldest stone, and each newer stone rolls nearly touching the one before it; the backmost stone is the one cast next (Chubby Chocobo's Grand Prix, 1:52: Thunder under the kart, then two newer stones; the backmost goes first).
+- A stack flashes white to show its level.
+  At level 2 a white glint covers the lower half of the ball for about 0.22 s every 0.53 s (Moogle Forest, 37.5 s to 44.4 s and 62 s to 70 s; the same glint on Goblin's Fire after Magic Plus).
+  At level 3 the whole ball turns white for four frames every 0.44 s, a pale rim fades out after it, and a short glint comes just before the next flash (Moogle Forest, 44.8 s to 47.8 s).
+  A level 1 stone is steady.
+  The FAQ's "blink" and "blink rapidly" describe this.
+- Magic Plus raises the backmost stack by one level (FAQ, and the glint that starts on Goblin's Fire after the trigger).
+- Mug takes the latest stack whole: a CPU Goblin's Mug takes the player's flashing level 2 Thunder and leaves nothing (Chocobo Grand Prix, 5:37).
+  In the remake the thief gets the stack at its level and loses the stones that do not fit.
+- A rival steals by bumping into the racer from behind (manual, Story chapter 2).
+  In the remake a racer whose body touches a held stack takes it whole, which with the chain at the rear wheels is a bump from behind.
+
+Deliberate deviations:
+
+| Original | Remake | Reason |
+| --- | --- | --- |
+| The chain snakes along the racer's past path through corners | The chain is a straight line behind the racer's direction of travel, eased so it sways a little | The simulation places the stacks for stealing, and a path history would add racer state to every network update |
+| The level 3 rim glows yellow-green outside the ball | A pale rim inside the ball's edge | Drawn by the stone shader in the same draw call |
+| No source shows what Mug does when the thief has less room than the stolen stack | The stones that do not fit are lost | Same rule as every other way of gaining stones |
+| No source shows Magic Plus on a full inventory, a level 3 stack, Reflect or Doom | Magic Plus waits until the latest stack can rise | Keeps the charge for a stone it can raise |
 
 ## Ability effects: Dash, boosts, Charge, Flap and Megaflare
 
@@ -247,8 +277,8 @@ The remake draws it with the same `activationBurst()` as Dash (`abilities/burst.
 
 What a rival sees: no footage shows a CPU Golem, Goblin, Black Magician, White Mage or Chubby Chocobo using these abilities in view of the player.
 The remake draws every one of them in the world round the racer, so a rival behind or beside sees the same sprites at its own distance, and the Studio shows each from the chase camera, the side and 20 m behind.
-The original's held stones show no level blink in any checked span of the footage: the black flicker the Magic Stones notes describe is the Magic Plus trigger.
-The remake keeps its steady level blink on stacks and adds the Magic Plus flicker on top.
+The black flicker the earlier Magic Stones notes described is the Magic Plus trigger.
+A stack's own level shows as white flashes; see "Spell stack" above.
 
 Deliberate deviations:
 
