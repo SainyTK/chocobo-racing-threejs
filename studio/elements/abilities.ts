@@ -129,11 +129,12 @@ export const abilities: StudioElement[] = [
     }
     const actors = [actor('Goblin', 'player', 0, 0), ...variant === 'nobody' ? [] : [actor('Chocobo', 'victim', 3, 14)]];
     return abilityScene(variant === 'victim' || variant === 'nobody' ? 'chase' : variant, ctx, actors, 3.2, (u, prev, [thief, victim], { fx }) => {
-      if (crossed(u, prev, 0)) { hold(thief, ['thunder', 1]); if (victim) hold(victim, ['fire', 1], ['haste', 1]); }
+      if (crossed(u, prev, 0)) { hold(thief, ['thunder', 1]); if (victim) hold(victim, ['fire', 1], ['haste', 2]); }
       if (!crossed(u, prev, .3)) return;
-      const kind = victim ? victim.p.stones.pop()!.kind : 'ice' as Item;
-      thief.p.stones.push({ kind, level: 1 });
-      fx.abilities.used('mug', thief.p.id); fx.abilities.mugged(thief.p.id, victim?.p.id, kind, thief.p.stones.length - 1);
+      // Mug takes the victim's latest stack whole.
+      const stack = victim ? victim.p.stones.pop()! : { kind: 'ice' as Item, level: 1 };
+      thief.p.stones.push(stack);
+      fx.abilities.used('mug', thief.p.id); fx.abilities.mugged(thief.p.id, victim?.p.id, stack.kind, thief.p.stones.length - 1);
     }, variant === 'victim' ? 1 : 0);
   }),
   element('magic-plus', 'Magic Plus', ['black magician', 'level', 'stone', 'passive'], VIEWS, (variant, ctx) => abilityScene(variant, ctx, [actor('Black Magician', 'player', 0, 0)], 4, (u, prev, [m], { fx }) => {

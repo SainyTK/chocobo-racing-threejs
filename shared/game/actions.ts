@@ -1,7 +1,7 @@
 import { trackLength } from '../track/sampling.ts';
 import { ABILITIES, ABILITY_SECONDS } from './abilities.ts';
 import { ITEMS, drawStone, inBackHalf, spellName } from './items.ts';
-import { addStone, canAddStone, syncInventory, takeStack, takeStone } from './inventory.ts';
+import { addStone, canAddStone, syncInventory, takeStack } from './inventory.ts';
 import { restartPoint } from '../track/surface.ts';
 import { hit } from './combat.ts';
 import { event } from './events.ts';
@@ -32,10 +32,13 @@ export function useItem(r: Race, p: Racer) {
   }
   event(r, p, kind, `${spellName(kind, level)}!`);
 }
-/** Mug takes one stone from the latest stack of the best placed rival holding stones. With nobody to rob, it conjures a random stone. */
+/**
+ * Mug takes the latest stack of the best placed rival holding stones. A stack looks like one stone, and Mug takes it
+ * whole, as in the original. With nobody to rob, it conjures a random stone.
+ */
 function mug(r: Race, p: Racer) {
   const victim = activeRivals(r, p).filter(q => q.stones.length).sort((a, b) => a.rank - b.rank)[0];
-  if (victim) { const kind = takeStone(victim)!; addStone(p, kind); event(r, p, 'steal', `Mugged a ${ITEMS[kind].name} Stone!`, victim.id); }
+  if (victim) { const { kind, level } = takeStack(victim)!; addStone(p, kind, level); event(r, p, 'steal', `Mugged ${spellName(kind, level)}!`, victim.id); }
   else { const kind = drawStone(random(r), inBackHalf(p.rank, r.racers.length)); addStone(p, kind); event(r, p, 'pickup', `${ITEMS[kind].name} Stone`); }
 }
 export function useAbility(r: Race, p: Racer) {

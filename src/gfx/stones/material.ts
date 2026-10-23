@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { GLYPHS } from './glyphs.ts';
-import { CENTRED_KINDS, STONE_KINDS, STONE_LOOKS } from './looks.ts';
+import { CENTRED_KINDS, LEVEL_FLASH, STONE_KINDS, STONE_LOOKS } from './looks.ts';
 
 const table = (pick: (kind: typeof STONE_KINDS[number]) => string) => STONE_KINDS.map(kind => new THREE.Color(pick(kind)));
 const N = STONE_KINDS.length;
@@ -28,6 +28,9 @@ varying vec3 vN; varying vec3 vView; varying vec3 vF; varying vec3 vR; varying v
 ${GLYPHS}
 /** The symbol spans this much of the ball's face. */
 const float GLYPH_SCALE = 1.22;
+const float FLASH_PERIOD_2 = ${LEVEL_FLASH.period[0]}, FLASH_PERIOD_3 = ${LEVEL_FLASH.period[1]}, GLINT = ${LEVEL_FLASH.glint}, FLASH = ${LEVEL_FLASH.flash}, RIM = ${LEVEL_FLASH.rim};
+/** How strongly the level glint shows s seconds into its cycle: a quick rise, a hold and a quick fall. */
+float glint(float s) { return smoothstep(0., .05, s) * (1. - smoothstep(GLINT - .07, GLINT, s)); }
 void main() {
   vec3 n = normalize(vN), v = normalize(vView);
   vec2 q = vec2(dot(n, vR), dot(n, vU)) / GLYPH_SCALE;
@@ -40,7 +43,16 @@ void main() {
   float hl = dot(n, normalize(L + v)), rim = 1. - max(dot(n, v), 0.);
   col *= 1. - .3 * smoothstep(.5, 1., rim);
   col += vec3(1.) * (smoothstep(.95, .985, hl) * .62 + smoothstep(.86, .97, hl) * .14);
-  // A held stack of two or three blinks to black, faster at level three.
+#ifndef PUFF
+  // A held stack shows its level with white flashes (see LEVEL_FLASH); w is the stack's level.
+  float lower = (1. - smoothstep(-.5, .1, dot(n, vU))) * smoothstep(0., .4, dot(n, v));
+  if (vState.w > 2.5) {
+    float s = mod(uTime + vState.x * .16, FLASH_PERIOD_3), edge = smoothstep(.4, 1., rim);
+    col = mix(col, vec3(1.), step(s, FLASH) * .92 + glint(s - FLASH_PERIOD_3 + GLINT + .03) * lower * .85);
+    col += vec3(1., 1., .78) * edge * (1. - smoothstep(FLASH, FLASH + RIM, s)) * step(FLASH, s) * .9;
+  } else if (vState.w > 1.5) col = mix(col, vec3(1.), glint(mod(uTime + vState.x * .16, FLASH_PERIOD_2)) * lower * .85);
+#endif
+  // Magic Plus flips the raised stone to black while it works.
   if (vState.y > 0. && fract(uTime * vState.y + vState.x * .16) > .5) col *= .07;
 #ifdef PUFF
   // A picked stone bursts into a bright, soft smear of its own colours that fades out.

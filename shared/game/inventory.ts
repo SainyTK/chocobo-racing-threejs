@@ -31,21 +31,20 @@ export function levelUpLatest(p: Racer) {
   const top = p.stones.at(-1);
   return !!top && top.level < maxLevel(top.kind) && addStone(p, top.kind);
 }
-/** Removes one stone from the latest stack and returns its kind. */
-export function takeStone(p: Racer) {
-  const top = p.stones.at(-1); if (!top) return undefined;
-  if (--top.level === 0) p.stones.pop();
-  syncInventory(p); return top.kind;
-}
 /** Removes and returns the stack at `index` (the latest by default). */
 export function takeStack(p: Racer, index = p.stones.length - 1): StoneStack | undefined { const [stack] = p.stones.splice(index, 1); syncInventory(p); return stack; }
 
-/** Distance between neighbouring held stacks, and from the racer's centre to the first one, scaled by racer size. */
-const STACK_GAP = 1.3, STACK_START = 2.1;
+/**
+ * Distance between neighbouring held stacks, and from the racer's centre to the first one, scaled by racer size. As in
+ * the original, the oldest stack rolls right at the rear wheels and the others follow it nearly touching.
+ */
+const STACK_GAP = 1, STACK_START = 1.3;
+/** Radius of a held stone, about half a track stone across, for a racer of size 1. */
+export const HELD_STONE_RADIUS = .42;
 /**
  * World positions of the held stacks on the ground plane. They trail in a line behind the racer's direction of
  * travel, oldest closest; the latest stack (the next to cast) is the last in line. The renderer draws the orbs here
- * and a racer that drives into one takes it.
+ * and a racer that bumps into one from behind takes it.
  */
 export function stackPositions(p: Racer) {
   const heading = p.speed > 2 ? Math.atan2(p.vx, p.vz) : p.yaw, bx = -Math.sin(heading), bz = -Math.cos(heading), size = RACERS[p.character].size;

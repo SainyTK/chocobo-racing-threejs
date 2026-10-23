@@ -1,12 +1,14 @@
 import { RACERS } from '../racers.ts';
 import { miniScale } from '../mini.ts';
 import { CRASH, DOOM } from '../spells.ts';
-import { addStone, canAddStone, stackPositions, takeStack } from '../inventory.ts';
+import { HELD_STONE_RADIUS, addStone, canAddStone, stackPositions, takeStack } from '../inventory.ts';
 import { crash, hit } from '../combat.ts';
 import { event } from '../events.ts';
 import type { Race, Racer } from '../types.ts';
 
 const BUMP_BOUNCE = .3, BUMP_SHOVE = 6;
+/** Radius of a racer's body for contacts, for a racer of size 1. */
+const BODY_RADIUS = 1.15;
 /** Closing speed in m/s above which a contact is felt as a bump: sound, sparks and a small shake. */
 const BUMP_IMPACT = 2;
 
@@ -29,7 +31,7 @@ function pushApart(a: Racer, b: Racer, ma: number, mb: number, nx: number, nz: n
 export function resolveContacts(r: Race) {
   for (let i = 0; i < r.racers.length; i++) for (let j = i + 1; j < r.racers.length; j++) {
     const a = r.racers[i], b = r.racers[j]; if (a.falling > 0 || b.falling > 0) continue;
-    const sa = bodySize(a), sb = bodySize(b), dx = b.px - a.px, dz = b.pz - a.pz, d = Math.hypot(dx, dz), radius = (sa + sb) * 1.15;
+    const sa = bodySize(a), sb = bodySize(b), dx = b.px - a.px, dz = b.pz - a.pz, d = Math.hypot(dx, dz), radius = (sa + sb) * BODY_RADIUS;
     if (d >= radius) continue;
     const closing = pushApart(a, b, mass(a, sa, b), mass(b, sb, a), d > .001 ? dx / d : 1, d > .001 ? dz / d : 0, radius - d);
     if (a.finishTime !== null || b.finishTime !== null || a.contactCooldown > 0 || b.contactCooldown > 0) continue;
@@ -45,14 +47,17 @@ export function resolveContacts(r: Race) {
   }
 }
 
-/** A racer that drives into a rival's trailing stack takes the whole stack, as if it were a track pickup. */
+/**
+ * A racer whose body touches a rival's held stack takes the whole stack, as if it were a track pickup. The chain rolls
+ * right behind the holder, so this is the original's steal by bumping into a racer from behind.
+ */
 export function stealStacks(r: Race) {
   for (const holder of r.racers) {
     if (!holder.stones.length || holder.finishTime !== null || holder.falling > 0) continue;
     const at = stackPositions(holder);
     for (const thief of r.racers) {
       if (thief === holder || thief.finishTime !== null || thief.falling > 0 || thief.stun > 0 || thief.pickupCooldown > 0) continue;
-      const reach = .8 * RACERS[thief.character].size * miniScale(thief);
+      const reach = BODY_RADIUS * bodySize(thief) + HELD_STONE_RADIUS * RACERS[holder.character].size;
       let i = at.length - 1; while (i >= 0 && !(Math.hypot(at[i].x - thief.px, at[i].z - thief.pz) < reach && canAddStone(thief))) i--;
       if (i < 0) continue;
       const stack = takeStack(holder, i)!; addStone(thief, stack.kind, stack.level); thief.pickupCooldown = .25;

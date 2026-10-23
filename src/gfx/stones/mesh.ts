@@ -10,8 +10,8 @@ export const shadowGeo = new THREE.PlaneGeometry(2, 2).rotateX(-Math.PI / 2);
 const hidden = new THREE.Matrix4().makeScale(0, 0, 0);
 
 /**
- * Many stones in one draw call. Each instance has a matrix, a kind and a state
- * (animation phase, blinks per second, fade 0..1, puff age 0..1); see the stone shader.
+ * Many stones in one draw call. Each instance has a matrix, a kind and a state (animation phase, blinks to black
+ * per second, fade 0..1, and the puff age 0..1 of a pickup burst or the level of a held stack); see the stone shader.
  */
 export class StoneMesh {
   readonly mesh: THREE.InstancedMesh;
@@ -24,8 +24,8 @@ export class StoneMesh {
     this.mesh.frustumCulled = false;
     for (let i = 0; i < capacity; i++) this.mesh.setMatrixAt(i, hidden);
   }
-  set(i: number, matrix: THREE.Matrix4, kind: StoneKind, phase: number, blink: number, fade: number, puff = 0) {
-    this.mesh.setMatrixAt(i, matrix); this.kinds.setX(i, kindIndex(kind)); this.states.setXYZW(i, phase, blink, fade, puff);
+  set(i: number, matrix: THREE.Matrix4, kind: StoneKind, phase: number, blink: number, fade: number, puffOrLevel = 0) {
+    this.mesh.setMatrixAt(i, matrix); this.kinds.setX(i, kindIndex(kind)); this.states.setXYZW(i, phase, blink, fade, puffOrLevel);
   }
   hide(i: number) { this.mesh.setMatrixAt(i, hidden); }
   /** Uploads this frame's changes and draws only the first `count` instances. */

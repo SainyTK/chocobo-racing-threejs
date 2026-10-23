@@ -14,7 +14,7 @@ import { HeldStones } from '../stones/held.ts';
 import { HELD_STONE } from '../stones/looks.ts';
 import { rand, floorY } from './util.ts';
 import { SpellFx } from './spells.ts';
-import { castInfo, crashInfo, receiveInfo } from '../../race-events.ts';
+import { castInfo, crashInfo, mugInfo, receiveInfo } from '../../race-events.ts';
 import { AbilityFx } from './abilities/index.ts';
 
 const v = new THREE.Vector3(), v2 = new THREE.Vector3(), tintColor = new THREE.Color(), white = new THREE.Color('#ffffff');
@@ -133,13 +133,13 @@ export class Effects {
         const id = text.includes('magic plus') ? 'magic' : p.abilityId, color = id === 'grip' ? '#8cff7a' : id === 'mug' ? '#ffd84a' : id === 'magic' ? '#c58bff' : '#ffc45a';
         if (id === 'magic' && p.stones.length) this.abilities.raised(p.id, p.stones.length - 1);
         // Mug sends its helper out whether it robbed a rival (a `steal` event this tick) or conjured a stone.
-        if (id === 'mug' && !race.events.some(x => x.type === 'steal' && x.player === p.id && x.time === e.time)) this.mugged(p);
+        if (id === 'mug' && !race.events.some(x => x.type === 'steal' && x.player === p.id && x.time === e.time)) this.mugged(p, 1);
         if (this.abilities.used(id, p.id)) return;
         this.bursts.spawn('ring', ground, color, 4, .5);
         this.sparkle(at, color, 22);
         return;
       }
-      case 'steal': if (e.text.startsWith('Mugged')) this.mugged(p, q); else if (tAt) this.stream(tAt, at, '#ffd84a', 26); return;
+      case 'steal': { const taken = mugInfo(e); if (taken) this.mugged(p, taken.level, q); else if (tAt) this.stream(tAt, at, '#ffd84a', 26); return; }
       case 'doom-pass': if (tAt) this.stream(at, tAt, '#b45cff', 30); return;
       case 'wall': { const f = at.clone().addScaledVector(fwd, 1.5); this.spray(this.glow, 16, () => ({ x: f.x, y: f.y - .6, z: f.z, vx: rand() * 7, vy: rand(1, 6), vz: rand() * 7, life: rand(.2, .45), size: .1, color: '#fff2b8', endColor: '#ff8a3a', gravity: 18, stretch: .04, shape: Shape.Shard })); if (p.id === playerId) this.shake = Math.max(this.shake, .22); return; }
       case 'recover': this.bursts.spawn('pillar', v.set(at.x, at.y - 1.5, at.z), '#bfe9ff', 1.6, .8, { height: 10 }); this.sparkle(at, '#bfe9ff', 20); return;
@@ -147,9 +147,9 @@ export class Effects {
     }
   }
 
-  /** Goblin's Mug brought the racer's latest stone, from `victim` or out of nowhere. */
-  private mugged(p: Racer, victim?: Racer) {
-    const top = p.stones.at(-1); if (top) this.abilities.mugged(p.id, victim?.id, top.kind, top.level === 1 ? p.stones.length - 1 : undefined);
+  /** Goblin's Mug brought the racer's latest stack, of `level` stones, from `victim` or out of nowhere. */
+  private mugged(p: Racer, level: number, victim?: Racer) {
+    const top = p.stones.at(-1); if (top) this.abilities.mugged(p.id, victim?.id, top.kind, top.level === level ? p.stones.length - 1 : undefined);
   }
 
   update(dt: number, race: Race | null, chars: Map<string, Character>, playerId: string, camera: THREE.Camera, paused: boolean) {

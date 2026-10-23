@@ -9,7 +9,7 @@ export { miniScale } from './mini.ts';
 export { neutralInput, cleanInput, type Input } from './input.ts';
 export type { Racer, StoneStack, GameEvent, Trap, Projectile, RaceMode, Race } from './types.ts';
 export { makeRacer, createRace, placeRacer } from './setup.ts';
-export { syncInventory, addStone, canAddStone, takeStack, stackPositions, maxLevel, MAX_STONES } from './inventory.ts';
+export { syncInventory, addStone, canAddStone, takeStack, stackPositions, maxLevel, MAX_STONES, HELD_STONE_RADIUS } from './inventory.ts';
 export { aboveGround, hit } from './combat.ts';
 export { useItem, useAbility, recover } from './actions.ts';
 export { botInput } from './bot.ts';

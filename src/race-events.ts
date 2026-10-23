@@ -36,8 +36,8 @@ export function castInfo(e: GameEvent): { kind: Item; level: number } | null {
   return { kind: e.type as Item, level: spell?.level ?? 1 };
 }
 
+const spellAfter = (prefix: string, e: GameEvent) => { const spell = SPELLS.find(s => e.text === `${prefix} ${s.name}!`); return spell ? { kind: spell.kind, level: spell.level } : null; };
 /** The spell a `receive` event caught, from its text "Received Spell name!". */
-export function receiveInfo(e: GameEvent): { kind: Item; level: number } | null {
-  const spell = SPELLS.find(s => e.text === `Received ${s.name}!`);
-  return spell ? { kind: spell.kind, level: spell.level } : null;
-}
+export const receiveInfo = (e: GameEvent) => spellAfter('Received', e);
+/** The stack a Mug took, from its `steal` event text "Mugged Spell name!". */
+export const mugInfo = (e: GameEvent) => spellAfter('Mugged', e);

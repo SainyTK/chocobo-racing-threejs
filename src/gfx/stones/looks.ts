@@ -1,4 +1,4 @@
-import { ITEMS, type Item } from '../../../shared/game/index.ts';
+import { HELD_STONE_RADIUS, ITEMS, type Item } from '../../../shared/game/index.ts';
 
 /** A track stone is a fixed type or the black "?" stone that rolls one on pickup. */
 export type StoneKind = Item | 'random';
@@ -27,11 +27,16 @@ export const CENTRED_KINDS: StoneKind[] = ['mini', 'ultima'];
 
 /** Track stones: radius in metres and the height of their centre above the road, so they float half a ball up as in the original. */
 export const TRACK_STONE = { radius: .85, lift: 1.3 };
-/** Held stones sit on the road in the trailing line, about half a track stone across. */
-export const HELD_STONE = { radius: .42, lift: .5 };
+/** Held stones roll on the road in the chain behind the racer, at the size the simulation uses for contacts. */
+export const HELD_STONE = { radius: HELD_STONE_RADIUS, lift: .5 };
 /** A picked stone bursts into a bright smear of itself for this long. */
 export const PUFF_SECONDS = .22;
 /** A stone that respawns grows back in over this long. */
 export const RESPAWN_GROW_SECONDS = .25;
-/** Blinks per second of a held level 2 and level 3 stack. */
-export const BLINK_RATE = [0, 0, 4, 8];
+/**
+ * A held stack flashes white to show its level, as read frame by frame from 30 fps footage of the original. At level 2 a
+ * white glint covers the lower half of the ball for `glint` seconds once every `period[0]`; at level 3 the whole ball
+ * turns white for `flash` seconds once every `period[1]`, a pale rim fades out over `rim` seconds, and the glint
+ * comes just before the next flash. A level 1 stone is steady.
+ */
+export const LEVEL_FLASH = { period: [.53, .44], glint: .22, flash: .1, rim: .3 } as const;
