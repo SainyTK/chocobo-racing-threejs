@@ -5,6 +5,7 @@ import './touch-hud.css';
 import './hud/hud.css';
 import { installTouchControls } from './touch-controls.ts';
 import { mobileControls } from './mobile-hud.ts';
+import { abilityIcon } from './hud/ability-icons.ts';
 import { World, type GhostPoint } from './scene.ts';
 import { loadCharacterModels } from './gfx/characters/index.ts';
 import { AudioEngine } from './audio.ts';
@@ -97,7 +98,7 @@ function hud() {
   stopFinish();
   screen = 'race'; document.body.classList.add('racing'); scrollTo(0, 0); accumulator = 0; eventId = race?.eventId || 0; lastCount = ''; world.resize();
   const p = race!.racers.find(p => p.id === playerId)!;
-  app.innerHTML = `<div class="hud"><div class="hud-top"><div class="lap-box"><small>LAP</small><strong><span id="lap">1</span><em> / ${race!.laps}</em></strong></div><div class="race-title"><small>${cup ? `GRAND PRIX ${cup.round + 1} / 4 · ` : ''}${TRACKS[race!.track].name}</small><strong id="race-time">0:00.00</strong></div><div class="race-actions"><span id="ping">${online ? 'LIVE' : mode === 'time' ? 'TIME ATTACK' : 'CPU RACE'}</span><button data-action="pause" aria-label="Pause menu">Ⅱ</button></div></div><div id="standings" class="standings"></div><div id="countdown" class="countdown"></div><div id="callout" class="callout hidden" role="status"></div><div id="network-banner" class="network-banner hidden">CONNECTION LOST · REJOINING<br>AI is driving your racer.</div><div class="hud-bottom"><div class="position"><span id="place">6</span><sup id="suffix">th</sup><small>POSITION</small></div><div class="powers"><button class="stone-power" data-touch="item" aria-label="Use magic"><small>MAGIC <kbd>SPACE</kbd></small><div id="stone-slots" class="stone-slots"></div><strong id="spell-name">NO STONES</strong></button><button class="ability-power" data-touch="ability" aria-label="Use ability"><small>ABILITY <kbd>E</kbd></small><strong>${ABILITIES[p.abilityId].name}</strong><div class="meter"><i id="ability-fill"></i></div><span id="ability-state">CHARGING</span></button></div><div class="speed-box"><strong id="speed">0</strong><small>MPH</small><div class="meter risk"><i id="drift-fill"></i></div><span id="drift-label">DRIFT RISK</span></div><canvas id="minimap" width="240" height="190" aria-label="Live course map"></canvas></div><div class="race-hint">W ACCELERATE · A/D STEER · S BRAKE · X REVERSE · SHIFT DRIFT · R RECOVER</div>${mobileControls(p.abilityId)}</div>`;
+  app.innerHTML = `<div class="hud"><div class="hud-top"><div class="lap-box"><small>LAP</small><strong><span id="lap">1</span><em> / ${race!.laps}</em></strong></div><div class="race-title"><small>${cup ? `GRAND PRIX ${cup.round + 1} / 4 · ` : ''}${TRACKS[race!.track].name}</small><strong id="race-time">0:00.00</strong></div><div class="race-actions"><span id="ping">${online ? 'LIVE' : mode === 'time' ? 'TIME ATTACK' : 'CPU RACE'}</span><button data-action="pause" aria-label="Pause menu">Ⅱ</button></div></div><div id="standings" class="standings"></div><div id="countdown" class="countdown"></div><div id="callout" class="callout hidden" role="status"></div><div id="network-banner" class="network-banner hidden">CONNECTION LOST · REJOINING<br>AI is driving your racer.</div><div class="hud-bottom"><div class="position"><span id="place">6</span><sup id="suffix">th</sup><small>POSITION</small></div><div class="powers"><button class="stone-power" data-touch="item" aria-label="Use magic"><small>MAGIC <kbd>SPACE</kbd></small><div id="stone-slots" class="stone-slots"></div><strong id="spell-name">NO STONES</strong></button><button class="ability-power" data-touch="ability" aria-label="Use ability"><small>ABILITY <kbd>E</kbd></small><strong>${abilityIcon(p.abilityId)}${ABILITIES[p.abilityId].name}</strong><div class="meter"><i id="ability-fill"></i></div><span id="ability-state">CHARGING</span></button></div><div class="speed-box"><strong id="speed">0</strong><small>MPH</small><div class="meter risk"><i id="drift-fill"></i></div><span id="drift-label">DRIFT RISK</span></div><canvas id="minimap" width="240" height="190" aria-label="Live course map"></canvas></div><div class="race-hint">W ACCELERATE · A/D STEER · S BRAKE · X REVERSE · SHIFT DRIFT · R RECOVER</div>${mobileControls(p.abilityId)}</div>`;
   standings = new Standings($('standings')!, portrait, esc); callout = new Callout($('callout')!);
 }
 function readInput(): Input {
@@ -147,10 +148,10 @@ function updateHUD(now: number) {
   set('mobile-item-label', p.item ? spellName(p.item, p.itemLevel) : 'NO STONES');
   const skill = ABILITIES[p.abilityId];
   set('mobile-ability-state', p.barrier > 0 ? 'UP' : p.ability >= 100 ? skill.passive ? 'AUTO READY' : 'READY' : `${Math.ceil((100 - p.ability) / 100 * skill.recharge)}s`);
+  for (const button of document.querySelectorAll<HTMLElement>('[data-touch="ability"]')) button.classList.toggle('ready', p.ability >= 100);
   const mobileAbility = document.querySelector<HTMLElement>('.mobile-ability');
   if (mobileAbility) {
     mobileAbility.style.setProperty('--charge', `${p.ability}%`);
-    mobileAbility.classList.toggle('ready', p.ability >= 100);
     mobileAbility.setAttribute('aria-label', `${skill.name}: ${$('mobile-ability-state')?.textContent}`);
   }
   set('spell-name', p.item ? spellName(p.item, p.itemLevel).toUpperCase() : race.mode === 'time' ? 'NO MAGIC IN TIME ATTACK' : 'NO STONES');

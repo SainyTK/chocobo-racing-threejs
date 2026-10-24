@@ -19,3 +19,6 @@ body.finishing .countdown{top:21%}
 body.podium .hud-top,body.podium .standings,body.podium .countdown{display:none}
 .touch-device .callout{top:calc(var(--hud-standings-bottom) + var(--hud-unit) * 2)}
 body.finishing.touch-device .countdown{top:calc(var(--hud-standings-bottom) + var(--hud-unit) * 2)}
+.ability-power strong{display:flex;align-items:center;gap:8px}
+.ability-power .ability-icon{width:30px;height:30px;flex-shrink:0;filter:drop-shadow(1px 2px 0 #0d153f88)}
+[data-touch="ability"]:not(.ready) .ability-icon{filter:saturate(.45) brightness(.8)}
