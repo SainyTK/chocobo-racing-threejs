@@ -73,7 +73,7 @@ export async function driveLapByTouch(context: BrowserContext, page: Page, { tim
   const steerAt = (await steeringThumb(page, steerId)).at;
   const pedals = { drive: await centerOf(page, '.mobile-drive', pedalId), drift: await centerOf(page, '.mobile-drift', pedalId), brake: await centerOf(page, '.mobile-brake', pedalId) };
   const magic = await centerOf(page, '.mobile-item', castId), rescue = await centerOf(page, '[aria-label="Recover racer"]', rescueId);
-  const used = { drive: 0, drift: 0, brake: 0, drifting: 0, casts: 0, rescues: 0, steerLeft: 0, steerRight: 0, maxSpeed: 0 };
+  const used = { drive: 0, drift: 0, brake: 0, drifting: 0, casts: 0, rescues: 0, steerLeft: 0, steerRight: 0, maxSpeed: 0, stonesShown: 0 };
   const seen = new Set<number>();
   let p = await telemetry(page);
   while (p.time < -.2) p = await telemetry(page);
@@ -98,7 +98,11 @@ export async function driveLapByTouch(context: BrowserContext, page: Page, { tim
     used.maxSpeed = Math.max(used.maxSpeed, p.speed);
     const now = Date.now();
     if (castUntil && now > castUntil) { await touch.end([magic]); castUntil = 0; }
-    else if (!castUntil && p.item) { await touch.start([magic]); castUntil = now + 120; }
+    else if (!castUntil && p.item) {
+      // MAGIC shows the held stone before the thumb casts it.
+      if (await page.locator('.mobile-item:not(.empty) .stone-ball img[src^="data:image/png"]').waitFor({ timeout: 500 }).then(() => true, () => false)) used.stonesShown++;
+      await touch.start([magic]); castUntil = now + 120;
+    }
     if (rescueUntil && now > rescueUntil) { await touch.end([rescue]); rescueUntil = 0; }
     else if (!rescueUntil && (Math.abs(p.x) > 9 && p.speed < 3 && p.time > 6 || p.s > (p.gates + 1) * len / 12 + 15)) { await touch.start([rescue]); rescueUntil = now + 120; }
     for (const e of p.events) if (!seen.has(e.id)) {

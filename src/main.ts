@@ -14,6 +14,7 @@ import { RaceAudio } from './race-audio.ts';
 import { bark } from './sfx/voices.ts';
 import { Standings } from './hud/standings.ts';
 import { Callout } from './hud/callout.ts';
+import { MagicButton } from './hud/magic-button.ts';
 import { statusFor } from './hud/messages.ts';
 import { FinishSequence } from './finish-sequence.ts';
 import { Network, NoResponse, type RoomView } from './network.ts';
@@ -39,7 +40,7 @@ let track: TrackId = TRACK_IDS.includes(storage.get('track') as TrackId) ? stora
 let difficulty = DIFFICULTY_IDS.find(id => id === storage.get('difficulty')) ?? DEFAULT_DIFFICULTY, laps = clamp(Number(storage.get('laps', '3')) || 3, 1, 3), mode: Mode = 'race', rival = 1, playerName = storage.get('name', 'Racer');
 let screen: 'home' | 'lobby' | 'race' | 'results' = 'home', race: Race | null = null, playerId = 'you', online = false, paused = false, modalOpen = false;
 let autoThrottle = storage.get('auto', 'false') === 'true', quality = storage.get('quality', 'high'), eventId = 0, accumulator = 0, lastCount = '', scored = false;
-let standings: Standings | null = null, callout: Callout | null = null; const finish = new FinishSequence();
+let standings: Standings | null = null, callout: Callout | null = null, magicButton: MagicButton | null = null; const finish = new FinishSequence();
 let joinCode = inviteCode(new URL(location.href)), entryBusy: EntryCard | null = null, entryNotice: EntryNotice | null = null; if (joinCode) mode = 'online';
 const audio = new AudioEngine(); audio.enabled = storage.get('sound', 'true') === 'true'; const raceAudio = new RaceAudio(audio); const net = new Network();
 const keys = new Set<string>(), touch = new Set<string>(); let itemPulse = 0, abilityPulse = 0, rescuePulse = 0;
@@ -115,6 +116,7 @@ function hud() {
   const p = race!.racers.find(p => p.id === playerId)!;
   app.innerHTML = `<div class="hud"><div class="hud-top"><div class="lap-box"><small>LAP</small><strong><span id="lap">1</span><em> / ${race!.laps}</em></strong></div><div class="race-title"><small>${cup ? `GRAND PRIX ${cup.round + 1} / 4 · ` : ''}${TRACKS[race!.track].name}</small><strong id="race-time">0:00.00</strong></div><div class="race-actions"><span id="ping">${online ? 'LIVE' : mode === 'time' ? 'TIME ATTACK' : 'CPU RACE'}</span><button data-action="pause" aria-label="Pause menu">Ⅱ</button></div></div><div id="standings" class="standings"></div><div id="countdown" class="countdown"></div><div id="callout" class="callout hidden" role="status"></div><div id="network-banner" class="network-banner hidden">CONNECTION LOST · REJOINING<br>AI is driving your racer.</div><div class="hud-bottom"><div class="position"><span id="place">6</span><sup id="suffix">th</sup><small>POSITION</small></div><div class="powers"><button class="ability-power" data-touch="ability" aria-label="Use ability"><small>ABILITY <kbd>E</kbd></small><strong>${abilityIcon(p.abilityId)}${ABILITIES[p.abilityId].name}</strong><div class="meter"><i id="ability-fill"></i></div><span id="ability-state">CHARGING</span></button></div><div class="speed-box"><strong id="speed">0</strong><small>MPH</small><div class="meter risk"><i id="drift-fill"></i></div><span id="drift-label">DRIFT RISK</span></div><canvas id="minimap" width="240" height="190" aria-label="Live course map"></canvas></div><div class="race-hint">W ACCELERATE · A/D STEER · S BRAKE / REVERSE · SHIFT DRIFT · SPACE MAGIC · E ABILITY · R RECOVER</div>${mobileControls(p.abilityId, race!.mode !== 'time')}</div>`;
   standings = new Standings($('standings')!, portrait, esc); callout = new Callout($('callout')!);
+  const magic = document.querySelector<HTMLElement>('.mobile-item'); magicButton = magic ? new MagicButton(magic, kind => world.stoneIcon(kind)) : null;
 }
 function readInput(): Input {
   if (screen !== 'race' || modalOpen || document.hidden) return neutralInput();
@@ -180,6 +182,7 @@ function updateHUD(now: number) {
   set('place', String(p.rank)); set('suffix', p.rank === 1 ? 'st' : p.rank === 2 ? 'nd' : p.rank === 3 ? 'rd' : 'th'); set('lap', String(Math.min(race.laps, p.lap))); set('speed', String(Math.round(Math.abs(p.speed) * 2.237))); set('race-time', formatTime(race.time)); set('ping', online ? `${net.latency} ms · LIVE` : savedGhost ? `GHOST ${formatTime(savedGhost.time)}` : mode === 'time' ? 'TIME ATTACK' : 'CPU RACE');
   if (screen === 'race' && p.finishTime !== null && !finish.active) { finish.begin(now, race, !online); document.body.classList.add('finishing'); }
   const place = `${p.rank}${p.rank === 1 ? 'ST' : p.rank === 2 ? 'ND' : p.rank === 3 ? 'RD' : 'TH'}`, count = finish.orbiting(now) ? place : race.time < -3 ? 'READY' : race.time < 0 ? String(Math.ceil(-race.time)) : race.time < .8 && p.finishTime === null ? 'GO!' : ''; if (count !== lastCount) { lastCount = count; const el = $('countdown'); if (el) el.innerHTML = count ? `<strong>${count}</strong><span>${count === place ? p.rank === 1 ? 'VICTORY!' : 'FINISH!' : count === 'GO!' ? 'RACE!' : 'TIME YOUR ACCELERATOR FOR A DASH START'}</span>` : ''; }
+  magicButton?.update(p.item, p.itemLevel);
   const skill = ABILITIES[p.abilityId];
   set('mobile-ability-state', p.barrier > 0 ? 'UP' : p.ability >= 100 ? skill.passive ? 'AUTO READY' : 'READY' : `${Math.ceil((100 - p.ability) / 100 * skill.recharge)}s`);
   for (const button of document.querySelectorAll<HTMLElement>('[data-touch="ability"]')) button.classList.toggle('ready', p.ability >= 100);

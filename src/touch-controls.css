@@ -125,7 +125,19 @@ body.racing #world, body.racing .hud {
 .touch-controls .mobile-ability.ready { border-color: #ffe594; }
 .touch-controls .mobile-ability .ability-icon { width: 58%; height: 58%; }
 #mobile-ability-state { font-size: clamp(9px, 1.4vmin, 12px); font-weight: 700; }
-.touch-controls .mobile-item { grid-area: item; width: var(--drive-w); height: var(--drive-w); }
+.touch-controls .mobile-item { grid-area: item; align-self: end; width: var(--pedal-size); height: var(--pedal-size); }
+/* MAGIC holds the stack that casts next, sized like the ability badge; its level shows as on the held stones. */
+.magic-stone { position: relative; width: 58%; aspect-ratio: 1; flex-shrink: 0; pointer-events: none; }
+.stone-ball { position: absolute; inset: 0; border-radius: 50%; overflow: hidden; }
+.stone-ball img { display: block; width: 100%; height: 100%; -webkit-user-drag: none; }
+.stone-band { position: absolute; left: 0; right: 0; top: 0; height: 50%; opacity: 0; background: linear-gradient(#fff0, #ffffffd9, #fff0); mix-blend-mode: screen; }
+.stone-flash, .stone-ring { position: absolute; inset: 0; border-radius: 50%; opacity: 0; }
+.stone-flash { background: radial-gradient(#fff 62%, #fff0 71%); }
+.stone-ring { border: 3px solid #fff6c4; box-shadow: 0 0 6px #fff6c499; }
+.magic-label { max-width: 90%; }
+.touch-controls .mobile-item.empty { background: #1d3354b3; border-color: #bce4ff66; color: #bcd3e8; }
+.mobile-item.empty .stone-ball { border: 2px dashed #bce4ff80; background: radial-gradient(#0b183580, #0b183500 70%); }
+.mobile-item.empty .stone-ball img { visibility: hidden; }
 .touch-controls .mobile-drift { grid-area: drift; width: var(--pedal-size); height: var(--pedal-size); background: #7a5524dd; border-color: #ffd68fcc; }
 .touch-controls .mobile-brake { grid-area: brake; width: var(--pedal-size); height: var(--pedal-size); background: #7a2e3add; border-color: #ffb3bccc; }
 .touch-controls .mobile-drive {

@@ -92,6 +92,9 @@ test('right thumb drives, drifts and brakes while the left thumb steers and othe
     const touch = await touchScreen(context, page), input = inputOf(page);
     const drive = await centerOf(page, '.mobile-drive', 2), drift = await centerOf(page, '.mobile-drift', 2), brake = await centerOf(page, '.mobile-brake', 2);
     const item = await centerOf(page, '.mobile-item', 3), ability = await centerOf(page, '.mobile-ability', 4);
+    // With no stones MAGIC is dimmed and says so.
+    await expect(page.locator('.mobile-item')).toHaveClass(/empty/);
+    await expect(page.locator('.mobile-item')).toHaveAccessibleName('Cast magic: no stones held');
     const thumb = await steeringThumb(page, 1);
     // Wherever the thumb lands is straight ahead; full lock is one travel away, a short thumb movement.
     expect(thumb.travel).toBeLessThanOrEqual(64);
@@ -202,6 +205,7 @@ for (const viewport of [iPadLandscape, { width: 820, height: 1180 }]) {
       expect(used.maxSpeed).toBeGreaterThan(40);
       expect(used.brake + used.drift).toBeGreaterThan(0);
       expect(used.casts).toBeGreaterThan(0);
+      expect(used.stonesShown).toBeGreaterThan(0);
       expect(errors).toEqual([]);
       await page.screenshot({ path: `output/testing/touch-lap-${viewport.width}x${viewport.height}.png` });
     } finally { await context.close(); }
