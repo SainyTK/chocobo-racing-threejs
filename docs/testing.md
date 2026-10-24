@@ -247,5 +247,7 @@ The Online home view shows two cards of equal weight, Create a room and Join a r
   The Versus test still selected the old ability dropdown after the ability picker landed; it now clicks the Flap badge.
 - Screenshots at 1440 x 900, 390 x 844 and 844 x 390 covered the Online cards, the room as host and as guest, a full room of six, the Away state, and the malformed, unknown, full, closed and already-racing messages.
 
+- The first connection no longer gives up on the first failed attempt or after 7 seconds. Socket.IO retries with backoff while the join card says "Connecting to room CODE", and the error appears only after 20 seconds without the server. A join sent but never answered is sent once more, which the server treats as a return to the same place.
+  `online-room.e2e.ts` opens the invite on a phone at a quarter of the CPU speed with every server message held for 10 seconds, and the late joiner with messages held for 8 seconds while three races run. Both get in. With the old 7 second deadline the phone case fails. With no server at all, the error appears after about 19 seconds and 3 attempts.
+
 Not covered: no real phone was used.
-Several headless WebGL pages in one browser can starve a newly opened page of CPU for long enough that its first connection times out; the e2e test closes two racing clients before the late joiner for that reason.

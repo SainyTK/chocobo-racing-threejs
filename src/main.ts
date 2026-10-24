@@ -16,7 +16,7 @@ import { Standings } from './hud/standings.ts';
 import { Callout } from './hud/callout.ts';
 import { statusFor } from './hud/messages.ts';
 import { FinishSequence } from './finish-sequence.ts';
-import { Network, type RoomView } from './network.ts';
+import { Network, NoResponse, type RoomView } from './network.ts';
 import { RACERS, HANDLING, DIFFICULTIES, DIFFICULTY_IDS, DEFAULT_DIFFICULTY, ABILITIES, ABILITY_IDS, TICK, createRace, makeRacer, placeRacer, neutralInput, stepRace, type AbilityId, type DifficultyId, type Input, type Race } from '../shared/game/index.ts';
 import { WIRE_VERSION } from '../shared/wire.ts';
 import { TRACKS, TRACK_IDS, trackLength, pointAt, type TrackId } from '../shared/track/index.ts';
@@ -147,7 +147,9 @@ async function enterRoom(action: EntryCard) {
   if (entryBusy) return; readProfile();
   const problem = action === 'join' ? roomCodeProblem(joinCode) : '';
   entryNotice = problem ? { card: 'join', text: problem } : null; entryBusy = problem ? null : action; if (screen === 'home') home(); if (problem) return;
-  try { await net.request(action, { name: playerName, character, abilityId, track, laps, difficulty, code: joinCode }); }
+  const send = () => net.request(action, { name: playerName, character, abilityId, track, laps, difficulty, code: joinCode });
+  // Joining the same room again restores the same place, so an unanswered join is safe to repeat once.
+  try { await send().catch(error => { if (action === 'join' && error instanceof NoResponse) return send(); throw error; }); }
   catch (error) { entryNotice = { card: action, text: error instanceof Error ? error.message : 'Request failed.' }; history.replaceState(null, '', location.pathname); }
   finally { entryBusy = null; if (screen === 'home') home(); }
 }

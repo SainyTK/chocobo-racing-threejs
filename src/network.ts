@@ -5,6 +5,9 @@ import { Interpolation } from './interpolation.ts';
 import { WIRE_VERSION, decodeSnapshot, type Snapshot } from '../shared/wire.ts';
 import { Prediction } from './prediction.ts';
 import { NetDiagnostics, Delivery } from './net-diagnostics.ts';
+const CONNECT_DEADLINE_MS = 20000;
+/** The server never answered a request. It may still have handled it, so only idempotent requests are sent again. */
+export class NoResponse extends Error {}
 export interface RoomView { code: string; host: string; track: TrackId; laps: number; difficulty: DifficultyId; members: { id: string; name: string; character: number; abilityId: AbilityId; connected: boolean; away: boolean }[]; phase: string }
 export class Network {
   socket: Socket; id = ''; connected = false; latency = 0; room: RoomView | null = null;
@@ -48,18 +51,20 @@ export class Network {
   async connect() {
     if (this.connected && this.id) return;
     this.socket.connect();
+    // A failed attempt is not the end: Socket.IO retries with backoff, which a slow phone still loading the page needs.
+    // Only the deadline gives up. Requests wait for the welcome, so a retried connection cannot send a join twice.
     await new Promise<void>((resolve, reject) => {
-      const clean = () => { clearTimeout(timer); this.socket.off('welcome', success); this.socket.off('connect_error', failure); };
+      const clean = () => { clearTimeout(timer); this.socket.off('welcome', success); };
       const success = () => { clean(); resolve(); };
-      const failure = () => { clean(); reject(Error('Cannot reach the race server. Practice still works.')); };
-      const timer = setTimeout(failure, 7000); this.socket.once('welcome', success); this.socket.once('connect_error', failure);
+      const timer = setTimeout(() => { clean(); reject(Error('Cannot reach the race server. Practice still works.')); }, CONNECT_DEADLINE_MS);
+      this.socket.once('welcome', success);
     });
   }
   async request(event: string, data: unknown = {}) {
     await this.connect();
     if (event === 'create' || event === 'join') this.listening = true;
     return new Promise<any>((resolve, reject) => this.socket.timeout(5000).emit(event, data, (err: unknown, result: any) => {
-      if (err) reject(Error('The server did not respond. Check your connection before trying again.'));
+      if (err) reject(new NoResponse('The server did not respond. Check your connection before trying again.'));
       else if (result?.error) reject(Error(result.error)); else resolve(result);
     }));
   }

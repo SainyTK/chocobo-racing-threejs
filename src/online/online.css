@@ -8,6 +8,7 @@
 .entry-card #join-code::placeholder{font-size:15px;letter-spacing:2px}
 .entry-card #join-code[aria-invalid=true]{border-color:#ff8a78}
 .entry-card .entry-error{padding:7px 9px;border-left:3px solid #ff8a78;background:#4a1f3c99;color:#ffd3c9;font-size:12px}
+.entry-card .entry-status{color:#ffe7a8;font-weight:700}
 .entry-button{margin-top:auto;width:100%;padding:11px 12px;font:800 20px 'Barlow Condensed',sans-serif;letter-spacing:1px}
 
 /* The online room: racer choice, roster and race setup in the setup panel. */
