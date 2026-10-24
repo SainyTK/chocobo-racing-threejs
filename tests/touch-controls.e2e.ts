@@ -207,3 +207,18 @@ for (const viewport of [iPadLandscape, { width: 820, height: 1180 }]) {
     } finally { await context.close(); }
   });
 }
+
+// Pushing the stick up drives at full speed in both phone orientations; pulling it down brakes for the corners.
+for (const viewport of [{ width: 390, height: 844 }, { width: 844, height: 390 }]) {
+  test(`a touch player drives a full lap at ${viewport.width}x${viewport.height} with the stick alone`, async ({ browser }) => {
+    test.setTimeout(240000);
+    const { context, page } = await touchRace(browser, viewport, 'retro');
+    try {
+      const { used, lapTime } = await driveLapByTouch(context, page, { stick: true });
+      console.log(`stick lap ${viewport.width}x${viewport.height}`, JSON.stringify({ lapTime, ...used }));
+      expect(lapTime).toBeGreaterThan(0);
+      expect(used.maxSpeed).toBeGreaterThan(39);
+      expect(used.brake).toBeGreaterThan(0);
+    } finally { await context.close(); }
+  });
+}
