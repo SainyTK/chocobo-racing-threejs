@@ -14,15 +14,15 @@ This is not an identical port. Models, music, animations, maps and physics tunin
 
 ## Screenshots
 
-Captured from the running game with Orca's embedded browser.
+Captured from the running game in headless Chrome at 1440x985.
 
 ### Racer selection
 
-![Racer selection with Chocobo, eight characters and race setup](docs/screenshots/racer-selection.png)
+![Racer selection with Chocobo, the ten racers, the ability badges and race setup](docs/screenshots/racer-selection.png)
 
 ### Racing in Mythril Mines
 
-![Chocobo racing through Mythril Mines with rivals, Magic Stones and the race HUD](docs/screenshots/mythril-mines.png)
+![Chocobo racing through Mythril Mines behind Golem, with the race HUD and its ability badge](docs/screenshots/mythril-mines.png)
 
 ## Play
 
