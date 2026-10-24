@@ -6,7 +6,7 @@ test('impaired desktop and mobile six-racer driving, one-shot recovery and reloa
   try {
     for (const c of contexts) await c.addInitScript(() => { localStorage.setItem('cbr-quality','retro'); localStorage.setItem('cbr-sound','false'); });
     for (const p of [a,b]) { p.on('pageerror',e=>errors.push(e.message)); await p.goto('/?netPerf&netDelay=80&netJitter=30&netDrop=0.1'); await p.getByRole('button',{name:'Online',exact:true}).click(); }
-    await a.getByRole('button',{name:'CREATE ROOM',exact:true}).click(); const code=await a.locator('#room-code').innerText();
+    await a.getByRole('button',{name:'Create room',exact:true}).click(); const code=await a.locator('#room-code').innerText();
     await b.getByRole('textbox',{name:'Room code'}).fill(code); await b.getByRole('button',{name:'Join room'}).click(); await expect(b.locator('#room-code')).toHaveText(code);
     await a.getByRole('button',{name:'START ONLINE RACE'}).click(); await expect(b.locator('#place')).toBeVisible();
     await expect.poll(async()=>(await debug(a)).race.phase).toBe('racing');

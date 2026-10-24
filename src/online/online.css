@@ -1,0 +1,43 @@
+/* Online entry on the home screen: two cards of equal weight for creating and joining a room. */
+.online-name{margin:12px 0 14px}
+.entry-cards{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.entry-card{display:flex;flex-direction:column;gap:10px;min-width:0;padding:16px;background:#15214299;border:1px solid #7083b066;border-radius:6px}
+.entry-card h2{margin:0;font-size:26px;line-height:1;color:var(--gold);text-shadow:1px 2px #172043}
+.entry-card p{margin:0;font-size:12px;line-height:1.45;color:#c7cee0}
+.entry-card #join-code{font:800 20px 'Barlow Condensed',sans-serif;letter-spacing:4px;text-align:center;text-transform:uppercase}
+.entry-card #join-code::placeholder{font-size:15px;letter-spacing:2px}
+.entry-card #join-code[aria-invalid=true]{border-color:#ff8a78}
+.entry-card .entry-error{padding:7px 9px;border-left:3px solid #ff8a78;background:#4a1f3c99;color:#ffd3c9;font-size:12px}
+.entry-button{margin-top:auto;width:100%;padding:11px 12px;font:800 20px 'Barlow Condensed',sans-serif;letter-spacing:1px}
+
+/* The online room: racer choice, roster and race setup in the setup panel. */
+.room{display:flex;flex-direction:column}
+.room-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;margin-bottom:12px;background:#132044;border:1px solid #6f80a9;border-radius:5px}
+.room-head .section-title{font-size:13px}
+.room-code-label{display:flex;align-items:baseline;gap:10px;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:2px;color:#bbc8e2}
+.room-code-label strong{font:800 34px/1 'Barlow Condensed',sans-serif;letter-spacing:6px;color:var(--gold)}
+.room-head button{white-space:nowrap}
+.room .racer-card svg{height:46px}
+.room .ability-select{flex-wrap:wrap;gap:6px 12px;padding:10px 0 4px}
+.room .ability-select label{width:auto;flex:1}
+.room .ability-select p{flex-basis:100%;margin:0}
+.roster{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:8px 0 14px;padding:0;list-style:none}
+.roster li{display:flex;align-items:center;gap:6px;min-width:0;padding:5px 6px;background:#19254988;border:1px solid transparent;border-radius:4px}
+.roster li.you{border-color:#ffdc6699;background:#ffdb5914}
+.roster li.open{opacity:.55}
+.roster li.absent{opacity:.7}
+.roster svg{width:36px;height:36px;flex-shrink:0}
+.roster span{min-width:0}
+.roster strong,.roster small{display:block;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.roster strong{font-size:13px}
+.roster em{font-style:normal;font-size:9px;letter-spacing:1px;color:var(--gold)}
+.roster small{font-size:9px;color:#b5c4e0}
+.roster .state{color:#ffe7a8}
+.roster li.absent .state{color:#ffb4a8}
+.room-fields{flex-wrap:wrap}
+.room-actions{display:flex;gap:10px;align-items:stretch}
+.room-actions>button:first-child{flex-shrink:0;white-space:nowrap}
+.room-actions>.primary,.room-actions>.room-wait{flex:1}
+.room-wait{margin:0;padding:13px;border:1px dashed #8fa0d099;border-radius:5px;text-align:center;font-weight:700;color:#ffe7a8}
+@media(max-width:600px){.room-fields>label:first-child{flex-basis:100%}.room-fields>label:nth-child(3){max-width:none}.room-actions{flex-direction:column-reverse}.entry-card{padding:13px}.entry-card h2{font-size:23px}.roster{grid-template-columns:1fr 1fr}.room-head{padding:9px 10px}.room-code-label strong{font-size:28px;letter-spacing:4px}}
+@media(max-width:440px){.entry-cards{grid-template-columns:1fr}}

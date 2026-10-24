@@ -28,11 +28,13 @@ Results: `output/testing/v2-simulation-stress.json`.
 
 ## Multiplayer coverage
 
-Real socket clients test room creation/joining, six-player capacity, independent character/ability selection, synchronized movement, rejected client position injection, host-only commands, unknown/full/started rooms, sanitization, prototype-key rejection, session-secret authentication, reload recovery, host transfer, disconnected reserved slots, cleanup, rate limiting, origin rejection and rematches.
+Real socket clients test room creation/joining, six-player capacity, independent character/ability selection, lobby racer changes, stepping away and returning without a duplicate, closed-room messages, synchronized movement, rejected client position injection, host-only commands, unknown/full/started rooms, sanitization, prototype-key rejection, session-secret authentication, reload recovery, host transfer, disconnected reserved slots, cleanup, rate limiting, origin rejection and rematches.
+
+`tests/online-room.e2e.ts` uses three browser contexts, one of them a phone. It creates a room, joins one player through the invite link and one by typing the code, checks that racer and ability picks show live for everyone, goes home and re-enters the code without a duplicate, starts the race with everyone's picks, and checks the already-racing, malformed and unknown code messages on the home page.
 
 The browser multiplayer test uses two independent contexts. They create and join one room, start the same race, reload one client, interrupt a connection, finish through keyboard input, compare identical authoritative ranks/times and return to the lobby. It does not claim a six-browser load test or public-internet certification.
 
-`tests/production-smoke.mjs` runs an isolated production server on port 3107. It verifies room creation, authoritative movement, reload recovery, a real shutdown/restart, visible room expiry, creation of a new room and a working local race after leaving. Results: `output/testing/v2-production-smoke.json`.
+`tests/production-smoke.mjs` runs an isolated production server on port 3107, or `SMOKE_PORT` when set. It verifies room creation, authoritative movement, reload recovery, a real shutdown/restart, a visible closed-room message, creation of a new room and a working local race after going home. Results: `output/testing/v2-production-smoke.json`.
 
 ## Browser playthroughs
 

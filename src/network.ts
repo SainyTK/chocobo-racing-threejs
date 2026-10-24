@@ -1,17 +1,19 @@
 import { io, type Socket } from 'socket.io-client';
-import type { AbilityId, Input, Race } from '../shared/game/index.ts';
+import type { AbilityId, DifficultyId, Input, Race } from '../shared/game/index.ts';
 import type { TrackId } from '../shared/track/index.ts';
 import { Interpolation } from './interpolation.ts';
 import { WIRE_VERSION, decodeSnapshot, type Snapshot } from '../shared/wire.ts';
 import { Prediction } from './prediction.ts';
 import { NetDiagnostics, Delivery } from './net-diagnostics.ts';
-export interface RoomView { code: string; host: string; track: TrackId; laps: number; members: { id: string; name: string; character: number; abilityId: AbilityId; connected: boolean }[]; phase: string }
+export interface RoomView { code: string; host: string; track: TrackId; laps: number; difficulty: DifficultyId; members: { id: string; name: string; character: number; abilityId: AbilityId; connected: boolean; away: boolean }[]; phase: string }
 export class Network {
   socket: Socket; id = ''; connected = false; latency = 0; room: RoomView | null = null;
   onRoom: (room: RoomView) => void = () => { }; onState: (race: Race) => void = () => { }; onStatus: (online: boolean) => void = () => { }; onExpired: () => void = () => { }; onOutdated: () => void = () => { };
   diagnostics = new NetDiagnostics(); private delivery = new Delivery(); private receivedAt = 0; private metadata: Race | null = null; private latestTick = -1; prediction = new Prediction();
   private actionSeq = 0; private actionHeld = { item: false, ability: false, rescue: false }; private pendingActions = new Map<number, ReturnType<typeof setTimeout>>();
   private interpolation = new Interpolation(); private lastSend = 0;
+  /** False after stepping away, so room and race messages already in flight do not pull the player back in. */
+  private listening = true;
   constructor() {
     let token = ''; try { token = sessionStorage.getItem('cbr-session') || ''; } catch { /* Private browsing may disable storage. */ }
     this.socket = io({ autoConnect: false, auth: { token, wire: WIRE_VERSION }, transports: ['websocket'], reconnectionDelay: 500, reconnectionDelayMax: 2500, timeout: 6000 });
@@ -23,10 +25,10 @@ export class Network {
       if (lostRoom) { this.clear(); this.onExpired(); }
     });
     this.socket.on('outdated', () => this.onOutdated());
-    this.socket.on('room', (room: RoomView) => { this.room = room; this.onRoom(room); });
-    this.socket.on('race', (race: Race) => { this.delivery.clear(); this.metadata = race; this.latestTick = -1; this.interpolation.reset(); this.prediction.reset(); this.clearActions(); this.actionSeq = 0; this.prediction.reconcile(race, this.id, 0); this.accept(race); });
+    this.socket.on('room', (room: RoomView) => { if (!this.listening) return; this.room = room; this.onRoom(room); });
+    this.socket.on('race', (race: Race) => { if (!this.listening) return; this.delivery.clear(); this.metadata = race; this.latestTick = -1; this.interpolation.reset(); this.prediction.reset(); this.clearActions(); this.actionSeq = 0; this.prediction.reconcile(race, this.id, 0); this.accept(race); });
     this.socket.on('snapshot', (s: Snapshot) => this.delivery.run('down', () => {
-      if (!this.metadata || s.tick <= this.latestTick) { this.diagnostics.count('staleSnapshots'); return; }
+      if (!this.listening || !this.metadata || s.tick <= this.latestTick) { this.diagnostics.count('staleSnapshots'); return; }
       const race = decodeSnapshot(this.metadata, s); if (!race) return;
       this.latestTick = s.tick;
       this.prediction.reconcile(race, this.id, s.ack[this.id] || 0);
@@ -34,7 +36,7 @@ export class Network {
       if (this.diagnostics.enabled) this.diagnostics.sample('stateBytes', new TextEncoder().encode(JSON.stringify(s)).length);
       this.accept(race);
     }));
-    this.socket.on('state', (race: Race) => this.delivery.run('down', () => this.accept(race)));
+    this.socket.on('state', (race: Race) => this.delivery.run('down', () => { if (this.listening) this.accept(race); }));
     setInterval(() => { if (this.connected) { const start = performance.now(); this.socket.timeout(2000).emit('latency', {}, (err: unknown) => { if (!err) { this.latency = Math.round(performance.now() - start); this.diagnostics.sample('transportRttMs', this.latency); } }); } }, 2500);
   }
   private accept(race: Race) {
@@ -55,11 +57,14 @@ export class Network {
   }
   async request(event: string, data: unknown = {}) {
     await this.connect();
+    if (event === 'create' || event === 'join') this.listening = true;
     return new Promise<any>((resolve, reject) => this.socket.timeout(5000).emit(event, data, (err: unknown, result: any) => {
       if (err) reject(Error('The server did not respond. Check your connection before trying again.'));
       else if (result?.error) reject(Error(result.error)); else resolve(result);
     }));
   }
+  /** Goes back to the home page while the server keeps this player's place in the room for a while. */
+  async stepAway() { this.listening = false; this.clear(); await this.request('away'); }
   drive(input: Input, dt: number) { this.prediction.advance(input, dt); this.sendInput(input); }
   private clearActions() { for (const timer of this.pendingActions.values()) clearTimeout(timer); this.pendingActions.clear(); this.actionHeld = { item: false, ability: false, rescue: false }; }
   private action(kind: 'item' | 'ability' | 'rescue') {

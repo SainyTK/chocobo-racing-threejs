@@ -57,6 +57,20 @@ Within 30 m of that human there is no lift, so catch-up never carries a CPU past
 Time Attack has no class setting.
 The online host's class applies to the whole room.
 
+### Online rooms
+
+Choose **Online**, enter your name, then pick one of two cards: **Create a room** or **Join a room**.
+To join, type the six-character code in the join card and press Join room or Enter.
+Opening an invite link joins its room straight away.
+Inside the room, every player picks a racer and ability and can change their name.
+Everyone sees each change in the room's racer list as it happens.
+The room starts with your last racer, ability and name.
+The host sets the course, laps and class, and starts the race.
+**Back to home** keeps your place for 60 seconds while others see you as Away.
+Enter the same code again, or reopen the link, to return to the same place.
+If the host goes home, the next player present becomes host.
+If a code is wrong, or the room is full, closed or already racing, the join card on the home page says so.
+
 ### Driving
 
 Manual acceleration is on by default. You must steer around corners. The game does not guide your heading along the road. Options includes auto-accelerate, which does not steer for you.
@@ -243,7 +257,7 @@ Install Node.js 22.12 or newer and [cloudflared](https://developers.cloudflare.c
 
 2. Copy the actual `https://...trycloudflare.com` URL printed by cloudflared. It changes whenever the tunnel restarts. Keep the command running.
 
-3. Open the same tunnel URL on every device. Choose **Online**, create a room on one device, then join its six-character room code on the others. Open the tunnel URL before copying an invite; a localhost invite does not work on a teammate's phone. With two players, the remaining four racers are CPU-controlled. On a phone, hold DRIVE with your right thumb and steer with your left thumb anywhere on the lower left. MAGIC and the ability button sit above DRIVE, and DRIFT and BRAKE sit next to it. Use mobile data on the phone to test separate internet connections, or the same Wi-Fi for a same-network test through the tunnel.
+3. Open the same tunnel URL on every device. Choose **Online**, create a room on one device, then join its six-character room code on the others, or send them the room's invite link. Each player picks a racer inside the room. Open the tunnel URL before copying an invite; a localhost invite does not work on a teammate's phone. With two players, the remaining four racers are CPU-controlled. On a phone, hold DRIVE with your right thumb and steer with your left thumb anywhere on the lower left. MAGIC and the ability button sit above DRIVE, and DRIFT and BRAKE sit next to it. Use mobile data on the phone to test separate internet connections, or the same Wi-Fi for a same-network test through the tunnel.
 
 4. Optionally append `/?netPerf` to the tunnel URL to collect bounded frame/network diagnostics. Do not add `netDelay`, `netJitter` or `netDrop` for a real-connection test. Desktop Chrome's developer console can copy the telemetry with:
 
@@ -385,7 +399,7 @@ Reports are in `output/playwright-report/`; screenshots are in `output/testing/`
   Race setup is in `setup.ts`, the inventory in `inventory.ts`, spell targets in `targeting.ts`, spell hits in `combat.ts`, item and ability use in `actions.ts`, jumps in `air.ts` and ground grip in `traction.ts`.
   The CPU driver is `bot.ts`, which combines `bot-driving.ts` (pedals, steering and pace), `bot-course.ts` (shortcuts and hazards) and `bot-magic.ts` with `bot-personalities.ts` (casting).
   `step/` runs one tick: per-racer physics, walls and course edges, pads and hazards, finished racers, projectiles, racer contacts and standings.
-- `server/index.ts`: authoritative room server, sessions and input validation.
+- `server/index.ts`: authoritative room server, sessions, lobby racer changes, held places for players who step away, and input validation.
 - `src/scene.ts`: course loading, pickups, shadows, bloom post-processing and 3D-rendered portraits.
 - `src/gfx/camera/`: the chase camera (`chase.ts`), its framing per screen shape (`framing.ts`) and the finish orbit and podium shots (`finish.ts`). `src/gfx/finish-stage.ts` and `src/gfx/podium.ts` stage those shots.
 - `src/gfx/characters/`: the racers. All ten are skinned GLBs made by the Blender pipeline in `scripts/characters/` (see `docs/characters.md`), drawn with cel shading and outlines. Chocobo's skate wheels, Mog's scooter wheels and fork, Chubby Chocobo's trike wheels and fork, Cloud's wheels and fork, Golem's wheels and steering knuckles, Goblin's cart wheels and front-wheel steering, and Behemoth's road wheels and track pads are bones the game turns in code, and White Mage's carpet is a chain of bones her clips ripple; Mog's pom-pom antenna and Goblin's lantern swing on a spring in code, and the tip of Black Magician's hat sways in code.
@@ -402,6 +416,8 @@ Reports are in `output/playwright-report/`; screenshots are in `output/testing/`
 - `src/gfx/materials/`: toon, glow, outline, ghost, fresnel shell, crystal and ground decal materials, one per file.
 - `src/gfx/geometry/`: the geometry helpers used to sculpt the models (baked transforms, primitives, rocks and swept tubes).
 - `src/main.ts`: modes, menus, HUD, input, local race loop and ghost recording.
+- `src/online/`: the Online entry cards on the home screen (`online-entry.ts`), the room page (`room-page.ts`), room code checks and invite links (`room-code.ts`) and their styles (`online.css`).
+  `src/racer-picker.ts` is the racer grid and ability choice shared by the home screen and the room, and `src/showcase.ts` the racer name and stats beside the 3D hero.
 - `src/hud/`: the race-order portrait strip (`standings.ts`) and the single callout (`callout.ts`, `messages.ts`).
 - `src/finish-sequence.ts`: timing of the slow motion, orbit and podium after the player finishes.
 - `src/touch-controls.ts`, `src/touch-steering.ts` and `src/mobile-hud.ts`: the two-thumb touch controls. `src/touch-layout.css` holds the geometry tokens that `src/touch-controls.css` and `src/touch-hud.css` share.

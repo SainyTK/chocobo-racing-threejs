@@ -18,7 +18,7 @@ try {
     const [a,b] = await Promise.all(contexts.map(c => c.newPage())); const errors: string[] = [];
     try {
       for (const page of [a,b]) { page.on('pageerror', e => errors.push(e.message)); await page.goto(`${url}/?netPerf${profile.query}`); await page.getByRole('button', { name: 'Online', exact: true }).click(); }
-      await a.getByRole('button', { name: 'CREATE ROOM', exact: true }).click();
+      await a.getByRole('button', { name: 'Create room', exact: true }).click();
       const code = await a.locator('#room-code').innerText();
       await b.getByRole('textbox', { name: 'Room code' }).fill(code); await b.getByRole('button', { name: 'Join room' }).click(); await b.locator('#room-code').waitFor();
       await a.getByRole('button', { name: 'START ONLINE RACE' }).click(); await b.locator('#place').waitFor();
