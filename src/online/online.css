@@ -43,3 +43,5 @@
 .room-wait{margin:0;padding:13px;border:1px dashed #8fa0d099;border-radius:5px;text-align:center;font-weight:700;color:#ffe7a8}
 @media(max-width:600px){.room .racer-grid{grid-template-columns:repeat(4,1fr)}.room-fields>label:first-child{flex-basis:100%}.room-fields>label:nth-child(3){max-width:none}.room-actions{flex-direction:column-reverse}.entry-card{padding:13px}.entry-card h2{font-size:23px}.roster{grid-template-columns:1fr 1fr}.room-head{padding:9px 10px}.room-code-label strong{font-size:28px;letter-spacing:4px}}
 @media(max-width:440px){.entry-cards{grid-template-columns:1fr}}
+/* On a short landscape phone the Online cards matter more than the view of the racer above them. */
+@media(max-width:900px) and (orientation:landscape){.showcase:empty{height:40px}}
