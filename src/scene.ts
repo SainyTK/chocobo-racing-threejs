@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import type { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { courseObjects, MAIN_ROUTE, pointAt, routeHeight, routePoint, type TrackId } from '../shared/track/index.ts';
 import { clamp } from '../shared/math.ts';
-import { miniScale, type Race } from '../shared/game/index.ts';
+import { miniScale, type Item, type Race } from '../shared/game/index.ts';
 import { createCharacter, type Character } from './gfx/characters/index.ts';
 import { Effects } from './gfx/effects/index.ts';
 import { SpeedLines } from './gfx/effects/speed-lines.ts';
@@ -16,6 +16,8 @@ import { ghostMaterial } from './gfx/materials/ghost.ts';
 import { Shape } from './gfx/particles/particles.ts';
 import { configureRenderer, createComposer, createLights } from './gfx/pipeline.ts';
 import { makeBoostPad, padGeo, padMaterial } from './gfx/stage/boost-pad.ts';
+import { heldStonePreview } from './gfx/stones/preview.ts';
+import { HELD_STONE } from './gfx/stones/looks.ts';
 import { buildCourse, applyEnvironment, sunOffset, type Course, type StageQuality } from './gfx/stage/course.ts';
 const MENU_FOV = 58;
 /** Rivals closer to the camera than this dissolve, so they never fill the screen or cover the HUD. */
@@ -44,7 +46,7 @@ export class World {
   renderer: THREE.WebGLRenderer; scene = new THREE.Scene(); camera = new THREE.PerspectiveCamera(MENU_FOV, 1, .2, 1500);
   course: Course | null = null; dynamic = new THREE.Group(); racers = new Map<string, RacerView>(); hero = createCharacter(0); heroIndex = 0; track: TrackId = 'test'; raceId = ''; mode: 'menu' | 'race' = 'menu'; clock = 0; stones: StoneField | null = null; ghost: Character | null = null;
   fx: Effects; chase = new ChaseCamera(); speedLines = new SpeedLines(); reactions = new Reactions(); finish: FinishView | null = null; private finishStage: FinishStage; hemi: THREE.HemisphereLight; sun: THREE.DirectionalLight;
-  private composer: EffectComposer; private quality = 'high'; private ghostMat = ghostMaterial(); private portraits: string[] = []; private sunOffset = new THREE.Vector3();
+  private composer: EffectComposer; private quality = 'high'; private ghostMat = ghostMaterial(); private portraits: string[] = []; private stoneIcons = new Map<Item, string>(); private sunOffset = new THREE.Vector3();
   constructor(canvas: HTMLCanvasElement) {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: !this.software, powerPreference: 'high-performance' }); this.renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5)); this.renderer.info.autoReset = false; configureRenderer(this.renderer);
     ({ hemi: this.hemi, sun: this.sun } = createLights());
@@ -70,6 +72,14 @@ export class World {
     c.root.rotation.y = -.35; c.root.updateMatrixWorld(true); const head = c.head.getWorldPosition(new THREE.Vector3());
     cam.position.set(head.x - 1.4, head.y + .35, head.z + 5.2); cam.lookAt(head.x, head.y - .25, head.z);
     this.portraits[i] = this.snapshot(scene, cam, 160); c.dispose(); return this.portraits[i];
+  }
+  /** A held Magic Stone with its symbol facing front, cached as a data URL for the mobile MAGIC button. */
+  stoneIcon(kind: Item) {
+    const cached = this.stoneIcons.get(kind); if (cached) return cached;
+    const scene = new THREE.Scene(), cam = new THREE.PerspectiveCamera(30, 1, .1, 20), stone = heldStonePreview(kind, 1);
+    stone.update(0); cam.position.set(0, 0, HELD_STONE.radius / Math.sin(15 * Math.PI / 180) * 1.04); cam.lookAt(0, 0, 0); scene.add(stone.root);
+    // Large enough for a crisp ball at three device pixels per CSS pixel on the biggest button.
+    const url = this.snapshot(scene, cam, 192); stone.dispose(); this.stoneIcons.set(kind, url); return url;
   }
   /** Renders a small offscreen scene on a transparent background into a PNG data URL. */
   private snapshot(scene: THREE.Scene, cam: THREE.Camera, size: number) {

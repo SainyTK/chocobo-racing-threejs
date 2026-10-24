@@ -115,7 +115,8 @@ You can also drive with the right thumb, which rests on DRIVE in the bottom-righ
 You can roll your thumb between DRIVE, DRIFT and BRAKE without lifting it.
 DRIFT keeps accelerating, so sliding onto it from DRIVE keeps you driving.
 Both ways combine: pushing the stick up while the right thumb sits on BRAKE drifts like DRIVE + BRAKE, and pulling the stick down brakes and reverses even while the right thumb holds DRIVE.
-MAGIC sits above DRIVE and the ability button, which shows your ability's badge and its recharge, sits above DRIFT.
+MAGIC sits above DRIVE and shows the stack that casts next, drawn like the stones behind your racer, with the same level band and ring; with no stones it dims and reads NO MAGIC.
+The ability button, which shows your ability's badge and its recharge, sits above DRIFT.
 Look behind and recover are small buttons in a row above them, or beside the ability button on short landscape phones.
 With auto-accelerate on, DRIVE shows AUTO and stays lit.
 A held key overrides touch steering.
@@ -134,7 +135,8 @@ A taken stone bursts into a bright smear of its colour and grows back in after 3
 You hold up to three stones, as small balls rolling in a short chain on the road right behind your racer's rear wheels, oldest first.
 A stone picked up right after a matching one merges into it for a stronger spell, up to level three, but every stone still takes a place until you cast.
 A level three stack fills all three places, and you drive through stones until you cast it.
-As in the original, the HUD shows no stone panel: the chain behind your racer is how you see what you hold.
+As in the original, the desktop HUD shows no stone panel: the chain behind your racer is how you see what you hold.
+On touch screens the MAGIC button shows the stack it will cast.
 As in the original, a stack looks like one stone and shows its level: at level two a bright band sweeps down the stone from top to bottom every half second, and at level three the stone flashes white and a ring grows out of it and fades, a little faster.
 The latest stack casts first, at its full level.
 Reflect and Doom never merge.

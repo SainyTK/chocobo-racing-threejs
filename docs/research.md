@@ -173,7 +173,8 @@ The remake bursts the stone the same way over 0.22 s and drops the earlier star 
 In the original a taken stone leaves an empty slot, and the slot is full again by the next lap, sometimes with a different kind. The refill itself is never on screen; the remake keeps its fixed kinds and 3.5 s respawn and grows the stone back in over 0.25 s.
 Held stones in the original roll on the road in a short chain right behind the racer's rear wheels, about half a track stone across, symbol facing the camera.
 How the chain behaves, how stacks level up and how they flash is in "Spell stack" below.
-The original HUD shows no held-stone icons, and the remake now matches it: it has no MAGIC panel, and held stones show only as the chain rolling behind the racer.
+The original HUD shows no held-stone icons, and the remake's desktop HUD matches it: it has no MAGIC panel, and held stones show only as the chain rolling behind the racer.
+On touch screens the MAGIC button shows the stack that casts next, rendered from the same stone model, with the level two band and level three flash and ring timed from the same numbers as the stone shader.
 
 Deliberate deviations:
 

@@ -1,10 +1,10 @@
 import { ABILITIES, type AbilityId } from '../shared/game/abilities.ts';
 import { abilityIcon } from './hud/ability-icons.ts';
+import { MAGIC_STONE_HTML } from './hud/magic-button.ts';
 
 const controlPaths = {
   behind: 'M4 24q20-22 40 0-20 22-40 0ZM24 18a6 6 0 1 0 0 12 6 6 0 1 0 0-12',
   rescue: 'M38 24a14 14 0 1 1-4-10M38 8v8h-8',
-  magic: 'M24 9a15 15 0 1 0 .01 0ZM24 16l2.5 5.5L32 24l-5.5 2.5L24 32l-2.5-5.5L16 24l5.5-2.5Z',
   brake: 'M17 6h14l11 11v14L31 42H17L6 31V17ZM15 24h18',
   drift: 'M12 42C12 24 22 14 38 14M31 7l7 7-7 7M5 32l7 2M7 23l7 3',
   drive: 'M10 30 24 14l14 16M10 42l14-16 14 16',
@@ -17,7 +17,7 @@ const glyph = (path: string) => `<svg viewBox="0 0 48 48" aria-hidden="true" fil
  * DRIVE, DRIFT and BRAKE share a slide group so the right thumb can roll between them without lifting.
  * DRIFT holds the accelerator too, so sliding off DRIVE keeps the racer driving.
  * BRAKE, like pulling the stick down, reverses once the racer stops.
- * MAGIC casts the latest stone and shows no stones: as in the original, held stones are seen rolling behind the racer.
+ * MAGIC casts the latest stack and shows it, drawn from the stone model (see hud/magic-button.ts); the desktop HUD shows no stones, as in the original.
  * Look behind and recover sit in a small row on the right, a deliberate reach away from the pedals.
  */
 export function mobileControls(ability: AbilityId, magic: boolean) {
@@ -28,7 +28,7 @@ export function mobileControls(ability: AbilityId, magic: boolean) {
     + `<div class="action-pad" role="group" aria-label="Race actions">`
     + `<div class="utility-controls"><button data-touch="behind" aria-label="Look behind">${glyph(controlPaths.behind)}</button><button data-touch="rescue" aria-label="Recover racer">${glyph(controlPaths.rescue)}</button></div>`
     + `<button data-touch="ability" aria-label="Activate ability: ${ABILITIES[ability].name}" class="mobile-ability">${abilityIcon(ability)}<span id="mobile-ability-state"></span></button>`
-    + (magic ? `<button data-touch="item" aria-label="Cast magic" class="mobile-item">${glyph(controlPaths.magic)}<small>MAGIC</small></button>` : '')
+    + (magic ? `<button data-touch="item" aria-label="Cast magic" class="mobile-item empty">${MAGIC_STONE_HTML}</button>` : '')
     + `<div class="pedals" data-touch-slide>`
     + `<button data-touch="drift" data-hold="throttle drift" aria-label="Drift" class="mobile-drift">${glyph(controlPaths.drift)}<small>DRIFT</small></button>`
     + `<button data-touch="brake" aria-label="Brake and reverse" class="mobile-brake">${glyph(controlPaths.brake)}<small>BRAKE</small></button>`
