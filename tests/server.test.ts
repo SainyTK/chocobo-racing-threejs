@@ -36,7 +36,7 @@ describe('real multiplayer server', () => {
     const a = await connect(), b = await connect(); expect((await request(b.socket, 'join', { code: 'ABCDEF' })).error).toMatch(/not found/);
     const { code } = await request(a.socket, 'create'); await request(b.socket, 'join', { code });
     expect((await request(b.socket, 'start')).error).toMatch(/host/); expect((await request(b.socket, 'configure', { laps: 1 })).error).toMatch(/host/);
-    await request(a.socket, 'start'); const c = await connect(); expect((await request(c.socket, 'join', { code })).error).toMatch(/already started/);
+    await request(a.socket, 'start'); const c = await connect(); expect((await request(c.socket, 'join', { code })).error).toMatch(/already racing/);
     expect((await request(a.socket, 'rematch')).error).toMatch(/finish/);
   });
   it('sanitizes names and refuses prototype names as course identifiers', async () => {
@@ -102,6 +102,33 @@ describe('real multiplayer server', () => {
     // Assert per callback emission, not the number delivered in that window.
     expect(Math.max(...server.metrics.snapshotsPerLoop)).toBe(1);
     expect(a.socket.io.engine.transport.name).toBe('websocket');
+  });
+  it('changes racer, ability and name in the lobby only, and refuses an outsider', async () => {
+    const a = await connect(), b = await connect(), c = await connect(); const { code } = await request(a.socket, 'create', { name: 'Host', character: 0 }); await request(b.socket, 'join', { code, name: 'Friend', character: 1 });
+    let seen: any; a.socket.on('room', r => { seen = r; });
+    expect((await request(b.socket, 'profile', { name: 'Pal', character: 7, abilityId: 'flap' })).ok).toBe(true);
+    await until(() => seen?.members.find((m: any) => m.id === b.id)?.character === 7); expect(seen.members.find((m: any) => m.id === b.id)).toMatchObject({ name: 'Pal', abilityId: 'flap' });
+    await request(b.socket, 'profile', { character: 2, abilityId: 'nonsense' }); expect(server.rooms.get(code)!.members[1]).toMatchObject({ character: 2, abilityId: 'grip', name: 'Racer' });
+    expect((await request(c.socket, 'profile', { character: 3 })).error).toMatch(/Join a room/);
+    await request(a.socket, 'configure', { difficulty: 'chocobo' }); expect(server.rooms.get(code)!.difficulty).toBe('chocobo');
+    await request(a.socket, 'start'); expect((await request(b.socket, 'profile', { character: 4 })).error).toMatch(/lobby/);
+    expect(server.rooms.get(code)!.race!.racers.find(p => p.id === b.id)!.character).toBe(2);
+  });
+  it('keeps the place of a member who steps away and restores it on the same code without a duplicate', async () => {
+    const a = await connect(), b = await connect(); const { code } = await request(a.socket, 'create'); await request(b.socket, 'join', { code }); const room = server.rooms.get(code)!;
+    await request(a.socket, 'away'); expect(room.members).toHaveLength(2); expect(room.members[0]).toMatchObject({ away: true, connected: false }); expect(room.host).toBe(b.id);
+    let rooms = 0; a.socket.on('room', () => rooms++); await request(b.socket, 'configure', { laps: 1 }); await wait(100); expect(rooms).toBe(0);
+    expect((await request(a.socket, 'profile', { character: 3 })).error).toBeTruthy();
+    expect((await request(a.socket, 'join', { code })).ok).toBe(true); expect(room.members).toHaveLength(2); expect(room.members[0]).toMatchObject({ id: a.id, away: false, connected: true });
+    await request(a.socket, 'join', { code }); expect(room.members).toHaveLength(2);
+    await request(a.socket, 'away'); await request(b.socket, 'start'); expect(room.race!.racers.find(p => p.id === a.id)!.connected).toBe(false);
+    let initial: any; a.socket.on('state', r => { initial = r; }); await request(a.socket, 'join', { code }); await until(() => initial); expect(room.race!.racers.find(p => p.id === a.id)!.connected).toBe(true);
+  });
+  it('a lone host can step away and come back, and a closed room says so', async () => {
+    const a = await connect(), b = await connect(); const { code } = await request(a.socket, 'create');
+    await request(a.socket, 'away'); expect(server.rooms.has(code)).toBe(true); expect((await request(a.socket, 'join', { code })).ok).toBe(true); expect(server.rooms.get(code)!.host).toBe(a.id);
+    await request(a.socket, 'leave'); expect(server.rooms.has(code)).toBe(false);
+    expect((await request(b.socket, 'join', { code })).error).toMatch(/has closed/); expect((await request(b.socket, 'join', { code: '' })).error).toMatch(/Enter/);
   });
   it('rejects cross-origin WebSocket handshakes', async () => { await expect(connect(undefined, 'https://untrusted.example')).rejects.toThrow(); });
 });

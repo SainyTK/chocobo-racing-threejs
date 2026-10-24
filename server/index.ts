@@ -8,9 +8,11 @@ import { cleanInput, createRace, makeRacer, neutralInput, stepRace, TICK, RACERS
 import { WIRE_VERSION, encodeSnapshot } from '../shared/wire.ts';
 import { TRACKS, type TrackId } from '../shared/track/index.ts';
 
-interface Member { id: string; name: string; character: number; abilityId: AbilityId; connected: boolean }
+interface Member { id: string; name: string; character: number; abilityId: AbilityId; connected: boolean; away: boolean }
 interface Room { code: string; host: string; track: TrackId; laps: number; difficulty: DifficultyId; members: Member[]; race: Race | null; lastActive: number }
-interface Session { id: string; token: string; socket: string | null; room: string | null; seen: number; inputAt: number; inputSeq: number; appliedSeq: number; actionSeq: number; pendingActions: ('item' | 'ability' | 'rescue')[] }
+/** `awayAt` is when a member stepped back to the home page. Like a dropped connection, the place is kept for `HOLD_MS`. */
+interface Session { id: string; token: string; socket: string | null; room: string | null; seen: number; awayAt: number; inputAt: number; inputSeq: number; appliedSeq: number; actionSeq: number; pendingActions: ('item' | 'ability' | 'rescue')[] }
+const HOLD_MS = 60000, CLOSED_MEMORY_MS = 6 * 3600000;
 export async function createGameServer({ development = false, diagnostics = false } = {}) {
   const app = express(), http = createServer(app);
   app.disable('x-powered-by');
@@ -25,21 +27,34 @@ export async function createGameServer({ development = false, diagnostics = fals
       cb(null, allowed);
     },
   });
-  const rooms = new Map<string, Room>(), sessions = new Map<string, Session>();
-  const view = (r: Room) => ({ code: r.code, host: r.host, track: r.track, laps: r.laps, members: r.members, phase: r.race?.phase || 'lobby' });
+  // Closed codes are remembered so an old invite link explains that its room has closed.
+  const rooms = new Map<string, Room>(), sessions = new Map<string, Session>(), closed = new Map<string, number>();
+  const view = (r: Room) => ({ code: r.code, host: r.host, track: r.track, laps: r.laps, difficulty: r.difficulty, members: r.members, phase: r.race?.phase || 'lobby' });
   const broadcast = (r: Room) => io.to(r.code).emit('room', view(r));
   const channel = (socket: any) => socket.handshake.auth?.wire === WIRE_VERSION ? 'v2' : 'v1';
   const sendInitial = (socket: any, race: Race) => socket.emit(channel(socket) === 'v2' ? 'race' : 'state', race);
   const join = (socket: any, code: string) => { socket.join(code); socket.join(`${code}:${channel(socket)}`); };
+  const unsubscribe = (session: Session, code: string) => { const socket = session.socket ? io.sockets.sockets.get(session.socket) : undefined; if (socket) { socket.leave(code); socket.leave(`${code}:${channel(socket)}`); } };
+  const passHost = (room: Room, from: string) => { if (room.host === from) room.host = room.members.find(m => m.connected)?.id || room.host; };
   function leave(session: Session) {
     const room = rooms.get(session.room || '');
+    session.awayAt = 0;
     if (!room) { session.room = null; return; }
-    if (session.socket) { const socket = io.sockets.sockets.get(session.socket); socket?.leave(room.code); if (socket) socket.leave(`${room.code}:${channel(socket)}`); }
+    unsubscribe(session, room.code);
     room.members = room.members.filter(m => m.id !== session.id);
     if (room.race) { const p = room.race.racers.find(p => p.id === session.id); if (p) { p.connected = false; p.bot = true; p.name += ' [AI]'; } }
     if (room.host === session.id) room.host = room.members.find(m => m.connected)?.id || room.members[0]?.id || '';
     session.room = null;
-    if (!room.members.length) rooms.delete(room.code); else broadcast(room);
+    if (!room.members.length) { rooms.delete(room.code); closed.set(room.code, Date.now()); } else broadcast(room);
+  }
+  /** Puts a member back on their kept place: after a dropped connection, a reload or a return from the home page. */
+  function restore(socket: any, session: Session, room: Room) {
+    session.awayAt = 0; join(socket, room.code);
+    const member = room.members.find(m => m.id === session.id); if (member) { member.connected = true; member.away = false; }
+    const racer = room.race?.racers.find(p => p.id === session.id); if (racer) { racer.connected = true; racer.input = neutralInput(); }
+    if (!room.members.some(m => m.id === room.host && m.connected)) room.host = session.id;
+    broadcast(room);
+    if (room.race) sendInitial(socket, room.race);
   }
   io.on('connection', socket => {
     if (io.engine.clientsCount > 800) { socket.disconnect(true); return; }
@@ -48,19 +63,14 @@ export async function createGameServer({ development = false, diagnostics = fals
     if (typeof wire === 'number' && wire !== WIRE_VERSION) { socket.emit('outdated', { wire: WIRE_VERSION }); socket.disconnect(true); return; }
     const token = typeof socket.handshake.auth?.token === 'string' ? socket.handshake.auth.token : '';
     let session = sessions.get(token);
-    if (!session) { session = { id: randomUUID(), token: randomBytes(24).toString('hex'), socket: null, room: null, seen: Date.now(), inputAt: 0, inputSeq: 0, appliedSeq: 0, actionSeq: 0, pendingActions: [] }; sessions.set(session.token, session); }
+    if (!session) { session = { id: randomUUID(), token: randomBytes(24).toString('hex'), socket: null, room: null, seen: Date.now(), awayAt: 0, inputAt: 0, inputSeq: 0, appliedSeq: 0, actionSeq: 0, pendingActions: [] }; sessions.set(session.token, session); }
     const s = session;
     if (s.socket) io.sockets.sockets.get(s.socket)?.disconnect(true);
     s.socket = socket.id; s.seen = Date.now(); s.inputSeq = s.appliedSeq = s.actionSeq = 0; s.pendingActions = [];
-    socket.emit('welcome', { id: s.id, token: s.token, room: rooms.has(s.room || '') ? s.room : null });
-    const previous = rooms.get(s.room || '');
-    if (previous) {
-      join(socket, previous.code);
-      const member = previous.members.find(m => m.id === s.id); if (member) member.connected = true;
-      const racer = previous.race?.racers.find(p => p.id === s.id); if (racer) { racer.connected = true; racer.input = neutralInput(); }
-      broadcast(previous);
-      if (previous.race) sendInitial(socket, previous.race);
-    }
+    // A member who went back to the home page returns by entering the code again, not by reloading.
+    const previous = s.awayAt ? undefined : rooms.get(s.room || '');
+    socket.emit('welcome', { id: s.id, token: s.token, room: previous ? previous.code : null });
+    if (previous) restore(socket, s, previous);
     let budgetAt = Date.now(), actions = 0, inputs = 0;
     const budget = (input = false) => {
       if (Date.now() - budgetAt > 1000) { budgetAt = Date.now(); actions = 0; inputs = 0; }
@@ -79,25 +89,43 @@ export async function createGameServer({ development = false, diagnostics = fals
     handle('create', data => {
       if (rooms.size >= 100) throw Error('The server is full. Try again shortly.');
       leave(s);
-      let code: string; do { code = randomBytes(4).toString('hex').slice(0, 6).toUpperCase(); } while (rooms.has(code));
-      const room: Room = { code, host: s.id, track: typeof data?.track === 'string' && Object.hasOwn(TRACKS, data.track) ? data.track : 'test', laps: [1, 2, 3].includes(data?.laps) ? data.laps : 3, difficulty: DIFFICULTY_IDS.includes(data?.difficulty) ? data.difficulty : DEFAULT_DIFFICULTY, members: [{ id: s.id, ...profile(data), connected: true }], race: null, lastActive: Date.now() };
+      let code: string; do { code = randomBytes(4).toString('hex').slice(0, 6).toUpperCase(); } while (rooms.has(code) || closed.has(code));
+      const room: Room = { code, host: s.id, track: typeof data?.track === 'string' && Object.hasOwn(TRACKS, data.track) ? data.track : 'test', laps: [1, 2, 3].includes(data?.laps) ? data.laps : 3, difficulty: DIFFICULTY_IDS.includes(data?.difficulty) ? data.difficulty : DEFAULT_DIFFICULTY, members: [{ id: s.id, ...profile(data), connected: true, away: false }], race: null, lastActive: Date.now() };
       rooms.set(code, room); s.room = code; join(socket, code); broadcast(room); return { ok: true, code };
     });
     handle('join', data => {
       const code = typeof data?.code === 'string' ? data.code.trim().toUpperCase() : '';
       const room = rooms.get(code);
-      if (!room) throw Error('Room not found. Check the six-character code.');
-      if (room.code === s.room) { broadcast(room); return { ok: true }; }
-      if (room.race) throw Error('This race has already started. Join after the host returns to the lobby.');
-      if (room.members.length >= GRID_SIZE) throw Error('This room is full. Maximum six racers.');
+      if (!room && closed.has(code)) throw Error(`Room ${code} has closed. Ask the host for a new invite.`);
+      if (!code) throw Error('Enter the six-character room code.');
+      if (!room) throw Error(`Room ${code} was not found. Check the six-character code.`);
+      if (room.code === s.room) { restore(socket, s, room); return { ok: true }; }
+      if (room.race) throw Error(`Room ${code} is already racing. Try again when the host returns to the lobby.`);
+      if (room.members.length >= GRID_SIZE) throw Error(`Room ${code} is full. A room holds six racers.`);
       leave(s); s.room = code; join(socket, code);
-      room.members.push({ id: s.id, ...profile(data), connected: true }); room.lastActive = Date.now(); broadcast(room); return { ok: true };
+      room.members.push({ id: s.id, ...profile(data), connected: true, away: false }); room.lastActive = Date.now(); broadcast(room); return { ok: true };
+    });
+    handle('profile', data => {
+      const room = rooms.get(s.room || ''), member = room?.members.find(m => m.id === s.id);
+      if (!room || !member || s.awayAt) throw Error('Join a room first.');
+      if (room.race) throw Error('Change racers in the lobby, between races.');
+      Object.assign(member, profile(data));
+      broadcast(room); return { ok: true };
+    });
+    handle('away', () => {
+      const room = rooms.get(s.room || ''), member = room?.members.find(m => m.id === s.id);
+      if (!room || !member) return { ok: true };
+      s.awayAt = Date.now(); unsubscribe(s, room.code);
+      member.connected = false; member.away = true;
+      const racer = room.race?.racers.find(p => p.id === s.id); if (racer) { racer.connected = false; racer.input = neutralInput(); }
+      passHost(room, s.id); broadcast(room); return { ok: true };
     });
     handle('configure', data => {
       const room = rooms.get(s.room || '');
       if (!room || room.host !== s.id || room.race) throw Error('Only the host can change a lobby.');
       if (typeof data?.track === 'string' && Object.hasOwn(TRACKS, data.track)) room.track = data.track;
       if ([1, 2, 3].includes(data?.laps)) room.laps = data.laps;
+      if (DIFFICULTY_IDS.includes(data?.difficulty)) room.difficulty = data.difficulty;
       broadcast(room); return { ok: true };
     });
     handle('start', () => {
@@ -146,7 +174,7 @@ export async function createGameServer({ development = false, diagnostics = fals
       if (room) {
         const member = room.members.find(m => m.id === s.id); if (member) member.connected = false;
         const racer = room.race?.racers.find(p => p.id === s.id); if (racer) { racer.connected = false; racer.input = neutralInput(); }
-        if (room.host === s.id) room.host = room.members.find(m => m.connected)?.id || s.id;
+        passHost(room, s.id);
         broadcast(room);
       }
     });
@@ -188,16 +216,18 @@ export async function createGameServer({ development = false, diagnostics = fals
   }, 1000 / 60);
   const cleanup = setInterval(() => {
     for (const s of sessions.values()) {
-      if (!s.socket && Date.now() - s.seen > 60000) { leave(s); sessions.delete(s.token); }
+      if (!s.socket && Date.now() - s.seen > HOLD_MS) { leave(s); sessions.delete(s.token); }
+      else if (s.awayAt && Date.now() - s.awayAt > HOLD_MS) leave(s);
       // A backgrounded browser must not leave a steering or item button held forever.
       if (s.socket && Date.now() - s.inputAt > 1000) { const p = rooms.get(s.room || '')?.race?.racers.find(p => p.id === s.id); if (p) p.input = neutralInput(); }
     }
   }, 1000);
+  const forget = setInterval(() => { for (const [code, at] of closed) if (Date.now() - at > CLOSED_MEMORY_MS) closed.delete(code); }, 60000);
   app.get('/health', (_req, res) => res.json({ ok: true, rooms: rooms.size, players: io.engine.clientsCount }));
   let vite: Awaited<ReturnType<typeof import('vite')['createServer']>> | undefined;
   if (development) { const { createServer } = await import('vite'); vite = await createServer({ server: { middlewareMode: true, hmr: { server: http } }, appType: 'spa' }); app.use(vite.middlewares); }
   else { const dir = fileURLToPath(new URL('../dist', import.meta.url)); app.use(express.static(dir)); app.get('/{*path}', (_req, res) => res.sendFile(path.join(dir, 'index.html'))); }
-  return { app, http, io, rooms, metrics, close: async () => { clearInterval(timer); clearInterval(cleanup); await vite?.close(); await new Promise<void>(resolve => io.close(() => resolve())); } };
+  return { app, http, io, rooms, metrics, close: async () => { clearInterval(timer); clearInterval(cleanup); clearInterval(forget); await vite?.close(); await new Promise<void>(resolve => io.close(() => resolve())); } };
 }
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const server = await createGameServer({ development: process.env.NODE_ENV !== 'production' });
