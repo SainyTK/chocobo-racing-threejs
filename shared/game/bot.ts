@@ -15,5 +15,5 @@ export function botInput(r: Race, p: Racer): Input {
   // A timed hazard ahead can hold the CPU back below its cornering speed until it stops striking.
   // Cornering plans read the main road's bends; a shortcut is a near-straight line, so on one only the course line's limit applies.
   const hold = p.speed > line.limit, brake = line.shortcut ? hold : drive.brake || hold;
-  return { ...drive, brake, throttle: line.shortcut ? !hold : drive.throttle && !hold, reverse: false, ...botMagic(r, p, line.limit < Infinity), rescue: p.speed < 2 && r.time > 8 && Math.abs(p.x) > def.width - 2 || p.s > (p.gates + 2) * len / 12 };
+  return { ...drive, brake, throttle: line.shortcut ? !hold : drive.throttle && !hold, ...botMagic(r, p, line.limit < Infinity), rescue: p.speed < 2 && r.time > 8 && Math.abs(p.x) > def.width - 2 || p.s > (p.gates + 2) * len / 12 };
 }

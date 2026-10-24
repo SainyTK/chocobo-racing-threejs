@@ -63,19 +63,23 @@ body.racing #world, body.racing .hud {
   height: var(--steer-h);
   transform: translate(-50%, -50%);
   border: 2px solid #d5e7f6aa;
-  border-radius: calc(var(--steer-h) / 2);
-  background: linear-gradient(90deg, #a4d9fc33, #172b4f99 30% 70%, #a4d9fc33);
+  border-radius: calc(var(--steer-knob) / 2 + 8px);
+  /* Up drives and down brakes, so the pad is tinted green above and red below, like DRIVE and BRAKE. */
+  background:
+    linear-gradient(#5fd38a66, transparent 34% 66%, #ff6f8266),
+    linear-gradient(90deg, #a4d9fc33, #172b4f99 30% 70%, #a4d9fc33);
   box-shadow: 0 3px 12px #0a183b66;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 calc(var(--steer-h) * .14);
   color: #d1e9ff;
-  font-size: calc(var(--steer-h) * .42);
+  font-size: calc(var(--steer-knob) * .5);
   line-height: 1;
   pointer-events: none;
 }
-.steer-arrow { opacity: .75; }
+.steer-arrow { position: absolute; opacity: .75; }
+.steer-arrow.left { left: 7%; top: 50%; transform: translateY(-55%); }
+.steer-arrow.right { right: 7%; top: 50%; transform: translateY(-55%); }
+.steer-arrow.up { left: 50%; top: 3%; transform: translateX(-50%) rotate(90deg); color: #b9f5cb; }
+.steer-arrow.down { left: 50%; bottom: 3%; transform: translateX(-50%) rotate(-90deg); color: #ffc1c9; }
+.steering-pad[data-pedal="throttle"] .steer-arrow.up, .steering-pad[data-pedal="brake"] .steer-arrow.down { opacity: 1; color: #ffe594; }
 .steer-knob {
   position: absolute;
   left: 50%;
@@ -86,12 +90,14 @@ body.racing #world, body.racing .hud {
   border-radius: 50%;
   background: radial-gradient(circle at 40% 35%, #a9cdf0, #5d8bbb);
   box-shadow: 0 3px 12px #0a183b88;
-  transform: translate(calc(-50% + var(--steer-offset, 0) * var(--steer-travel)), -50%);
+  transform: translate(calc(-50% + var(--steer-offset, 0) * var(--steer-travel)), calc(-50% + var(--pedal-offset, 0) * var(--pedal-travel)));
 }
+.steering-pad[data-pedal="throttle"] .steer-knob { background: radial-gradient(circle at 40% 35%, #c8f5d6, #3f9a62); }
+.steering-pad[data-pedal="brake"] .steer-knob { background: radial-gradient(circle at 40% 35%, #ffd0d6, #a83e4e); }
 .steering-pad.pressed .steer-knob { border-color: #ffe594; }
 
 /* Right thumb rests on DRIVE; DRIFT and BRAKE sit one roll to the left, magic and the skill one reach above,
-   and the rarely used look behind, recover and reverse one more reach above those. */
+   and the rarely used look behind and recover one more reach above those. */
 .touch-controls > .action-pad {
   position: absolute;
   right: 0;
@@ -117,6 +123,7 @@ body.racing #world, body.racing .hud {
 .touch-controls .pedals { display: contents; }
 .touch-controls .mobile-ability { grid-area: ability; align-self: end; width: var(--pedal-size); height: var(--pedal-size); background: conic-gradient(#4c719c var(--charge, 0%), #20344fe6 0); }
 .touch-controls .mobile-ability.ready { border-color: #ffe594; }
+.touch-controls .mobile-ability .ability-icon { width: 58%; height: 58%; }
 #mobile-ability-state { font-size: clamp(9px, 1.4vmin, 12px); font-weight: 700; }
 .touch-controls .mobile-item { grid-area: item; width: var(--drive-w); height: var(--drive-w); }
 .touch-controls .mobile-drift { grid-area: drift; width: var(--pedal-size); height: var(--pedal-size); background: #7a5524dd; border-color: #ffd68fcc; }
@@ -140,12 +147,6 @@ body.racing #world, body.racing .hud {
 .touch-controls .mobile-drive.pressed { background: linear-gradient(#5cc283, #2f8a53); }
 .touch-controls .mobile-ability.pressed, .touch-controls .mobile-item.pressed, .touch-controls .utility-controls button.pressed { background-color: #5377a1; }
 
-.mobile-stones { display: flex; align-items: center; justify-content: center; position: relative; width: 100%; height: 62%; }
-.mobile-stones img { object-fit: contain; pointer-events: none; -webkit-user-drag: none; }
-.mobile-stones .current-stone { width: 62%; height: 100%; }
-.mobile-stones .next-stone { position: absolute; width: 22%; height: 28%; right: 4%; top: 2%; }
-.mobile-stones .next-stone + .next-stone { top: 34%; }
-.mobile-stones > span { font-size: calc(var(--drive-w) * .36); opacity: .6; }
 
 /* Start-screen control hints follow the input the player has. */
 .touch-hint { display: none; }

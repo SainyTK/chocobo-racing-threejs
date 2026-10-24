@@ -23,8 +23,9 @@ try {
   await page.getByRole('button', { name: 'Pause menu' }).click(); const at = (await stats()).race.time; await page.waitForTimeout(250); assert.equal((await stats()).race.time, at);
   const immutable = await page.evaluate(() => { const copy = window.__raceDebug; copy.race.racers[0].px = 999999; return window.__raceDebug.race.racers[0].px !== 999999; }); assert.equal(immutable, true);
   await page.keyboard.press('Escape'); await page.screenshot({ path: 'output/testing/v2-webkit-race.png' });
-  await hold('s', .9); assert.ok((await stats()).race.racers[0].speed < .1);
-  await hold('x', .6); const reverse = (await stats()).race.racers[0]; assert.ok(reverse.vx * Math.sin(reverse.yaw) + reverse.vz * Math.cos(reverse.yaw) < -4);
+  // S brakes to a stop and, still held, reverses.
+  await hold('s', .2); assert.ok((await stats()).race.racers[0].speed < moving.race.racers[0].speed - 5);
+  await hold('s', 1.4); const reverse = (await stats()).race.racers[0]; assert.ok(reverse.vx * Math.sin(reverse.yaw) + reverse.vz * Math.cos(reverse.yaw) < -4);
   assert.deepEqual(errors, []);
   await mkdir('output/testing', { recursive: true }); await writeFile('output/testing/v2-webkit-smoke.json', JSON.stringify({ passed: true, engine: 'Playwright WebKit', checks: ['WebGL 2 scene', '16 course replacements without GPU object growth', 'Black Magician vehicle', 'manual acceleration', 'steering', 'braking', 'reverse', 'pause/resume', 'read-only diagnostics'], initialGraphics: initial, afterGraphics: after, pageErrors: errors }, null, 2));
   console.log('WebKit compatibility and GPU replacement smoke passed.', { initial, after });

@@ -4,9 +4,11 @@ import type { Race, Racer } from './game/types.ts';
  * metadata. A client sends `WIRE_VERSION` when it connects; the server refuses a fixed-order client of another version,
  * which would read every field after a change at the wrong index. Bump it whenever `DYNAMIC_FIELDS` changes.
  * Clients that send no version (v1) keep receiving full JSON state until they reload.
- * Version 3 added Bahamut's `flare`. Version 4 added lobby racer changes (`profile`), stepping away (`away`) and the room class.
+ * Version 3 added Bahamut's `flare`.
+ * Version 4 dropped `Input.reverse`: brake reverses once the racer stops, and an older client would predict otherwise.
+ * Version 5 added lobby racer changes (`profile`), stepping away (`away`) and the room class.
  */
-export const WIRE_VERSION = 4;
+export const WIRE_VERSION = 5;
 export const DYNAMIC_FIELDS = ['bot','connected','px','pz','yaw','vx','vz','speed','s','routeS','x','route','alt','vy','drift','drifting','sharp','sharpTaps','lastBrake','boost','boosted','pace','shield','barrier','stun','invincible','flying','gripUp','charging','flare','mini','miniLevel','doom','doomOwner','falling','wrongWay','ability','stones','item','itemLevel','finishTime','rank','lap','lapTimes','lapStart','gates','lastSafeS','lastRescue','contactCooldown','wallCooldown','pickupCooldown','lastItem','lastAbility','lastThrottle','throttleAt','spinReleased','spinDash','input'] as const satisfies readonly (keyof Racer)[];
 export interface Snapshot { id: string; tick: number; time: number; phase: Race['phase']; racers: unknown[][]; pickups: number[]; traps: Race['traps']; projectiles: Race['projectiles']; events: Race['events']; eventId: number; firstFinish: number | null; ack: Record<string, number> }
 const rounded = (v: unknown) => typeof v === 'number' ? Math.round(v * 10000) / 10000 : v;

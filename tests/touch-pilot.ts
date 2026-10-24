@@ -39,7 +39,8 @@ export async function centerOf(page: Page, selector: string, id: number): Promis
 
 /**
  * The left thumb on the floating steering pad. It lands at `landing` (the pad's resting centre by default),
- * and `at(offset)` is that finger moved by a fraction of the pad's travel: -1 is full lock left, 1 full lock right.
+ * and `at(offset, rise)` is that finger moved by fractions of the pad's travel: offset -1 is full lock left and 1 full lock right;
+ * rise -1 pushes the stick fully up (drive) and 1 pulls it fully down (brake, then reverse).
  */
 export async function steeringThumb(page: Page, id: number, landing?: { x: number; y: number }) {
   const { pad, knob } = await page.evaluate(() => {
@@ -49,8 +50,8 @@ export async function steeringThumb(page: Page, id: number, landing?: { x: numbe
     };
     return { pad: box('.steering-pad'), knob: box('.steer-knob') };
   });
-  const origin = landing ?? { x: pad.x + pad.width / 2, y: pad.y + pad.height / 2 }, travel = (pad.width - knob.width) / 2;
-  return { travel, at: (offset: number): TouchPoint => ({ x: origin.x + offset * travel, y: origin.y, id }) };
+  const origin = landing ?? { x: pad.x + pad.width / 2, y: pad.y + pad.height / 2 }, travel = (pad.width - knob.width) / 2, travelY = (pad.height - knob.height) / 2;
+  return { travel, at: (offset: number, rise = 0): TouchPoint => ({ x: origin.x + offset * travel, y: origin.y + rise * travelY, id }) };
 }
 
 /** The telemetry the pilot reads, taken from one cloned debug snapshot per tick. */
@@ -63,8 +64,9 @@ const telemetry = (page: Page) => page.evaluate(() => {
  * Black-box touch pilot for one lap. It reads cloned telemetry and only sends touches:
  * the left thumb lands on the steering zone and slides, the right thumb rolls between DRIVE, DRIFT and BRAKE,
  * and a third finger taps MAGIC when a stone is ready.
+ * With `stick`, the left thumb also does the pedals, pushing up to drive and pulling down to brake, and the right thumb rests.
  */
-export async function driveLapByTouch(context: BrowserContext, page: Page, timeout = 150000) {
+export async function driveLapByTouch(context: BrowserContext, page: Page, { timeout = 150000, stick = false } = {}) {
   const touch = await touchScreen(context, page), steerId = 1, pedalId = 2, castId = 3, rescueId = 4;
   const track = (await raceDebug(page)).race.track as TrackId, len = trackLength(track);
   const point = (s: number) => pointAt(track, ((s % len) + len) % len);
@@ -75,7 +77,7 @@ export async function driveLapByTouch(context: BrowserContext, page: Page, timeo
   const seen = new Set<number>();
   let p = await telemetry(page);
   while (p.time < -.2) p = await telemetry(page);
-  await touch.start([steerAt(0), pedals.drive]);
+  await touch.start(stick ? [steerAt(0)] : [steerAt(0), pedals.drive]);
   const started = Date.now();
   let castUntil = 0, rescueUntil = 0;
   while (p.gates < 12) {
@@ -84,9 +86,11 @@ export async function driveLapByTouch(context: BrowserContext, page: Page, timeo
     const delta = ((Math.atan2(target.x - p.px, target.z - p.pz) - p.yaw + Math.PI) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2) - Math.PI;
     const curve = Math.max(...[12, 25, 40].map(v => Math.abs(point(p.s + v).curve)));
     const steer = Math.max(-1, Math.min(1, delta * 2.1));
-    const pedal = p.speed > Math.max(13, Math.min(34, Math.sqrt(24.5 / Math.max(.001, curve))) + 1) ? 'brake' : curve > .02 && p.speed > 18 && Math.abs(steer) > .45 ? 'drift' : 'drive';
+    const tooFast = p.speed > Math.max(13, Math.min(34, Math.sqrt(24.5 / Math.max(.001, curve))) + 1);
+    const pedal = tooFast ? 'brake' : !stick && curve > .02 && p.speed > 18 && Math.abs(steer) > .45 ? 'drift' : 'drive';
     // Positive steer turns left, so the thumb slides left. The offset includes the deadzone so small corrections still turn.
-    await touch.move([steerAt(-Math.sign(steer) * (.15 + Math.abs(steer) * .85)), pedals[pedal]]);
+    const offset = -Math.sign(steer) * (.15 + Math.abs(steer) * .85);
+    await touch.move(stick ? [steerAt(offset, tooFast ? 1.2 : -1.2)] : [steerAt(offset), pedals[pedal]]);
     used[pedal]++;
     if (steer > .2) used.steerLeft++;
     if (steer < -.2) used.steerRight++;

@@ -7,7 +7,7 @@ const inside = (a: Box, b: Box) => a.x >= b.x - .5 && a.y >= b.y - .5 && a.x + a
 const distance = (a: Box, b: Box) => Math.hypot(Math.max(0, b.x - a.x - a.width, a.x - b.x - b.width), Math.max(0, b.y - a.y - a.height, a.y - b.y - b.height));
 const iPadLandscape = { width: 1180, height: 820 };
 const viewports = [iPadLandscape, { width: 820, height: 1180 }, { width: 1366, height: 1024 }, { width: 1024, height: 1366 }, { width: 390, height: 844 }, { width: 320, height: 568 }, { width: 844, height: 390 }, { width: 667, height: 375 }];
-const controlSelectors = ['.mobile-drive', '.mobile-brake', '.mobile-drift', '.mobile-item', '.mobile-ability', '.steering-pad', '[data-touch="behind"]', '[data-touch="rescue"]', '[data-touch="reverse"]'];
+const controlSelectors = ['.mobile-drive', '.mobile-brake', '.mobile-drift', '.mobile-item', '.mobile-ability', '.steering-pad', '[data-touch="behind"]', '[data-touch="rescue"]'];
 
 async function touchRace(browser: Browser, viewport: { width: number; height: number }, quality = 'high') {
   // iPad Safari reports a desktop-class browser, so only phone-sized viewports use the mobile flag.
@@ -54,7 +54,7 @@ test('two-thumb layout fits iPad and phone screens without covering the HUD or t
       expect(rects.zone.x).toBe(0);
       expect(rects.zone.y + rects.zone.height).toBeCloseTo(viewport.height, 0);
       expect(rects.pad.width, `${at} steering pad width`).toBeLessThanOrEqual(200);
-      // Look behind, recover and reverse live in the right cluster, a deliberate reach from the pedals the right thumb rolls across.
+      // Look behind and recover live in the right cluster, a deliberate reach from the pedals the right thumb rolls across.
       const [driveBox, brakeBox, driftBox] = rects.controls, utilities = rects.controls.slice(6);
       for (const utility of utilities) {
         expect(inside(utility, rects.right), `${at} utility button outside the right cluster`).toBe(true);
@@ -136,6 +136,26 @@ test('right thumb drives, drifts and brakes while the left thumb steers and othe
     await expect.poll(input).toMatchObject({ steer: -1 });
     await touch.end();
     await expect.poll(input).toMatchObject({ steer: 0 });
+    // The same stick drives when pushed up and brakes, then reverses, when pulled down. A thumb sweeping sideways
+    // with a little vertical drift only steers.
+    await touch.start([thumb.at(0)]);
+    await touch.move([thumb.at(.9, -.3)]);
+    await expect.poll(input).toMatchObject({ throttle: false, brake: false });
+    expect((await input()).steer).toBeLessThan(-.5);
+    await touch.move([thumb.at(0, -1)]);
+    await expect.poll(input).toMatchObject({ throttle: true, brake: false, steer: 0 });
+    await expect(page.locator('.steering-pad')).toHaveAttribute('data-pedal', 'throttle');
+    await touch.move([thumb.at(-1, 1)]);
+    await expect.poll(input).toMatchObject({ throttle: false, brake: true, steer: 1 });
+    await expect(page.locator('.steering-pad')).toHaveAttribute('data-pedal', 'brake');
+    // DRIVE held by the right thumb while the stick pulls down still brakes and reverses; with the stick centred DRIVE drives.
+    await touch.start([drive]);
+    await expect.poll(input).toMatchObject({ throttle: false, brake: true });
+    await touch.move([thumb.at(0, 0)]);
+    await expect.poll(input).toMatchObject({ throttle: true, brake: false });
+    await touch.end();
+    await expect.poll(input).toMatchObject({ throttle: false, brake: false, steer: 0 });
+    await expect(page.locator('.steering-pad')).toHaveAttribute('data-pedal', '');
     for (const action of ['blur', 'orientationchange', 'menu']) {
       await touch.start([thumb.at(0), drift]);
       await expect(page.locator('.steering-pad')).toHaveClass(/pressed/);
@@ -184,6 +204,21 @@ for (const viewport of [iPadLandscape, { width: 820, height: 1180 }]) {
       expect(used.casts).toBeGreaterThan(0);
       expect(errors).toEqual([]);
       await page.screenshot({ path: `output/testing/touch-lap-${viewport.width}x${viewport.height}.png` });
+    } finally { await context.close(); }
+  });
+}
+
+// Pushing the stick up drives at full speed in both phone orientations; pulling it down brakes for the corners.
+for (const viewport of [{ width: 390, height: 844 }, { width: 844, height: 390 }]) {
+  test(`a touch player drives a full lap at ${viewport.width}x${viewport.height} with the stick alone`, async ({ browser }) => {
+    test.setTimeout(240000);
+    const { context, page } = await touchRace(browser, viewport, 'retro');
+    try {
+      const { used, lapTime } = await driveLapByTouch(context, page, { stick: true });
+      console.log(`stick lap ${viewport.width}x${viewport.height}`, JSON.stringify({ lapTime, ...used }));
+      expect(lapTime).toBeGreaterThan(0);
+      expect(used.maxSpeed).toBeGreaterThan(39);
+      expect(used.brake).toBeGreaterThan(0);
     } finally { await context.close(); }
   });
 }

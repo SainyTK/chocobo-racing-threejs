@@ -17,10 +17,11 @@
 .room-code-label{display:flex;align-items:baseline;gap:10px;margin-top:2px;font-size:10px;font-weight:700;letter-spacing:2px;color:#bbc8e2}
 .room-code-label strong{font:800 34px/1 'Barlow Condensed',sans-serif;letter-spacing:6px;color:var(--gold)}
 .room-head button{white-space:nowrap}
-.room .racer-card svg{height:46px}
-.room .ability-select{flex-wrap:wrap;gap:6px 12px;padding:10px 0 4px}
-.room .ability-select label{width:auto;flex:1}
-.room .ability-select p{flex-basis:100%;margin:0}
+.room .racer-grid{grid-template-columns:repeat(5,1fr)}
+.room .racer-card svg{height:44px}
+.room .racer-card span{overflow:hidden;text-overflow:ellipsis}
+.room .ability-help{min-height:0;margin-top:6px}
+.room-name{margin-bottom:10px}
 .roster{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:8px 0 14px;padding:0;list-style:none}
 .roster li{display:flex;align-items:center;gap:6px;min-width:0;padding:5px 6px;background:#19254988;border:1px solid transparent;border-radius:4px}
 .roster li.you{border-color:#ffdc6699;background:#ffdb5914}
@@ -39,5 +40,5 @@
 .room-actions>button:first-child{flex-shrink:0;white-space:nowrap}
 .room-actions>.primary,.room-actions>.room-wait{flex:1}
 .room-wait{margin:0;padding:13px;border:1px dashed #8fa0d099;border-radius:5px;text-align:center;font-weight:700;color:#ffe7a8}
-@media(max-width:600px){.room-fields>label:first-child{flex-basis:100%}.room-fields>label:nth-child(3){max-width:none}.room-actions{flex-direction:column-reverse}.entry-card{padding:13px}.entry-card h2{font-size:23px}.roster{grid-template-columns:1fr 1fr}.room-head{padding:9px 10px}.room-code-label strong{font-size:28px;letter-spacing:4px}}
+@media(max-width:600px){.room .racer-grid{grid-template-columns:repeat(4,1fr)}.room-fields>label:first-child{flex-basis:100%}.room-fields>label:nth-child(3){max-width:none}.room-actions{flex-direction:column-reverse}.entry-card{padding:13px}.entry-card h2{font-size:23px}.roster{grid-template-columns:1fr 1fr}.room-head{padding:9px 10px}.room-code-label strong{font-size:28px;letter-spacing:4px}}
 @media(max-width:440px){.entry-cards{grid-template-columns:1fr}}

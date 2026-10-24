@@ -14,15 +14,15 @@ This is not an identical port. Models, music, animations, maps and physics tunin
 
 ## Screenshots
 
-Captured from the running game with Orca's embedded browser.
+Captured from the running game in headless Chrome at 1440x985.
 
 ### Racer selection
 
-![Racer selection with Chocobo, eight characters and race setup](docs/screenshots/racer-selection.png)
+![Racer selection with Chocobo, the ten racers, the ability badges and race setup](docs/screenshots/racer-selection.png)
 
 ### Racing in Mythril Mines
 
-![Chocobo racing through Mythril Mines with rivals, Magic Stones and the race HUD](docs/screenshots/mythril-mines.png)
+![Chocobo racing through Mythril Mines behind Golem, with the race HUD and its ability badge](docs/screenshots/mythril-mines.png)
 
 ## Play
 
@@ -46,7 +46,8 @@ Open http://localhost:3000.
 Choose among ten racers and nine courses.
 Bahamut, the original's secret final opponent, is unlocked from the start: he flies instead of driving, with Goblin's top speed, good acceleration and loose grip.
 Cloud, a secret racer in the original, is unlocked from the start too: he rides the Hardy-Daytona with the Buster Sword on his back, and shares Goblin's profile of a high top speed and very loose cornering.
-Each racer starts with its own ability, and you can pick any other ability for yourself. CPU racers always use their own. Lap count is configurable from one to three. Grand Prix starts on your selected course and continues through the next three in course order.
+Each racer starts with its own ability, and you can pick any other ability for yourself from the row of ability badges under the racers.
+Each badge draws what its ability does, in the colours of its in-race effect; the description of the chosen one shows below the row. CPU racers always use their own. Lap count is configurable from one to three. Grand Prix starts on your selected course and continues through the next three in course order.
 
 The CLASS setting sets the challenge for Quick Race, Grand Prix, Versus and online rooms.
 Chocobo Class has relaxed rivals who misread hazards and rarely take shortcuts.
@@ -77,16 +78,20 @@ Manual acceleration is on by default. You must steer around corners. The game do
 
 | Action | Keyboard | Touch | Standard gamepad |
 | --- | --- | --- | --- |
-| Accelerate | W or up arrow | Hold DRIVE | Right trigger |
-| Steer | A/D or left/right arrows | Left thumb on the floating steering pad | Left stick |
-| Brake | S or down arrow | BRAKE | Left trigger |
-| Reverse | X | Reverse button | B |
+| Accelerate | W or up arrow | Hold DRIVE, or push the stick up | Right trigger |
+| Steer | A/D or left/right arrows | Slide the floating stick left or right | Left stick |
+| Brake, then reverse | Hold S or down arrow | Hold BRAKE, or pull the stick down | Left trigger |
 | Drift | Shift while steering, or accelerator + brake | DRIFT, or DRIVE + BRAKE | A |
 | Cast latest stone | Space | MAGIC | X |
 | Ability | E | Ability button | Y |
 | Recover | R | Recover button | - |
 | Look behind | B | Look-behind button | - |
 | Race menu | Escape | Pause button | - |
+
+Braking and reversing share one pedal, as in most racing games.
+Held without the accelerator, it slows the racer, and once the racer has stopped it drives in reverse.
+With the accelerator also held it never reverses, so accelerator + brake still drifts.
+Auto-accelerate lets go while you brake, so the same pedal reverses with it on.
 
 Racers grip hard enough to take most medium corners near top speed, but a corner taken too fast runs wide.
 Lift, brake, or tap the brake while steering to turn tighter.
@@ -103,12 +108,15 @@ Wall hits cost speed in proportion to how hard you hit, and Grip-Up glances off 
 In bumps, bigger racers shove smaller ones: Chubby Chocobo, Behemoth and Golem are the heaviest.
 
 On a touch screen, put your left thumb down anywhere on the lower left and slide it left or right to steer.
-The steering pad appears where your thumb lands and returns to the corner when you lift it.
-The right thumb rests on DRIVE in the bottom-right corner, with DRIFT and BRAKE stacked to its left.
+The stick appears where your thumb lands and returns to the corner when you lift it.
+Push it up to accelerate and pull it down to brake and then reverse; the pad is tinted green above and red below, and the knob takes the colour of the pedal it holds.
+A small up or down drift while you steer does nothing: the stick needs a clear push before it drives or brakes.
+You can also drive with the right thumb, which rests on DRIVE in the bottom-right corner, with DRIFT and BRAKE stacked to its left.
 You can roll your thumb between DRIVE, DRIFT and BRAKE without lifting it.
 DRIFT keeps accelerating, so sliding onto it from DRIVE keeps you driving.
-MAGIC, which previews your stones, sits above DRIVE, and the ability button sits above DRIFT.
-Look behind, recover and reverse are small buttons in a row above them, or beside the ability button on short landscape phones.
+Both ways combine: pushing the stick up while the right thumb sits on BRAKE drifts like DRIVE + BRAKE, and pulling the stick down brakes and reverses even while the right thumb holds DRIVE.
+MAGIC sits above DRIVE and the ability button, which shows your ability's badge and its recharge, sits above DRIFT.
+Look behind and recover are small buttons in a row above them, or beside the ability button on short landscape phones.
 With auto-accelerate on, DRIVE shows AUTO and stays lit.
 A held key overrides touch steering.
 
@@ -125,7 +133,8 @@ A taken stone bursts into a bright smear of its colour and grows back in after 3
 
 You hold up to three stones, as small balls rolling in a short chain on the road right behind your racer's rear wheels, oldest first.
 A stone picked up right after a matching one merges into it for a stronger spell, up to level three, but every stone still takes a place until you cast.
-A level three stack fills all three HUD slots, and you drive through stones until you cast it.
+A level three stack fills all three places, and you drive through stones until you cast it.
+As in the original, the HUD shows no stone panel: the chain behind your racer is how you see what you hold.
 As in the original, a stack looks like one stone and shows its level: at level two a bright band sweeps down the stone from top to bottom every half second, and at level three the stone flashes white and a ring grows out of it and fades, a little faster.
 The latest stack casts first, at its full level.
 Reflect and Doom never merge.
@@ -257,7 +266,7 @@ Install Node.js 22.12 or newer and [cloudflared](https://developers.cloudflare.c
 
 2. Copy the actual `https://...trycloudflare.com` URL printed by cloudflared. It changes whenever the tunnel restarts. Keep the command running.
 
-3. Open the same tunnel URL on every device. Choose **Online**, create a room on one device, then join its six-character room code on the others, or send them the room's invite link. Each player picks a racer inside the room. Open the tunnel URL before copying an invite; a localhost invite does not work on a teammate's phone. With two players, the remaining four racers are CPU-controlled. On a phone, hold DRIVE with your right thumb and steer with your left thumb anywhere on the lower left. MAGIC and the ability button sit above DRIVE, and DRIFT and BRAKE sit next to it. Use mobile data on the phone to test separate internet connections, or the same Wi-Fi for a same-network test through the tunnel.
+3. Open the same tunnel URL on every device. Choose **Online**, create a room on one device, then join its six-character room code on the others, or send them the room's invite link. Each player picks a racer inside the room. Open the tunnel URL before copying an invite; a localhost invite does not work on a teammate's phone. With two players, the remaining four racers are CPU-controlled. On a phone, steer with your left thumb anywhere on the lower left and push that stick up to drive, or hold DRIVE with your right thumb. MAGIC and the ability button sit above DRIVE, and DRIFT and BRAKE sit next to it. Use mobile data on the phone to test separate internet connections, or the same Wi-Fi for a same-network test through the tunnel.
 
 4. Optionally append `/?netPerf` to the tunnel URL to collect bounded frame/network diagnostics. Do not add `netDelay`, `netJitter` or `netDrop` for a real-connection test. Desktop Chrome's developer console can copy the telemetry with:
 
@@ -417,7 +426,7 @@ Reports are in `output/playwright-report/`; screenshots are in `output/testing/`
 - `src/gfx/geometry/`: the geometry helpers used to sculpt the models (baked transforms, primitives, rocks and swept tubes).
 - `src/main.ts`: modes, menus, HUD, input, local race loop and ghost recording.
 - `src/online/`: the Online entry cards on the home screen (`online-entry.ts`), the room page (`room-page.ts`), room code checks and invite links (`room-code.ts`) and their styles (`online.css`).
-  `src/racer-picker.ts` is the racer grid and ability choice shared by the home screen and the room, and `src/showcase.ts` the racer name and stats beside the 3D hero.
+  `src/racer-grid.ts` is the racer grid and `src/ability-picker.ts` the ability picker, both shared by the home screen and the room, and `src/showcase.ts` the racer name and stats beside the 3D hero.
 - `src/hud/`: the race-order portrait strip (`standings.ts`) and the single callout (`callout.ts`, `messages.ts`).
 - `src/finish-sequence.ts`: timing of the slow motion, orbit and podium after the player finishes.
 - `src/touch-controls.ts`, `src/touch-steering.ts` and `src/mobile-hud.ts`: the two-thumb touch controls. `src/touch-layout.css` holds the geometry tokens that `src/touch-controls.css` and `src/touch-hud.css` share.

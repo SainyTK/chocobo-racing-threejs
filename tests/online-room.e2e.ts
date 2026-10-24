@@ -22,13 +22,15 @@ test('invite links and codes open the room, where every member picks a racer tha
     const invited = await open(browser, `/?room=${code}`, true); clients.push(invited); const b = invited.page;
     await expect(b.locator('#room-code')).toHaveText(code); await expect(roster(a)).toContainText('Racer');
     await b.getByRole('textbox', { name: 'Your name' }).fill('Phone'); await b.getByRole('textbox', { name: 'Your name' }).press('Enter');
-    await b.getByRole('button', { name: 'Choose Behemoth', exact: true }).tap(); await b.getByRole('combobox', { name: 'Ability', exact: true }).selectOption('flap');
+    await b.getByRole('button', { name: 'Choose Behemoth', exact: true }).tap(); await b.getByRole('radio', { name: 'Flap', exact: true }).tap();
     await expect(roster(a)).toContainText('Phone'); await expect(roster(a)).toContainText('Behemoth · Flap');
 
     const typed = await open(browser, '/'), c = typed.page; clients.push(typed);
     await c.getByRole('button', { name: 'Online', exact: true }).click(); await c.getByRole('textbox', { name: 'Room code' }).fill(code.toLowerCase()); await c.getByRole('textbox', { name: 'Room code' }).press('Enter');
     await expect(c.locator('#room-code')).toHaveText(code); await c.getByRole('button', { name: 'Choose Goblin', exact: true }).click();
-    await expect(roster(b)).toContainText('Goblin'); await expect(c.getByRole('button', { name: 'START ONLINE RACE' })).toHaveCount(0);
+    // Arrow keys move through the ability picker; the roster update from each step keeps focus in place.
+    await c.getByRole('radio', { name: 'Charge', exact: true }).click(); await c.keyboard.press('ArrowLeft');
+    await expect(roster(b)).toContainText('Goblin · Receive'); await expect(c.getByRole('radio', { name: 'Receive (auto)', exact: true })).toBeFocused(); await expect(c.getByRole('button', { name: 'START ONLINE RACE' })).toHaveCount(0);
 
     // Going home keeps the place; the same code brings the player back without a second roster entry.
     await b.getByRole('button', { name: 'Back to home' }).tap(); await expect(b.getByRole('textbox', { name: 'Room code' })).toHaveValue(code);
@@ -40,7 +42,7 @@ test('invite links and codes open the room, where every member picks a racer tha
     await a.getByRole('button', { name: 'START ONLINE RACE' }).click();
     for (const p of [a, b, c]) await expect(p.locator('#place')).toBeVisible();
     const racers = (await debug(a)).race.racers.filter((p: any) => !p.bot);
-    expect(racers.map((p: any) => [p.name, p.character, p.abilityId])).toEqual([['Host', 0, 'dash'], ['Phone', 7, 'flap'], ['Racer', 3, 'mug']]);
+    expect(racers.map((p: any) => [p.name, p.character, p.abilityId])).toEqual([['Host', 0, 'dash'], ['Phone', 7, 'flap'], ['Racer', 3, 'receive']]);
 
     // Problems with a code show on the home page, in the join card. Three headless WebGL races would starve a fourth page of CPU, so two players drop out first.
     for (const client of [invited, typed]) { expect(client.errors).toEqual([]); await client.context.close(); }

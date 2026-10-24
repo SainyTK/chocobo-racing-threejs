@@ -1,7 +1,7 @@
-import { steerFromOffset } from './touch-steering.ts';
+import { pedalFromOffset, steerFromOffset, type StickPedal } from './touch-steering.ts';
 
 interface Hold { control: HTMLElement; captor: HTMLElement; actions: string[] }
-interface Steering { pointerId: number; zone: HTMLElement; pad: HTMLElement; originX: number; travel: number; value: number }
+interface Steering { pointerId: number; zone: HTMLElement; pad: HTMLElement; originX: number; originY: number; travel: number; travelY: number; value: number; pedal: StickPedal }
 
 const controlAt = (target: EventTarget | null) => target instanceof Element ? target.closest<HTMLElement>('[data-touch]') : null;
 const actionsOf = (control: HTMLElement) => control.dataset.hold?.split(' ') ?? [control.dataset.touch!];
@@ -35,7 +35,8 @@ export function installTouchControls(options: {
     if (!captor) return;
     holds.delete(pointerId);
     if (steering?.pointerId === pointerId) {
-      for (const name of ['--pad-x', '--pad-y', '--steer-offset']) steering.zone.style.removeProperty(name);
+      for (const name of ['--pad-x', '--pad-y', '--steer-offset', '--pedal-offset']) steering.zone.style.removeProperty(name);
+      steering.pad.dataset.pedal = '';
       steering = null;
     }
     render();
@@ -59,7 +60,7 @@ export function installTouchControls(options: {
   window.addEventListener('blur', reset);
   document.addEventListener('visibilitychange', reset);
   updateLayout();
-  // Where the thumb lands is straight ahead. The pad is drawn there, kept inside the zone.
+  // Where the thumb lands is straight ahead with no pedal. The pad is drawn there, kept inside the zone.
   const startSteering = (e: PointerEvent, zone: HTMLElement) => {
     const pad = zone.querySelector<HTMLElement>('.steering-pad')!, knob = pad.querySelector<HTMLElement>('.steer-knob')!;
     const area = zone.getBoundingClientRect(), size = pad.getBoundingClientRect(), style = getComputedStyle(zone);
@@ -69,13 +70,18 @@ export function installTouchControls(options: {
     const y = Math.max(size.height / 2, Math.min(bottom, e.clientY - area.top));
     zone.style.setProperty('--pad-x', `${x}px`);
     zone.style.setProperty('--pad-y', `${y}px`);
-    steering = { pointerId: e.pointerId, zone, pad, originX: e.clientX, travel: (size.width - knob.getBoundingClientRect().width) / 2, value: 0 };
+    const knobSize = knob.getBoundingClientRect();
+    steering = { pointerId: e.pointerId, zone, pad, originX: e.clientX, originY: e.clientY, travel: (size.width - knobSize.width) / 2, travelY: (size.height - knobSize.height) / 2, value: 0, pedal: null };
     steerTo(e);
   };
+  // Left and right steer; up drives and down brakes, then reverses.
   const steerTo = (e: PointerEvent) => {
-    const offset = (e.clientX - steering!.originX) / steering!.travel;
+    const offset = (e.clientX - steering!.originX) / steering!.travel, offsetY = (e.clientY - steering!.originY) / steering!.travelY;
     steering!.value = steerFromOffset(offset);
+    steering!.pedal = pedalFromOffset(offsetY);
     steering!.zone.style.setProperty('--steer-offset', String(Math.max(-1, Math.min(1, offset))));
+    steering!.zone.style.setProperty('--pedal-offset', String(Math.max(-1, Math.min(1, offsetY))));
+    steering!.pad.dataset.pedal = steering!.pedal ?? '';
   };
   document.addEventListener('pointerdown', e => {
     const control = controlAt(e.target);
@@ -123,5 +129,5 @@ export function installTouchControls(options: {
     const control = controlAt(e.target);
     if (control && e.detail === 0 && options.enabled()) options.onPress(control.dataset.touch!);
   });
-  return { reset, steer: () => steering?.value ?? 0 };
+  return { reset, steer: () => steering?.value ?? 0, pedal: (): StickPedal => steering?.pedal ?? null };
 }
