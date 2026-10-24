@@ -233,3 +233,19 @@ Cloud joined as a tenth racer: a skinned GLB of Cloud on the Hardy-Daytona, with
 - Playwright on a dev server at port 3341: the racer select test (naming all ten racers), two online clients with rejoin and rematch, and the impaired-network desktop and mobile test pass. Piloted races as Cloud finished with no page errors.
 
 Not covered after the final model change: the per-course keyboard laps, Grand Prix, Time Attack, Versus and the touch-control suites. An earlier full run on this branch passed them, apart from two keyboard laps that timed out under CPU load and passed on rerun. No real phone was used.
+
+## Online room flow (2026-10-24)
+
+Invite links and typed codes now open the room straight away, and every member picks a racer, ability and name inside the room.
+The Online home view shows two cards of equal weight, Create a room and Join a room.
+
+- Wire version 5: lobby `profile` changes, the `away` request that holds a place for 60 seconds, and the room class in `configure`.
+- `npx tsc --noEmit` passes, and `npx vitest run` passes 224 tests in 12 files.
+  New server tests cover lobby racer changes and their refusal during a race or outside a room, stepping away and returning without a duplicate (also mid-race), a lone host returning, and the closed-room message.
+- `npm run build` passes, and the production smoke passes with `SMOKE_PORT=3480`, including the closed-room message after a server restart.
+- Playwright on port 3480: `browser.e2e.ts`, `network.e2e.ts`, `touch-controls.e2e.ts` and the new `online-room.e2e.ts` pass, 23 tests in all.
+  The Versus test still selected the old ability dropdown after the ability picker landed; it now clicks the Flap badge.
+- Screenshots at 1440 x 900, 390 x 844 and 844 x 390 covered the Online cards, the room as host and as guest, a full room of six, the Away state, and the malformed, unknown, full, closed and already-racing messages.
+
+Not covered: no real phone was used.
+Several headless WebGL pages in one browser can starve a newly opened page of CPU for long enough that its first connection times out; the e2e test closes two racing clients before the late joiner for that reason.
