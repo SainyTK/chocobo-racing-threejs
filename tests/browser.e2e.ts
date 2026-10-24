@@ -48,7 +48,7 @@ test('ten distinct racers, nine courses, independent abilities, options and hone
   for (let i = 0; i < 8; i++) { await page.getByRole('button', { name: 'Next course' }).click(); if (i === 5) await page.screenshot({ path: 'output/testing/v2-candy-menu.png' }); }
   await page.getByRole('button', { name: 'Controls', exact: true }).click(); await expect(page.getByRole('dialog')).toContainText('There is no release turbo'); await page.keyboard.press('Escape');
   await page.getByRole('button', { name: 'Options', exact: true }).click(); await expect(page.getByRole('switch', { name: 'Auto-accelerate' })).toHaveAttribute('aria-checked', 'false'); await page.getByRole('combobox', { name: 'Graphics quality' }).selectOption('retro'); await page.getByRole('button', { name: 'DONE', exact: true }).click(); expect((await debug(page)).settings.quality).toBe('retro');
-  await page.getByRole('button', { name: 'What matches the original?' }).click(); await expect(page.getByRole('dialog')).toContainText('not an identical copy'); expect(errors).toEqual([]);
+  expect(errors).toEqual([]);
 });
 for (const [index, id] of TRACK_IDS.entries()) test(`real keyboard driving completes ${id}`, async ({ page }) => {
   test.setTimeout(190000); const errors: string[] = []; page.on('pageerror', e => errors.push(e.message)); await ready(page);

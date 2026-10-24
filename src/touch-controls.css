@@ -159,8 +159,3 @@ body.racing #world, body.racing .hud {
 .touch-controls .mobile-drive.pressed { background: linear-gradient(#5cc283, #2f8a53); }
 .touch-controls .mobile-ability.pressed, .touch-controls .mobile-item.pressed, .touch-controls .utility-controls button.pressed { background-color: #5377a1; }
 
-
-/* Start-screen control hints follow the input the player has. */
-.touch-hint { display: none; }
-.touch-device .touch-hint { display: inline; }
-.touch-device .keyboard-hint { display: none; }
