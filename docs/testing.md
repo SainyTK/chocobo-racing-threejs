@@ -47,7 +47,7 @@ The suite covers:
 5. Four complete Grand Prix rounds, cumulative points, changed courses/grids and a final champion.
 6. The two-client online lifecycle described above.
 7. A full Versus race with Behemoth using Flap against Goblin.
-8. Mobile portrait and landscape layouts, simultaneous gas/steering, brake, reverse, recovery, and no horizontal overflow.
+8. Mobile portrait and landscape layouts, simultaneous gas/steering, BRAKE held through a stop into reverse, stick driving up and reversing down (also with DRIVE held), no acceleration from a sideways slide, recovery, and no horizontal overflow.
 
 The mobile follow-up specifically rechecks touch controls after taking a screenshot and changing orientation. The touch-capable device class keeps the controls present even if pointer media-query reporting changes.
 
@@ -159,7 +159,7 @@ Driving, magic, courses, presentation and touch controls were retuned toward the
   New tests cover per-course stone sets, stacks filling the inventory, position-weighted "?" stones, progress targeting, Mini steps, the safe window, Doom pass locks, Mug, Barrier and Receive rules, CPU stone lanes, and every course gimmick in `tests/courses.test.ts`.
 - The full Playwright suite, now 21 cases, passed in 25.9 minutes on commit 287eb56. The only later commit changes `tests/tunnel.test.ts`.
 - `tests/touch-controls.e2e.ts` checks the two-thumb layout at eight iPad and phone sizes in both orientations: control sizes, no overlaps between controls and HUD, the floating steering zone, and no page scroll.
-  It also drives multi-touch steering, DRIVE, DRIFT and BRAKE sliding, and full touch laps at 1180x820 and 820x1180.
+  It also drives multi-touch steering, the stick's up (drive) and down (brake and reverse) axis with its dead zone and with DRIVE held, DRIVE, DRIFT and BRAKE sliding, and full touch laps at 1180x820 and 820x1180.
 - Headless all-CPU races, 8 courses x 8 seeds x 3 laps per class, finished every race.
   There were 1, 0 and 1 falls on Chocobo, Behemoth and Bahamut Class, and 98, 37 and 107 timed-hazard hits.
 - On Behemoth Class without items, a scripted clean driver who skips shortcuts beats the best CPU by a median of 2.0 s.

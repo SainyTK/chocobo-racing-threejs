@@ -1,0 +1,26 @@
+/* Home screen ability picker: a row of badges under the racer grid, with the chosen ability's description below. */
+.ability-picker { padding: 10px 0 6px; }
+.ability-picker-label { display: block; font-size: 11px; font-weight: 700; color: #bbc8e2; letter-spacing: 1px; margin-bottom: 6px; }
+.ability-options { display: grid; grid-template-columns: repeat(9, 1fr); gap: 5px; }
+.ability-option {
+  min-width: 0;
+  padding: 5px 2px 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  background: linear-gradient(#4c6096, #26366a);
+}
+.ability-option .ability-icon { width: 34px; height: 34px; filter: drop-shadow(1px 2px 0 #182b42); }
+.ability-option span { font: 600 11px/1.1 'Barlow Condensed', sans-serif; white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+.ability-help { font-size: 11px; color: #c7cfe4; line-height: 1.5; margin: 8px 0 0; min-height: 33px; }
+.ability-help strong { color: #ffe594; font: 700 13px 'Barlow Condensed', sans-serif; letter-spacing: .5px; margin-right: 4px; }
+@media (min-width: 1500px) {
+  .ability-option .ability-icon { width: 40px; height: 40px; }
+  .ability-option span { font-size: 12px; }
+  .ability-help { font-size: 12px; }
+}
+@media (max-width: 600px) {
+  .ability-options { grid-template-columns: repeat(5, 1fr); }
+  .ability-help { font-size: 10px; }
+}

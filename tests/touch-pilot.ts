@@ -39,7 +39,8 @@ export async function centerOf(page: Page, selector: string, id: number): Promis
 
 /**
  * The left thumb on the floating steering pad. It lands at `landing` (the pad's resting centre by default),
- * and `at(offset)` is that finger moved by a fraction of the pad's travel: -1 is full lock left, 1 full lock right.
+ * and `at(offset, rise)` is that finger moved by fractions of the pad's travel: offset -1 is full lock left and 1 full lock right;
+ * rise -1 pushes the stick fully up (drive) and 1 pulls it fully down (brake, then reverse).
  */
 export async function steeringThumb(page: Page, id: number, landing?: { x: number; y: number }) {
   const { pad, knob } = await page.evaluate(() => {
@@ -49,8 +50,8 @@ export async function steeringThumb(page: Page, id: number, landing?: { x: numbe
     };
     return { pad: box('.steering-pad'), knob: box('.steer-knob') };
   });
-  const origin = landing ?? { x: pad.x + pad.width / 2, y: pad.y + pad.height / 2 }, travel = (pad.width - knob.width) / 2;
-  return { travel, at: (offset: number): TouchPoint => ({ x: origin.x + offset * travel, y: origin.y, id }) };
+  const origin = landing ?? { x: pad.x + pad.width / 2, y: pad.y + pad.height / 2 }, travel = (pad.width - knob.width) / 2, travelY = (pad.height - knob.height) / 2;
+  return { travel, at: (offset: number, rise = 0): TouchPoint => ({ x: origin.x + offset * travel, y: origin.y + rise * travelY, id }) };
 }
 
 /** The telemetry the pilot reads, taken from one cloned debug snapshot per tick. */

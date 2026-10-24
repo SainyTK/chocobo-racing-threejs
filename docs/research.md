@@ -6,6 +6,10 @@ The first build mixed Chocobo GP ideas with a simplified lane racer. That was no
 
 The original manual describes separate accelerator, brake and reverse controls. Steering turns the vehicle freely. Holding accelerator and brake while turning starts a drift; excessive drifting causes a spin. A release-and-repress technique recovers with a Spin Dash. The start boost depends on accelerator timing. Abilities can be selected independently of racers. Grand Prix has six competitors and four rounds. Time Attack removes stones and rivals and can replay saved driving as a Phantom Racer. [1]
 
+The remake merges brake and reverse into one pedal, as most racing games do: held without the accelerator it brakes, then reverses once the racer has stopped. Touch players can also drive with the left stick, pushing it up to accelerate and down to brake and reverse.
+
+The original's ability select screen pairs each ability with the portrait of the racer who owns it; no ability symbol was found in footage or the manual. The remake draws one badge per ability from what it does in this remake (a speed arrow for Dash, a wing for Flap, a tyre for Grip-Up, a thief's sack for Mug, a plus for Magic Plus, a shield for Barrier, a stone dropping into a bowl for Receive, an arrow striking a star for Charge and a flare burst for Megaflare), coloured like its in-race effect, and shows it in the ability picker and on the ability buttons.
+
 Magic is a three-stone inventory, consumed last-in-first-out. Consecutive matching stones strengthen a spell without freeing inventory capacity. Fire is initially aimed, then homing at level two, then attacks all rivals at level three. Ice progresses from a trap to multiple traps to a field-wide attack. Thunder targets a racer ahead, or everyone at level three. Haste boosts speed, Mini shrinks rivals, Doom adds a transferable countdown, Reflect defends, and Ultima crashes opponents. [2][3]
 
 The roster uses different vehicles rather than different-colored birds. Chocobo has mechanical skates; Mog rides a scooter. Golem drives a jeep, Goblin a mine cart, Black Magician a cloud, White Mage a carpet, Chubby Chocobo a tricycle, and Behemoth a tank-like buggy. [1][4]
@@ -36,7 +40,7 @@ These describe this repository's behavior, not a claim of exact original code.
 | Time Attack | Solo race with no pickups, saved best-race ghost and interpolated replay of actual recorded positions | Browser-local saves, configurable lap count, no memory-card import |
 | Versus | Player against one selected CPU rival | No split-screen or second local controller |
 | Online | Six-player private rooms with AI fill, authoritative simulation, recovery and rematches | Browser addition, not emulation of the original multiplayer |
-| Presentation | Gold title, blue beveled menus, animated portrait order, MPH, stone slots, ability gauge, minimap, one callout at a time, a finish sequence with slow motion, orbit and podium, and synthesized engines, spell sounds and character barks | Newly authored interface, fonts, synthesized music, sounds and scenery |
+| Presentation | Gold title, blue beveled menus, animated portrait order, MPH, ability gauge, minimap, one callout at a time, a finish sequence with slow motion, orbit and podium, and synthesized engines, spell sounds and character barks | Newly authored interface, fonts, synthesized music, sounds and scenery |
 
 Not implemented: Story, Relay, secret characters other than Bahamut and Cloud, the F.F.VIII Circuit bonus course, custom stat editing, original cutscenes, original soundtrack, exact maps, split-screen, public matchmaking or ranked online leaderboards. The in-game About screen states these limits.
 
@@ -169,7 +173,7 @@ The remake bursts the stone the same way over 0.22 s and drops the earlier star 
 In the original a taken stone leaves an empty slot, and the slot is full again by the next lap, sometimes with a different kind. The refill itself is never on screen; the remake keeps its fixed kinds and 3.5 s respawn and grows the stone back in over 0.25 s.
 Held stones in the original roll on the road in a short chain right behind the racer's rear wheels, about half a track stone across, symbol facing the camera.
 How the chain behaves, how stacks level up and how they flash is in "Spell stack" below.
-The original HUD shows no held-stone icons; the remake keeps its MAGIC slots, drawn from the same stone model.
+The original HUD shows no held-stone icons, and the remake now matches it: it has no MAGIC panel, and held stones show only as the chain rolling behind the racer.
 
 Deliberate deviations:
 
@@ -400,7 +404,7 @@ Scenery and rigid vehicle parts merge by material. Low-segment geometry, simple 
 
 The Web Audio guidance recommends starting or resuming sound after user interaction and providing sound controls. [14]
 
-Audio is synthesized locally after a gesture, with a persistent mute option that also stops the engine loops. No Square Enix recordings or melodies are bundled. Text inputs do not consume race shortcuts. Pointer capture supports simultaneous steering and throttle on touch devices: the left thumb steers proportionally on a pad that floats to wherever it lands, and the right thumb can slide between DRIVE, DRIFT and BRAKE without lifting. Spell and ability taps remain active for 150 ms so they cross a simulation/network tick. Blur and visibility changes clear input. Local race menus pause simulation; online menus do not pause the room.
+Audio is synthesized locally after a gesture, with a persistent mute option that also stops the engine loops. No Square Enix recordings or melodies are bundled. Text inputs do not consume race shortcuts. Pointer capture supports simultaneous steering and throttle on touch devices: the left thumb steers proportionally on a stick that floats to wherever it lands and drives or brakes when pushed up or down past a wide dead zone, and the right thumb can slide between DRIVE, DRIFT and BRAKE without lifting. Spell and ability taps remain active for 150 ms so they cross a simulation/network tick. Blur and visibility changes clear input. Local race menus pause simulation; online menus do not pause the room.
 
 Manual acceleration is the default. Auto-accelerate is an option, not automatic steering. Keyboard and touch paths are tested separately. Gamepad mappings exist but physical-controller validation is not claimed. Modal focus handling and labeled controls help menu accessibility, but the game is not nonvisually playable.
 

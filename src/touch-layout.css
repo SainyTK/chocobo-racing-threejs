@@ -8,17 +8,19 @@
   --touch-gap: clamp(8px, 1.5vmin, 14px);
   /* Extra space that keeps the upper buttons out of a resting thumb's path. */
   --touch-reach-gap: clamp(14px, 2.6vmin, 24px);
-  /* Steering is sized for thumb travel: full lock is this far from where the thumb lands. */
+  /* The stick is sized for thumb travel: full lock is this far from where the thumb lands,
+     and pushing up or down this far drives or brakes. */
   --steer-travel: clamp(44px, 7.5vmin, 64px);
-  --steer-h: clamp(54px, 8.5vmin, 76px);
-  --steer-knob: calc(var(--steer-h) * .76);
+  --pedal-travel: clamp(30px, 5vmin, 44px);
+  --steer-knob: clamp(42px, 6.5vmin, 58px);
   --steer-w: calc(2 * var(--steer-travel) + var(--steer-knob));
+  --steer-h: calc(2 * var(--pedal-travel) + var(--steer-knob));
   --utility-size: clamp(40px, 6vmin, 52px);
   --utility-gap: var(--touch-gap);
   --pedal-size: clamp(56px, 9.5vmin, 86px);
   --drive-w: clamp(74px, 13vmin, 116px);
   --steer-stack-h: var(--steer-h);
-  --utility-row-w: calc(3 * var(--utility-size) + 2 * var(--utility-gap));
+  --utility-row-w: calc(2 * var(--utility-size) + var(--utility-gap));
   /* The pedals with MAGIC and ABILITY above them. */
   --action-core-w: calc(var(--pedal-size) + var(--touch-gap) + var(--drive-w));
   --action-core-h: calc(var(--drive-w) + var(--touch-reach-gap) + 2 * var(--pedal-size) + var(--touch-gap));

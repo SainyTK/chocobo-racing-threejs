@@ -72,7 +72,7 @@ describe('real multiplayer server', () => {
     await request(a.socket, 'start'); await until(() => meta);
     const r = server.rooms.get(code)!.race!; r.time = 1; r.phase = 'racing';
     a.socket.emit('input', { race: r.id, seq: 2, input: { throttle: true } });
-    a.socket.emit('input', { race: r.id, seq: 1, input: { reverse: true } });
+    a.socket.emit('input', { race: r.id, seq: 1, input: { brake: true } });
     await until(() => packet?.ack[a.id] === 2); expect(state.racers.find((p: any)=>p.id===a.id).speed).toBeGreaterThan(0);
     const p = r.racers.find(p=>p.id===a.id)!; p.ability = 100;
     const action = { race: r.id, seq: 1, kind: 'ability' };
