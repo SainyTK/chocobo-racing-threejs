@@ -17,9 +17,9 @@ import { Callout } from './hud/callout.ts';
 import { MagicButton } from './hud/magic-button.ts';
 import { statusFor } from './hud/messages.ts';
 import { FinishSequence } from './finish-sequence.ts';
-import { Network, NoResponse, type RoomView } from './network.ts';
+import { Network, NoResponse, type Hosting, type RoomView } from './network.ts';
 import { RACERS, HANDLING, DIFFICULTIES, DIFFICULTY_IDS, DEFAULT_DIFFICULTY, ABILITIES, ABILITY_IDS, TICK, createRace, makeRacer, placeRacer, neutralInput, stepRace, type AbilityId, type DifficultyId, type Input, type Race } from '../shared/game/index.ts';
-import { WIRE_VERSION } from '../shared/wire.ts';
+import type { Route } from './net/transport.ts';
 import { TRACKS, TRACK_IDS, trackLength, pointAt, type TrackId } from '../shared/track/index.ts';
 import { clamp, angleDelta } from '../shared/math.ts';
 import { racerGridHtml } from './racer-grid.ts';
@@ -34,6 +34,8 @@ const esc = (s: string) => s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt
 const storage = { get(k: string, fallback = '') { try { return localStorage.getItem('cbr-' + k) || fallback; } catch { return fallback; } }, set(k: string, v: string) { try { localStorage.setItem('cbr-' + k, v); return true; } catch { return false; } } };
 const formatTime = (s: number | null) => s === null ? '—' : `${Math.floor(Math.max(0, s) / 60)}:${(Math.max(0, s) % 60).toFixed(2).padStart(5, '0')}`;
 type Mode = 'race' | 'gp' | 'time' | 'versus' | 'online';
+/** The race HUD's word for how this page reaches an online room, next to the ping. */
+const PING_ROUTE: Record<Route, string> = { server: 'LIVE', host: 'HOST', direct: 'P2P', relay: 'RELAY' };
 const MODES: Record<Mode, [string, string]> = { race: ['Quick Race', 'Six racers. One course.'], gp: ['Grand Prix', 'Four rounds. Race for the cup.'], time: ['Time Attack', 'Solo laps against your saved ghost.'], versus: ['Versus', 'A one-on-one duel against the CPU.'], online: ['Online', 'Private rooms for up to six friends.'] };
 let character = clamp(Number(storage.get('character', '0')) || 0, 0, RACERS.length - 1), abilityId: AbilityId = ABILITY_IDS.find(id => id === storage.get('ability')) ?? RACERS[character].ability;
 let track: TrackId = TRACK_IDS.includes(storage.get('track') as TrackId) ? storage.get('track') as TrackId : 'test';
@@ -41,6 +43,7 @@ let difficulty = DIFFICULTY_IDS.find(id => id === storage.get('difficulty')) ?? 
 let screen: 'home' | 'lobby' | 'race' | 'results' = 'home', race: Race | null = null, playerId = 'you', online = false, paused = false, modalOpen = false;
 let autoThrottle = storage.get('auto', 'false') === 'true', quality = storage.get('quality', 'high'), eventId = 0, accumulator = 0, lastCount = '', scored = false;
 let standings: Standings | null = null, callout: Callout | null = null, magicButton: MagicButton | null = null; const finish = new FinishSequence();
+let hosting: Hosting = storage.get('hosting') === 'device' ? 'device' : 'server';
 let joinCode = inviteCode(new URL(location.href)), entryBusy: EntryCard | null = null, entryNotice: EntryNotice | null = null; if (joinCode) mode = 'online';
 const audio = new AudioEngine(); audio.enabled = storage.get('sound', 'true') === 'true'; const raceAudio = new RaceAudio(audio); const net = new Network();
 const keys = new Set<string>(), touch = new Set<string>(); let itemPulse = 0, abilityPulse = 0, rescuePulse = 0;
@@ -83,7 +86,7 @@ function home() {
   stopFinish();
   screen = 'home'; online = false; paused = false; race = null; cup = null; savedGhost = null; if (world.track !== track) world.buildTrack(track); world.menu(); world.setGhost(null); document.body.classList.remove('racing'); scrollTo(0, 0);
   const tabs = `<div class="mode-tabs" aria-label="Mode">${Object.entries(MODES).map(([id, [label]]) => `<button data-mode="${id}" aria-pressed="${mode === id}" class="${mode === id ? 'selected' : ''}">${label}</button>`).join('')}</div><p class="mode-description">${MODES[mode][1]}${mode === 'time' ? ' No Magic Stones. Dash, Flap or Grip-Up only.' : ''}</p>`;
-  const setup = mode === 'online' ? onlineEntryHtml(playerName, joinCode, entryBusy, entryNotice, esc) : `${racerGridHtml(character, portrait)}${abilityPickerHtml(abilityId, 'home')}${tabs}<div class="course-select"><button data-action="previous-course" aria-label="Previous course">◀</button><div class="course-preview">${courseSvg(track)}</div><div><small>COURSE ${TRACK_IDS.indexOf(track) + 1} / ${TRACK_IDS.length}</small><strong id="course-name">${TRACKS[track].name}</strong><span class="difficulty">${'★'.repeat(TRACKS[track].difficulty)}${'☆'.repeat(5 - TRACKS[track].difficulty)} · ${Math.round(trackLength(track))} m</span></div><button data-action="next-course" aria-label="Next course">▶</button></div><p class="course-description">${TRACKS[track].description}</p><div class="fields"><label>NAME<input id="player-name" aria-label="Your name" value="${esc(playerName)}" maxlength="18" autocomplete="nickname"></label><label>LAPS<select id="laps" aria-label="Laps">${[1, 2, 3].map(n => `<option ${n === laps ? 'selected' : ''}>${n}</option>`).join('')}</select></label>${mode === 'time' ? '' : `<label>CLASS<select id="difficulty" aria-label="Class">${DIFFICULTY_IDS.map(id => `<option value="${id}" ${id === difficulty ? 'selected' : ''}>${DIFFICULTIES[id].name}</option>`).join('')}</select></label>`}${mode === 'versus' ? `<label>RIVAL<select id="rival" aria-label="Rival">${RACERS.map((r, i) => `<option value="${i}" ${rival === i ? 'selected' : ''}>${r.name}</option>`).join('')}</select></label>` : ''}</div><button class="primary start-button" id="play-button" aria-label="${mode === 'gp' ? 'START GRAND PRIX' : 'START RACE'}" data-action="play">${mode === 'gp' ? 'START GRAND PRIX' : 'START RACE'} <span>▶</span></button>`;
+  const setup = mode === 'online' ? onlineEntryHtml(playerName, joinCode, hosting, entryBusy, entryNotice, esc) : `${racerGridHtml(character, portrait)}${abilityPickerHtml(abilityId, 'home')}${tabs}<div class="course-select"><button data-action="previous-course" aria-label="Previous course">◀</button><div class="course-preview">${courseSvg(track)}</div><div><small>COURSE ${TRACK_IDS.indexOf(track) + 1} / ${TRACK_IDS.length}</small><strong id="course-name">${TRACKS[track].name}</strong><span class="difficulty">${'★'.repeat(TRACKS[track].difficulty)}${'☆'.repeat(5 - TRACKS[track].difficulty)} · ${Math.round(trackLength(track))} m</span></div><button data-action="next-course" aria-label="Next course">▶</button></div><p class="course-description">${TRACKS[track].description}</p><div class="fields"><label>NAME<input id="player-name" aria-label="Your name" value="${esc(playerName)}" maxlength="18" autocomplete="nickname"></label><label>LAPS<select id="laps" aria-label="Laps">${[1, 2, 3].map(n => `<option ${n === laps ? 'selected' : ''}>${n}</option>`).join('')}</select></label>${mode === 'time' ? '' : `<label>CLASS<select id="difficulty" aria-label="Class">${DIFFICULTY_IDS.map(id => `<option value="${id}" ${id === difficulty ? 'selected' : ''}>${DIFFICULTIES[id].name}</option>`).join('')}</select></label>`}${mode === 'versus' ? `<label>RIVAL<select id="rival" aria-label="Rival">${RACERS.map((r, i) => `<option value="${i}" ${rival === i ? 'selected' : ''}>${r.name}</option>`).join('')}</select></label>` : ''}</div><button class="primary start-button" id="play-button" aria-label="${mode === 'gp' ? 'START GRAND PRIX' : 'START RACE'}" data-action="play">${mode === 'gp' ? 'START GRAND PRIX' : 'START RACE'} <span>▶</span></button>`;
   // Racer choice lives in the room, so Online mode leaves the 3D racer on its own without a name or stats.
   const showcase = mode === 'online' ? '<section class="showcase" aria-hidden="true"></section>' : showcaseHtml(character, 'SELECT YOUR RACER', 'Original low-poly fan models · Free-steering racing');
   app.innerHTML = `<main class="home">${header()}<div class="setup-layout">${showcase}<section class="panel setup" aria-label="Race setup">${mode === 'online' ? tabs : ''}${setup}</section></div><footer>Unofficial fan remake. Not affiliated with Square Enix. Original models, music and course layouts.</footer></main>`;
@@ -139,7 +142,7 @@ function lobby(room: RoomView) {
   // The server's copy of this player's picks is authoritative; it also seeds the next visit.
   character = me.character; abilityId = me.abilityId; playerName = me.name; storage.set('character', String(character)); storage.set('ability', abilityId); storage.set('name', playerName); if (world.heroIndex !== character) world.setHero(character);
   history.replaceState(null, '', inviteUrl(new URL(location.href), room.code).search);
-  app.innerHTML = `<main class="home">${header()}<div class="setup-layout">${showcaseHtml(character, 'YOUR RACER', 'Everyone in the room sees your racer as you pick it.')}${roomPanelHtml(room, me, portrait, esc)}</div></main>`;
+  app.innerHTML = `<main class="home">${header()}<div class="setup-layout">${showcaseHtml(character, 'YOUR RACER', 'Everyone in the room sees your racer as you pick it.')}${roomPanelHtml(room, me, net.route, portrait, esc)}</div></main>`;
   if (!entering && refocus) app.querySelector<HTMLElement>(refocus)?.focus();
   if (typing) { const field = $<HTMLInputElement>('room-name')!; field.value = typing.value; field.setSelectionRange(typing.selectionStart, typing.selectionEnd); }
 }
@@ -149,14 +152,14 @@ async function enterRoom(action: EntryCard) {
   if (entryBusy) return; readProfile();
   const problem = action === 'join' ? roomCodeProblem(joinCode) : '';
   entryNotice = problem ? { card: 'join', text: problem } : null; entryBusy = problem ? null : action; if (screen === 'home') home(); if (problem) return;
-  const send = () => net.request(action, { name: playerName, character, abilityId, track, laps, difficulty, code: joinCode });
+  const send = () => net.request(action, { name: playerName, character, abilityId, track, laps, difficulty, code: joinCode, hosting });
   // Joining the same room again restores the same place, so an unanswered join is safe to repeat once.
   try { await send().catch(error => { if (action === 'join' && error instanceof NoResponse) return send(); throw error; }); }
   catch (error) { entryNotice = { card: action, text: error instanceof Error ? error.message : 'Request failed.' }; history.replaceState(null, '', location.pathname); }
   finally { entryBusy = null; if (screen === 'home') home(); }
 }
 const sendProfile = () => net.request('profile', { name: playerName, character, abilityId });
-async function leaveGame() { closeModal(); clearInput(); if (net.room) { try { if (net.connected) await net.request('leave'); else { net.socket.disconnect(); sessionStorage.removeItem('cbr-session'); net.socket.auth = { wire: WIRE_VERSION }; } } catch {} net.clear(); } online = false; race = null; history.replaceState(null, '', location.pathname); if (world.track !== track) world.buildTrack(track); home(); }
+async function leaveGame() { closeModal(); clearInput(); if (net.room) { try { await net.leave(); } catch {} net.clear(); } online = false; race = null; history.replaceState(null, '', location.pathname); if (world.track !== track) world.buildTrack(track); home(); }
 function results() {
   if (!race) return; closeModal(); screen = 'results'; clearInput(); const p = race.racers.find(p => p.id === playerId)!;
   if (mode === 'time' && !online && p.finishTime !== null && (!savedGhost || p.finishTime < savedGhost.time)) {
@@ -178,7 +181,7 @@ function drawMap() { if (!race) return; const c = $<HTMLCanvasElement>('minimap'
 function updateHUD(now: number) {
   if (!race) return; const p = race.racers.find(p => p.id === playerId); if (!p) return;
   const set = (id: string, value: string) => { const el = $(id); if (el && el.textContent !== value) el.textContent = value; };
-  set('place', String(p.rank)); set('suffix', p.rank === 1 ? 'st' : p.rank === 2 ? 'nd' : p.rank === 3 ? 'rd' : 'th'); set('lap', String(Math.min(race.laps, p.lap))); set('speed', String(Math.round(Math.abs(p.speed) * 2.237))); set('race-time', formatTime(race.time)); set('ping', online ? `${net.latency} ms · LIVE` : savedGhost ? `GHOST ${formatTime(savedGhost.time)}` : mode === 'time' ? 'TIME ATTACK' : 'CPU RACE');
+  set('place', String(p.rank)); set('suffix', p.rank === 1 ? 'st' : p.rank === 2 ? 'nd' : p.rank === 3 ? 'rd' : 'th'); set('lap', String(Math.min(race.laps, p.lap))); set('speed', String(Math.round(Math.abs(p.speed) * 2.237))); set('race-time', formatTime(race.time)); set('ping', online ? `${net.latency} ms · ${PING_ROUTE[net.route]}` : savedGhost ? `GHOST ${formatTime(savedGhost.time)}` : mode === 'time' ? 'TIME ATTACK' : 'CPU RACE');
   if (screen === 'race' && p.finishTime !== null && !finish.active) { finish.begin(now, race, !online); document.body.classList.add('finishing'); }
   const place = `${p.rank}${p.rank === 1 ? 'ST' : p.rank === 2 ? 'ND' : p.rank === 3 ? 'RD' : 'TH'}`, count = finish.orbiting(now) ? place : race.time < -3 ? 'READY' : race.time < 0 ? String(Math.ceil(-race.time)) : race.time < .8 && p.finishTime === null ? 'GO!' : ''; if (count !== lastCount) { lastCount = count; const el = $('countdown'); if (el) el.innerHTML = count ? `<strong>${count}</strong><span>${count === place ? p.rank === 1 ? 'VICTORY!' : 'FINISH!' : count === 'GO!' ? 'RACE!' : 'TIME YOUR ACCELERATOR FOR A DASH START'}</span>` : ''; }
   magicButton?.update(p.item, p.itemLevel);
@@ -203,6 +206,7 @@ net.onRoom = room => { online = true; mode = 'online'; playerId = net.id; if (ro
 net.onState = state => { if (!online && !net.room) return; online = true; playerId = net.id; const fresh = race?.id !== state.id; race = state; if (fresh || screen === 'home' || screen === 'lobby') { cup = null; savedGhost = null; world.setGhost(null); closeModal(); world.enterRace(state); hud(); } };
 net.onStatus = connected => { $('network-banner')?.classList.toggle('hidden', connected || !online); };
 net.onOutdated = () => { online = false; closeModal(); home(); toast('This game was updated. Reload the page to play online.', 20000); };
+net.onClosed = message => { online = false; mode = 'online'; entryNotice = { card: 'join', text: message }; closeModal(); history.replaceState(null, '', location.pathname); home(); };
 net.onExpired = () => { online = false; mode = 'online'; entryNotice = { card: 'join', text: `Room ${joinCode} has closed. Create a room or join another one.` }; closeModal(); history.replaceState(null, '', location.pathname); home(); };
 document.addEventListener('click', async e => {
   const button = e.target instanceof Element ? e.target.closest<HTMLElement>('[data-action],[data-character],[data-mode]') : null;
@@ -227,7 +231,7 @@ document.addEventListener('click', async e => {
     if (action === 'fullscreen') { if (document.fullscreenElement) await document.exitFullscreen(); else await document.documentElement.requestFullscreen(); }
   } catch (error) { toast(error instanceof Error ? error.message : 'Request failed'); } finally { button.removeAttribute('disabled'); }
 });
-document.addEventListener('change', async e => { const el = e.target as HTMLSelectElement; if (screen === 'lobby' && el.id === 'room-name') { playerName = el.value.trim().slice(0, 18) || 'Racer'; try { await sendProfile(); } catch (e) { toast(e instanceof Error ? e.message : String(e)); } } if (el.id === 'quality') { quality = el.value; autoQuality = false; storage.set('quality', quality); world.setQuality(quality); } if (el.id === 'lobby-track' || el.id === 'lobby-laps' || el.id === 'lobby-class') try { await net.request('configure', { track: $<HTMLSelectElement>('lobby-track')!.value, laps: Number($<HTMLSelectElement>('lobby-laps')!.value), difficulty: $<HTMLSelectElement>('lobby-class')!.value }); } catch (e) { toast(e instanceof Error ? e.message : String(e)); } });
+document.addEventListener('change', async e => { const el = e.target as HTMLSelectElement; if (screen === 'home' && el.name === 'hosting') { readProfile(); hosting = el.value === 'device' ? 'device' : 'server'; storage.set('hosting', hosting); home(); app.querySelector<HTMLInputElement>(`input[name=hosting][value=${hosting}]`)?.focus(); return; } if (screen === 'lobby' && el.id === 'room-name') { playerName = el.value.trim().slice(0, 18) || 'Racer'; try { await sendProfile(); } catch (e) { toast(e instanceof Error ? e.message : String(e)); } } if (el.id === 'quality') { quality = el.value; autoQuality = false; storage.set('quality', quality); world.setQuality(quality); } if (el.id === 'lobby-track' || el.id === 'lobby-laps' || el.id === 'lobby-class') try { await net.request('configure', { track: $<HTMLSelectElement>('lobby-track')!.value, laps: Number($<HTMLSelectElement>('lobby-laps')!.value), difficulty: $<HTMLSelectElement>('lobby-class')!.value }); } catch (e) { toast(e instanceof Error ? e.message : String(e)); } });
 document.addEventListener('keydown', e => {
   if (screen === 'race' && finish.active && ['Escape', 'Enter', 'Space'].includes(e.code)) { e.preventDefault(); finish.skip(performance.now()); return; }
   if (e.code === 'Escape') { e.preventDefault(); if (modalOpen) closeModal(); else if (screen === 'race') settings(); return; }
@@ -260,12 +264,12 @@ function frame(now: number) {
   raceAudio.update(screen === 'race' ? race : null, playerId, paused || document.hidden);
   requestAnimationFrame(frame);
 }
-Object.defineProperty(window, '__raceDebug', { get: () => JSON.parse(JSON.stringify({ screen, race, playerId, room: net.room, online, paused, connected: net.connected, settings: { autoThrottle, quality, character, abilityId, mode }, cup, ghost: savedGhost ? { time: savedGhost.time, samples: savedGhost.points.length } : null, recordingSamples: recording.length, graphics: world.stats(), audio: audio.playback, fps: Math.round(fps), network: { transport: net.socket.io.engine?.transport.name, samples: net.diagnostics.samples, counters: net.diagnostics.counters } })) });
+Object.defineProperty(window, '__raceDebug', { get: () => JSON.parse(JSON.stringify({ screen, race, playerId, room: net.room, online, paused, connected: net.connected, settings: { autoThrottle, quality, character, abilityId, mode }, cup, ghost: savedGhost ? { time: savedGhost.time, samples: savedGhost.points.length } : null, recordingSamples: recording.length, graphics: world.stats(), audio: audio.playback, fps: Math.round(fps), network: { transport: net.transportName, route: net.route, samples: net.diagnostics.samples, counters: net.diagnostics.counters } })) });
 if (net.diagnostics.enabled) {
-  Object.assign(window, { __resetNetPerf: () => net.diagnostics.reset(), __dropNetwork: () => net.socket.io.engine?.close() });
+  Object.assign(window, { __resetNetPerf: () => net.diagnostics.reset(), __dropNetwork: () => net.dropConnection() });
   Object.defineProperty(window, '__perfPose', { get: () => { const p = race?.racers.find(p => p.id === playerId); return p ? { speed: p.speed, yaw: p.yaw } : null; } });
 }
 home(); requestAnimationFrame(frame);
 // An invite link opens its room straight away. Otherwise a saved session reconnects to a room it is still part of.
 if (joinCode) void enterRoom('join');
-else if ((net.socket.auth as { token?: string }).token) void net.connect().catch(() => {});
+else if (net.hasSession) void net.connect().catch(() => {});

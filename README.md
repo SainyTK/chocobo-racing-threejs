@@ -72,6 +72,21 @@ Enter the same code again, or reopen the link, to return to the same place.
 If the host goes home, the next player present becomes host.
 If a code is wrong, or the room is full, closed or already racing, the join card on the home page says so.
 
+#### Rooms hosted on a player's device
+
+The Create card has a **Race runs on** choice.
+**Race server** runs the room on the game server, as above.
+**My device** runs the room in the creating player's browser tab, and the other players connect to that tab.
+The game server only hands out the code and introduces the players to each other.
+Guests connect straight to the host over WebRTC when their networks allow it.
+When they cannot, for example behind some mobile carriers or with WebRTC turned off, their traffic goes through the game server instead.
+The room shows how you are connected: HOSTED HERE, DIRECT P2P or P2P VIA RELAY, and the race HUD shows HOST, P2P or RELAY next to the ping.
+
+The host's tab is the room.
+Keep it open and in front: if the host goes home, exits or closes the tab, the room ends and every guest sees that the host closed it.
+Phones pause background tabs, so a phone host should not switch apps during a race.
+A guest who drops or reloads gets the same place back, as in a server room.
+
 ### Driving
 
 Manual acceleration is on by default. You must steer around corners. The game does not guide your heading along the road. Options includes auto-accelerate, which does not steer for you.
@@ -344,7 +359,9 @@ docker run --rm -p 3000:3000 \
   chocobo-racing
 ```
 
-`GET /health` reports health, rooms and connections. The server is a single process with in-memory rooms. Restarting it clears rooms. Do not run unsynchronized replicas. Public hosting also needs infrastructure rate limiting and monitoring.
+`ICE_SERVERS` optionally sets the WebRTC ICE servers that player-hosted rooms use, as a JSON array such as `[{"urls":"turn:turn.example.com:3478","username":"u","credential":"p"}]`. Without it, guests use public STUN servers and fall back to the game server relay.
+
+`GET /health` reports health, server rooms, player-hosted rooms and connections. The server is a single process with in-memory rooms. Restarting it clears rooms. Do not run unsynchronized replicas. Public hosting also needs infrastructure rate limiting and monitoring.
 
 ## Deployment
 
