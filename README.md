@@ -361,7 +361,7 @@ Its production environment sets `VITE_SERVER_URL` to `https://chocobo-racing-thr
 When `VITE_SERVER_URL` is unset, the page connects to its own origin, as in development and on Railway.
 The client uses the WebSocket transport only, so the server's origin check in `ALLOWED_ORIGINS` is the only cross-origin setting.
 Vercel preview URLs are not in `ALLOWED_ORIGINS`, so multiplayer works only on the production domain.
-The DNS record `cbr` in the `sainytk.com` Cloudflare zone is a DNS-only CNAME to Vercel.
+The DNS record `cbr` in the `sainytk.com` Cloudflare zone is a DNS-only A record to Vercel (`76.76.21.21`).
 
 Hosting stays on the free Trial, which automatically reverts to the Free plan with $1 monthly credit [3]. No paid subscription was created. Uptime depends on available credits. Idle sleeping reduces usage but active multiplayer connections can keep the server awake.
 
