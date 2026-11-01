@@ -6,7 +6,7 @@ This playable, unofficial fan interpretation of the 1999 PlayStation racer has f
 
 [Repository](https://github.com/SainyTK/chocobo-racing-threejs) · [MIT license](LICENSE)
 
-[Play in your browser](https://chocobo-racing-threejs-production.up.railway.app/), or follow the instructions below to play locally.
+[Play in your browser](https://cbr.sainytk.com/), or follow the instructions below to play locally.
 
 The public server uses Railway's free credits. It can sleep when idle and may be unavailable when credits run out. Rooms disappear when the server sleeps, restarts or deploys.
 
@@ -348,15 +348,24 @@ docker run --rm -p 3000:3000 \
 
 ## Deployment
 
-The public deployment is a single Railway service in Singapore that serves both `dist/` and the authoritative multiplayer server. The existing Dockerfile builds and starts both. No database is required.
+The game page is served from Vercel at https://cbr.sainytk.com.
+The authoritative multiplayer server is a single Railway service in Singapore, and the page opens its Socket.IO connection to it.
+The Railway service also still serves the page itself at its own URL. The existing Dockerfile builds and starts both.
+No database is required.
 
-The Railway project is `hearty-analysis`, service `chocobo-racing-threejs`, environment `production`. GitHub auto-deployment is connected to `main`. It uses one replica, `/health` for deployment checks, and idle sleeping. `ALLOWED_ORIGINS` is `https://chocobo-racing-threejs-production.up.railway.app`.
+The Railway project is `hearty-analysis`, service `chocobo-racing-threejs`, environment `production`. GitHub auto-deployment is connected to `main`. It uses one replica, `/health` for deployment checks, and idle sleeping.
+`ALLOWED_ORIGINS` is `https://chocobo-racing-threejs-production.up.railway.app,https://cbr.sainytk.com`.
+
+The Vercel project builds with `npm run build` into `dist` (see `vercel.json`).
+Its production environment sets `VITE_SERVER_URL` to `https://chocobo-racing-threejs-production.up.railway.app`, which `src/network.ts` uses as the Socket.IO server.
+When `VITE_SERVER_URL` is unset, the page connects to its own origin, as in development and on Railway.
+The client uses the WebSocket transport only, so the server's origin check in `ALLOWED_ORIGINS` is the only cross-origin setting.
+Vercel preview URLs are not in `ALLOWED_ORIGINS`, so multiplayer works only on the production domain.
+The DNS record `cbr` in the `sainytk.com` Cloudflare zone is a DNS-only CNAME to Vercel.
 
 Hosting stays on the free Trial, which automatically reverts to the Free plan with $1 monthly credit [3]. No paid subscription was created. Uptime depends on available credits. Idle sleeping reduces usage but active multiplayer connections can keep the server awake.
 
 Railway detects a repository Dockerfile automatically [1]. Use the repository root, branch `main`, one replica, a public HTTPS domain and healthcheck path `/health`. The server listens on `0.0.0.0` and reads Railway's `PORT` variable [2]. Set `ALLOWED_ORIGINS` to the exact public page origin, without a trailing slash. Add any custom-domain origin as another comma-separated value. Rooms live in memory and disappear on restart or deployment.
-
-Vercel can host the Vite frontend with build command `npm run build` and output directory `dist`. However, this is not a complete multiplayer deployment as written. `src/network.ts` currently connects to the page's own origin. A split Vercel/Railway deployment needs a configurable backend URL and cross-origin Socket.IO configuration on the server, including polling CORS. Vercel preview origins also need an explicit policy. Keep the current long-running simulation and room state on Railway unless the backend is redesigned.
 
 ### What to provide before deployment
 

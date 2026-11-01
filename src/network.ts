@@ -5,6 +5,9 @@ import { Interpolation } from './interpolation.ts';
 import { WIRE_VERSION, decodeSnapshot, type Snapshot } from '../shared/wire.ts';
 import { Prediction } from './prediction.ts';
 import { NetDiagnostics, Delivery } from './net-diagnostics.ts';
+
+/** The game server's origin. Empty when the server also serves this page, as on Railway and in development. */
+const SERVER_URL = import.meta.env.VITE_SERVER_URL || undefined;
 const CONNECT_DEADLINE_MS = 20000;
 /** The server never answered a request. It may still have handled it, so only idempotent requests are sent again. */
 export class NoResponse extends Error {}
@@ -19,7 +22,7 @@ export class Network {
   private listening = true;
   constructor() {
     let token = ''; try { token = sessionStorage.getItem('cbr-session') || ''; } catch { /* Private browsing may disable storage. */ }
-    this.socket = io({ autoConnect: false, auth: { token, wire: WIRE_VERSION }, transports: ['websocket'], reconnectionDelay: 500, reconnectionDelayMax: 2500, timeout: 6000 });
+    this.socket = io(SERVER_URL, { autoConnect: false, auth: { token, wire: WIRE_VERSION }, transports: ['websocket'], reconnectionDelay: 500, reconnectionDelayMax: 2500, timeout: 6000 });
     this.socket.on('connect', () => { this.connected = true; this.onStatus(true); });
     this.socket.on('disconnect', () => { this.connected = false; this.delivery.clear(); this.clearActions(); this.onStatus(false); });
     this.socket.on('welcome', data => {
