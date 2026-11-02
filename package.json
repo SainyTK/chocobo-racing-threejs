@@ -12,33 +12,31 @@
     "node": ">=22.12.0"
   },
   "scripts": {
-    "dev": "tsx watch server/index.ts",
+    "dev": "node scripts/dev.mjs",
     "tunnel": "node scripts/tunnel.mjs",
-    "start": "NODE_ENV=production tsx server/index.ts",
     "studio": "vite --config studio/vite.config.ts",
     "character": "node scripts/characters/build.mjs",
-    "build": "tsc --noEmit && vite build",
+    "build": "npm run check && vite build",
     "test": "vitest run",
     "test:e2e": "playwright test",
     "test:studio": "playwright test --config tests/studio-playwright.config.ts",
-    "test:production": "npm run build && node tests/production-smoke.mjs",
-    "benchmark:multiplayer": "npm run build && node --import tsx tests/multiplayer-benchmark.ts",
-    "check": "tsc --noEmit"
+    "test:production": "VITE_SIGNAL_URL=http://localhost:8796 npm run build && node --import tsx tests/production-smoke.mjs",
+    "benchmark:multiplayer": "VITE_SIGNAL_URL=http://localhost:8796 npm run build && node --import tsx tests/multiplayer-benchmark.ts",
+    "check": "tsc --noEmit && tsc -p signaling",
+    "deploy:signal": "wrangler deploy --config signaling/wrangler.jsonc"
   },
   "dependencies": {
-    "express": "^5.1.0",
-    "socket.io": "^4.8.1",
-    "socket.io-client": "^4.8.1",
-    "three": "^0.180.0",
-    "tsx": "^4.20.5"
+    "three": "^0.180.0"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261102.1",
     "@playwright/test": "^1.55.0",
-    "@types/express": "^5.0.3",
     "@types/node": "^22.18.0",
     "@types/three": "^0.180.0",
+    "tsx": "^4.20.5",
     "typescript": "^5.9.2",
-    "vite": "^7.1.5",
-    "vitest": "^4.1.11"
+    "vite": "^7.3.7",
+    "vitest": "^4.1.12",
+    "wrangler": "^4.156.1"
   }
 }

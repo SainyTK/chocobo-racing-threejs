@@ -2,10 +2,10 @@
 export class NoResponse extends Error {}
 
 /**
- * How this page reaches its room: the game server, its own in-page host, a direct WebRTC connection to the hosting
- * player, or that player's room relayed through the game server.
+ * How this page reaches its room: it hosts the room itself, connects directly to the hosting player over WebRTC, or
+ * reaches that player through the signaling Worker's relay.
  */
-export type Route = 'server' | 'host' | 'direct' | 'relay';
+export type Route = 'host' | 'direct' | 'relay';
 
 export interface Transport {
   readonly connected: boolean;

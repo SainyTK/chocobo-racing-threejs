@@ -9,15 +9,6 @@
 .entry-card #join-code[aria-invalid=true]{border-color:#ff8a78}
 .entry-card .entry-error{padding:7px 9px;border-left:3px solid #ff8a78;background:#4a1f3c99;color:#ffd3c9;font-size:12px}
 .entry-card .entry-status{color:#ffe7a8;font-weight:700}
-.host-choice{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:0;padding:0;border:0;min-width:0}
-.host-choice legend{padding:0;margin-bottom:5px;font-size:10px;font-weight:700;letter-spacing:2px;color:#bbc8e2}
-.host-choice label{position:relative;display:block;cursor:pointer}
-.host-choice input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
-.host-choice span{display:block;padding:7px 6px;border:1px solid #7083b0aa;border-radius:4px;background:#0f183299;text-align:center;font:700 15px 'Barlow Condensed',sans-serif;color:#c7cee0}
-.host-choice input:checked+span{border-color:var(--gold);background:#ffdb5922;color:var(--gold)}
-.host-choice input:focus-visible+span{outline:2px solid var(--gold);outline-offset:2px}
-.host-choice[disabled] span{opacity:.6;cursor:default}
-.entry-card .host-hint{min-height:2.9em;font-size:11px;color:#aab6d3}
 .entry-button{margin-top:auto;width:100%;padding:11px 12px;font:800 20px 'Barlow Condensed',sans-serif;letter-spacing:1px}
 
 /* The online room: racer choice, roster and race setup in the setup panel. */

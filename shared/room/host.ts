@@ -1,27 +1,20 @@
 import { cleanInput, createRace, makeRacer, neutralInput, stepRace, TICK, RACERS, ABILITY_IDS, GRID_SIZE, DIFFICULTY_IDS, DEFAULT_DIFFICULTY, type AbilityId, type Race } from '../game/index.ts';
 import { WIRE_VERSION, encodeSnapshot } from '../wire.ts';
 import { TRACKS } from '../track/index.ts';
-import { randomHex, randomRoomCode, randomSeed } from '../random-id.ts';
+import { randomHex, randomSeed } from '../random-id.ts';
+import { CLOSED_MEMORY_MS, HOLD_MS } from '../peer.ts';
 import type { Connection, Link, Reply, Room, RoomMetrics, RoomView, Session } from './types.ts';
 
-export const HOLD_MS = 60000;
-const CLOSED_MEMORY_MS = 6 * 3600000;
 export type Every = (ms: number, fn: () => void) => () => void;
 export interface RoomHostOptions {
+  /** The code the signaling Worker reserved for this page's room. */
+  code: string;
   diagnostics?: boolean;
-  /** Most rooms this host runs at once. The game server runs many; a player's browser runs one. */
-  maxRooms?: number;
   maxLinks?: number;
-  /** Picks the code for a new room, or null when none is free. The game server reserves player-hosted codes here too. */
-  newCode?: (taken: (code: string) => boolean) => string | null;
-  /** Repeating timer. A browser host passes one that keeps running in a background tab. */
+  /** Repeating timer. The hosting page passes one that keeps running in a background tab. */
   every?: Every;
 }
 const defaultEvery: Every = (ms, fn) => { const timer = setInterval(fn, ms); return () => clearInterval(timer); };
-function defaultCode(taken: (code: string) => boolean) {
-  for (let i = 0; i < 1000; i++) { const code = randomRoomCode(); if (!taken(code)) return code; }
-  return null;
-}
 function profile(data: any) {
   const character = Number.isInteger(data?.character) && data.character >= 0 && data.character < RACERS.length ? data.character : 0;
   const name = typeof data?.name === 'string' ? data.name.replace(/[<>\x00-\x1f\x7f]/g, '').trim().slice(0, 18) || 'Racer' : 'Racer';
@@ -29,8 +22,8 @@ function profile(data: any) {
 }
 
 /**
- * Lobbies, sessions and the 60 Hz authoritative race loop, independent of how players connect. The game server attaches
- * Socket.IO sockets; a player-hosted room attaches WebRTC data channels and the hosting player's own page.
+ * The lobby, sessions and 60 Hz authoritative race loop of one room, running in the hosting player's page. Guests
+ * attach over WebRTC data channels or the signaling relay; the hosting player attaches through a local link.
  */
 export class RoomHost {
   readonly rooms = new Map<string, Room>();
@@ -44,28 +37,25 @@ export class RoomHost {
   private ticks = 0;
   private readonly stops: (() => void)[];
   private readonly diagnostics: boolean;
-  private readonly maxRooms: number;
+  private readonly code: string;
   private readonly maxLinks: number;
-  private readonly newCode: NonNullable<RoomHostOptions['newCode']>;
 
-  constructor(options: RoomHostOptions = {}) {
+  constructor(options: RoomHostOptions) {
+    this.code = options.code;
     this.diagnostics = options.diagnostics ?? false;
-    this.maxRooms = options.maxRooms ?? 100;
-    this.maxLinks = options.maxLinks ?? 800;
-    this.newCode = options.newCode ?? defaultCode;
+    this.maxLinks = options.maxLinks ?? 32;
     const every = options.every ?? defaultEvery;
     this.stops = [every(1000 / 60, () => this.loop()), every(1000, () => this.cleanup()), every(60000, () => this.forget())];
   }
 
   get linkCount() { return this.links; }
-  isTaken(code: string) { return this.rooms.has(code) || this.closed.has(code); }
   close() { for (const stop of this.stops) stop(); }
 
   /** Starts serving one link. `token` restores an earlier session; the welcome message hands out a new one otherwise. */
   attach(link: Link, token: string): Connection | null {
     if (this.links >= this.maxLinks) { link.close(); return null; }
-    // A fixed-order client from another release would misread every snapshot field, so it is told to reload instead.
-    if (typeof link.wire === 'number' && link.wire !== WIRE_VERSION) { link.send('outdated', { wire: WIRE_VERSION }); link.close(); return null; }
+    // A client from another release would misread every snapshot field, so it is told to reload instead.
+    if (link.wire !== WIRE_VERSION) { link.send('outdated', { wire: WIRE_VERSION }); link.close(); return null; }
     this.links++;
     let session = this.sessions.get(token);
     if (!session) {
@@ -124,9 +114,8 @@ export class RoomHost {
   private view(r: Room): RoomView { return { code: r.code, host: r.host, track: r.track, laps: r.laps, difficulty: r.difficulty, members: r.members, phase: r.race?.phase || 'lobby' }; }
   private members(code: string) { return [...this.sessions.values()].filter(s => s.room === code); }
   private listeners(code: string) { return this.members(code).filter(s => s.link && s.subscribed); }
-  private v2(s: Session) { return s.link?.wire === WIRE_VERSION; }
   private broadcast(r: Room) { const view = this.view(r); for (const s of this.listeners(r.code)) s.link!.send('room', view); }
-  private sendInitial(s: Session, race: Race) { s.link?.send(this.v2(s) ? 'race' : 'state', race); }
+  private sendInitial(s: Session, race: Race) { s.link?.send('race', race); }
   private passHost(room: Room, from: string) { if (room.host === from) room.host = room.members.find(m => m.connected)?.id || room.host; }
 
   private leave(session: Session) {
@@ -152,9 +141,8 @@ export class RoomHost {
 
   private readonly handlers: Record<string, (s: Session, data: any) => unknown> = {
     create: (s, data) => {
-      if (this.rooms.size >= this.maxRooms) throw Error('The server is full. Try again shortly.');
-      const code = this.newCode(code => this.isTaken(code));
-      if (!code) throw Error('The server is full. Try again shortly.');
+      const code = this.code;
+      if (this.rooms.has(code) || this.closed.has(code)) throw Error(`Room ${code} already exists.`);
       this.leave(s);
       const room: Room = { code, host: s.id, track: typeof data?.track === 'string' && Object.hasOwn(TRACKS, data.track) ? data.track : 'test', laps: [1, 2, 3].includes(data?.laps) ? data.laps : 3, difficulty: DIFFICULTY_IDS.includes(data?.difficulty) ? data.difficulty : DEFAULT_DIFFICULTY, members: [{ id: s.id, ...profile(data), connected: true, away: false }], race: null, lastActive: Date.now() };
       this.rooms.set(code, room); s.room = code; s.subscribed = true; this.broadcast(room); return { ok: true, code };
@@ -220,16 +208,14 @@ export class RoomHost {
     const r = this.rooms.get(s.room || '')?.race;
     const p = r?.racers.find(p => p.id === s.id);
     if (!p || r?.phase === 'finished') return;
-    if (this.v2(s)) {
-      if (data?.race !== r?.id || !Number.isSafeInteger(data?.seq) || data.seq <= s.inputSeq) return;
-      s.inputSeq = data.seq;
-      p.input = { ...cleanInput(data.input), item: false, ability: false, rescue: false };
-    } else p.input = cleanInput(data);
+    if (data?.race !== r?.id || !Number.isSafeInteger(data?.seq) || data.seq <= s.inputSeq) return;
+    s.inputSeq = data.seq;
+    p.input = { ...cleanInput(data.input), item: false, ability: false, rescue: false };
     s.inputAt = Date.now();
   }
   private action(s: Session, data: any, withinBudget: boolean, reply: Reply) {
     const race = this.rooms.get(s.room || '')?.race;
-    if (!withinBudget || !this.v2(s) || !race || data?.race !== race.id || !Number.isSafeInteger(data?.seq) || data.seq < 1 || !['item', 'ability', 'rescue'].includes(data?.kind)) { reply({ error: 'Invalid action' }); return; }
+    if (!withinBudget || !race || data?.race !== race.id || !Number.isSafeInteger(data?.seq) || data.seq < 1 || !['item', 'ability', 'rescue'].includes(data?.kind)) { reply({ error: 'Invalid action' }); return; }
     if (data.seq > s.actionSeq) {
       if (s.pendingActions.length >= 16) { reply({ error: 'Action queue full' }); return; }
       s.actionSeq = data.seq; s.pendingActions.push(data.kind);
@@ -267,16 +253,14 @@ export class RoomHost {
     for (const session of members) {
       session.appliedSeq = session.inputSeq;
       const p = race.racers.find(p => p.id === session.id);
-      if (p && session.link && this.v2(session)) p.input = { ...p.input, item: false, ability: false, rescue: false };
+      if (p && session.link) p.input = { ...p.input, item: false, ability: false, rescue: false };
     }
   }
   private snapshot(room: Room, race: Race) {
     const listeners = this.listeners(room.code);
-    const modern = listeners.filter(s => this.v2(s)), legacy = listeners.filter(s => !this.v2(s));
-    for (const s of legacy) s.link!.sendVolatile('state', race);
-    if (!modern.length) return;
+    if (!listeners.length) return;
     const snapshot = encodeSnapshot(race, this.ticks, Object.fromEntries(this.members(room.code).map(s => [s.id, s.appliedSeq])));
-    for (const s of modern) s.link!.sendVolatile('snapshot', snapshot);
+    for (const s of listeners) s.link!.sendVolatile('snapshot', snapshot);
   }
   private cleanup() {
     for (const s of this.sessions.values()) {

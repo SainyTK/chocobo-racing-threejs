@@ -1,5 +1,9 @@
 # Multiplayer performance
 
+The measurements below were taken in October 2026, when rooms ran on a Node.js Socket.IO server.
+Since November 2026 rooms run in the hosting player's browser and guests connect over WebRTC, so the "server" figures now come from the host page's race loop.
+`npm run benchmark:multiplayer` runs the same scenarios against the current design, with a local signaling Worker; its `host-stall` scenario replaces `server-stall` by blocking the host page.
+
 ## Pre-optimization baseline
 
 Base revision `6e6e35984866d0138894329594153e70d7079717`. Diagnostics and benchmark only were added before measuring. `docs/performance/baseline.json` records environment, sample counts, percentiles, and raw response trials. No public service connections were used.

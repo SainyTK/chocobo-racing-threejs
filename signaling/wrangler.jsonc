@@ -1,0 +1,18 @@
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "chocobo-racing-signal",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-01",
+  "durable_objects": { "bindings": [{ "name": "ROOMS", "class_name": "RoomObject" }] },
+  // The free plan only offers SQLite-backed Durable Objects.
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["RoomObject"] }],
+  "vars": {
+    // The production page, Vercel previews of this project, Cloudflare quick tunnels from `npm run tunnel`, and local development.
+    "ALLOWED_ORIGINS": "https://cbr.sainytk.com,https://chocobo-racing-*.vercel.app,https://*.trycloudflare.com,http://localhost:*,http://127.0.0.1:*"
+  },
+  "routes": [{ "pattern": "cbr-signal.sainytk.com", "custom_domain": true }],
+  // The custom domain is the Worker's only public address.
+  "workers_dev": false,
+  "preview_urls": false,
+  "observability": { "enabled": true }
+}

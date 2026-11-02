@@ -17,15 +17,18 @@ test('impaired desktop and mobile six-racer driving, one-shot recovery and reloa
     await expect.poll(async()=>{const d=await debug(b);return d.race.racers.find((p:any)=>p.id===d.playerId).speed;}).toBeGreaterThan(1);
     await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
     await expect.poll(async()=>{const d=await debug(a);return d.race.racers.find((p:any)=>p.id===d.playerId).speed;}).toBeGreaterThan(1);
-    const d=await debug(a); expect(d.network.transport).toBe('websocket'); expect(d.race.racers).toHaveLength(6); expect(d.race.racers.filter((p:any)=>!p.bot)).toHaveLength(2);
+    const d=await debug(a); expect(d.network.transport).toBe('host'); expect((await debug(b)).network.transport).toBe('direct'); expect(d.race.racers).toHaveLength(6); expect(d.race.racers.filter((p:any)=>!p.bot)).toHaveLength(2);
     await a.evaluate(()=> { document.body.dispatchEvent(new KeyboardEvent('keyup',{code:'KeyW',bubbles:true})); document.body.dispatchEvent(new KeyboardEvent('keydown',{code:'KeyR',bubbles:true})); });
     await expect.poll(async()=>{const d=await debug(a);return d.race.racers.find((p:any)=>p.id===d.playerId).lastRescue;}).toBeGreaterThan(0);
     const at=(await debug(a)).race.racers.find((p:any)=>p.id===d.playerId).lastRescue;
     await a.waitForTimeout(4200); expect((await debug(a)).race.racers.find((p:any)=>p.id===d.playerId).lastRescue).toBe(at);
     await a.evaluate(()=>document.body.dispatchEvent(new KeyboardEvent('keyup',{code:'KeyR',bubbles:true})));
+    // A dropped guest redials; the reload below starts from the room link, which no longer carries ?netPerf.
+    await contexts[1].setOffline(true); await b.evaluate(()=>(window as any).__dropNetwork()); await expect.poll(async()=>(await debug(b)).connected).toBe(false); await contexts[1].setOffline(false); await expect.poll(async()=>(await debug(b)).connected, { timeout: 30000 }).toBe(true);
+    expect((await debug(b)).network.samples.correctionMeters.length).toBeGreaterThan(0);
     const before=await debug(b); await b.reload(); await expect(b.locator('#place')).toBeVisible(); expect((await debug(b)).playerId).toBe(before.playerId); expect((await debug(b)).race.id).toBe(before.race.id);
-    await contexts[0].setOffline(true); await a.evaluate(()=>(window as any).__dropNetwork()); await expect.poll(async()=>(await debug(a)).connected).toBe(false); await contexts[0].setOffline(false); await expect.poll(async()=>(await debug(a)).connected).toBe(true);
-    expect((await debug(a)).network.samples.correctionMeters.length).toBeGreaterThan(0); expect(errors).toEqual([]);
-    for(const p of [a,b]) { await p.getByRole('button',{name:'Pause menu'}).click(); await p.getByRole('button',{name:'Exit race',exact:true}).click(); await p.getByRole('button',{name:'Exit race',exact:true}).click(); }
+    expect(errors).toEqual([]);
+    // The guest leaves first: the host leaving ends the room and sends the guest home.
+    for(const p of [b,a]) { await p.getByRole('button',{name:'Pause menu'}).click(); await p.getByRole('button',{name:'Exit race',exact:true}).click(); await p.getByRole('button',{name:'Exit race',exact:true}).click(); }
   } finally { await Promise.all(contexts.map(c=>c.close())); }
 });

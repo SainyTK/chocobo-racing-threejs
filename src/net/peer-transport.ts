@@ -4,7 +4,7 @@ import { randomHex } from '../../shared/random-id.ts';
 import { parseFrame, type HostFrame, type Pipe } from './pipe.ts';
 import { RelayPipe } from './relay-pipe.ts';
 import { RtcPipe } from './rtc-pipe.ts';
-import type { Signaling } from './signaling.ts';
+import { GuestSignaling, locateRoom } from './guest-signaling.ts';
 import { NoResponse, type Route, type Transport } from './transport.ts';
 
 /** How long a guest keeps trying to get back to a host it lost before telling the player the room is gone. */
@@ -15,7 +15,7 @@ const WELCOME_TIMEOUT_MS = 8000;
 
 /**
  * A guest's connection to a room that runs in another player's browser. It connects directly over WebRTC when the two
- * networks allow it and through the game server's relay otherwise, and redials after a drop with the same session.
+ * networks allow it and through the signaling Worker's relay otherwise, and redials after a drop with the same session.
  */
 export class PeerTransport implements Transport {
   onMessage: Transport['onMessage'] = () => {};
@@ -30,7 +30,17 @@ export class PeerTransport implements Transport {
   private nextId = 1;
   private readonly pending = new Map<number, { resolve: (result: unknown) => void; reject: (error: Error) => void; timer: ReturnType<typeof setTimeout> }>();
 
-  constructor(readonly code: string, private readonly iceServers: IceServer[], private readonly signaling: Signaling, private token: string) {}
+  private readonly signaling: GuestSignaling;
+  /** Receives handshake steps for the direct attempt in progress. */
+  private onRtcSignal: (data: unknown) => void = () => {};
+  private relayPipe: RelayPipe | null = null;
+
+  constructor(readonly code: string, private readonly iceServers: IceServer[], private token: string) {
+    this.signaling = new GuestSignaling(code);
+    this.signaling.onSignal = data => this.onRtcSignal(data);
+    this.signaling.onRelay = data => this.relayPipe?.deliver(data);
+    this.signaling.onDrop = () => this.relayPipe?.close();
+  }
   get connected() { return this.pipe !== null && this.live; }
   get route(): Route { return this.pipe?.route ?? 'direct'; }
 
@@ -61,8 +71,11 @@ export class PeerTransport implements Transport {
   send(event: string, data: unknown) { this.pipe?.send(JSON.stringify({ e: event, d: data }), false); }
   sendVolatile(event: string, data: unknown) { this.pipe?.send(JSON.stringify({ e: event, d: data }), true); }
   setToken(token: string) { this.token = token; }
+  /** Drops the current pipe as a network failure would, so the transport redials. Diagnostics only. */
+  drop() { this.pipe?.close(); }
   close() {
     this.closed = true;
+    this.signaling.close();
     clearTimeout(this.welcomeTimer);
     const pipe = this.pipe; this.pipe = null; this.live = false; pipe?.close();
     this.failPending();
@@ -94,44 +107,38 @@ export class PeerTransport implements Transport {
     if (Date.now() - this.lostAt > RECONNECT_DEADLINE_MS) { this.giveUp(`Lost the connection to the host of room ${this.code}.`); return; }
     setTimeout(() => {
       if (this.closed) return;
-      void this.signaling.locate({ code: this.code }).then(answer => {
-        if (answer?.peer || /reconnecting/.test(answer?.error || '')) this.connect();
-        else this.giveUp(answer?.error || `Room ${this.code} has closed.`);
-      }, () => this.connect());
+      void locateRoom(this.code).then(info => {
+        if (this.closed) return;
+        if (info.ok || info.retry) this.connect(); else this.giveUp(info.error);
+      });
     }, RETRY_MS);
   }
   private giveUp(message: string) { this.close(); this.onMessage('closed', { code: this.code, message }); }
 
-  /** A direct connection first; the game server's relay if none forms in time. Null when neither is possible now. */
+  /** A direct connection first; the signaling Worker's relay if none forms in time. Null when neither is possible now. */
   private async dial(): Promise<Pipe | null> {
+    if (!await this.signaling.connect() || this.closed) return null;
     const attempt = randomHex(8);
     let rtc: RtcPipe;
     // Some browsers and privacy settings turn WebRTC off; those players still get in through the relay.
-    try { rtc = new RtcPipe(this.iceServers, attempt, signal => this.signaling.signal(this.code, signal)); }
-    catch { return this.signaling.connected && !this.closed ? this.relay() : null; }
-    const unsubscribe = this.signaling.subscribe(event => {
-      if (event.type === 'signal' && event.message.code === this.code && (event.message.data as { attempt?: string })?.attempt === attempt) void rtc.receive(event.message.data as never).catch(() => rtc.close());
-    });
+    try { rtc = new RtcPipe(this.iceServers, attempt, signal => this.signaling.signal(signal)); }
+    catch { return this.relay(); }
+    this.onRtcSignal = data => { if ((data as { attempt?: string })?.attempt === attempt) void rtc.receive(data as never).catch(() => rtc.close()); };
     const direct = await new Promise<boolean>(resolve => {
       const timer = setTimeout(() => resolve(false), DIRECT_TIMEOUT_MS);
       rtc.onOpen = () => { clearTimeout(timer); resolve(true); };
       rtc.onClose = () => { clearTimeout(timer); resolve(false); };
       rtc.offer().catch(() => resolve(false));
     });
-    unsubscribe();
+    this.onRtcSignal = () => {};
     if (direct && !this.closed) return rtc;
     rtc.onClose = () => {}; rtc.close();
-    if (!this.signaling.connected || this.closed) return null;
     return this.relay();
   }
   private relay() {
-    let unsubscribe = () => {};
-    const pipe = new RelayPipe((text, volatile) => this.signaling.relay(this.code, text, volatile), () => unsubscribe());
-    unsubscribe = this.signaling.subscribe(event => {
-      if (event.type === 'relay' && event.message.code === this.code) pipe.deliver(event.message.data);
-      else if (event.type === 'host-gone' && event.message.code === this.code) pipe.close();
-      else if (event.type === 'status' && !event.connected) pipe.close();
-    });
+    if (!this.signaling.isOpen || this.closed) return null;
+    const pipe = new RelayPipe((text, volatile) => this.signaling.relay(text, volatile), () => { if (this.relayPipe === pipe) this.relayPipe = null; });
+    this.relayPipe = pipe;
     return pipe;
   }
 }

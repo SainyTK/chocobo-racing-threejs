@@ -251,3 +251,19 @@ The Online home view shows two cards of equal weight, Create a room and Join a r
   `online-room.e2e.ts` opens the invite on a phone at a quarter of the CPU speed with every server message held for 10 seconds, and the late joiner with messages held for 8 seconds while three races run. Both get in. With the old 7 second deadline the phone case fails. With no server at all, the error appears after about 19 seconds and 3 attempts.
 
 Not covered: no real phone was used.
+
+## Player-hosted rooms over WebRTC (November 2026)
+
+Rooms moved from the Railway Socket.IO server into the hosting player's browser. Guests connect over WebRTC data channels, or through the signaling Worker's relay when no direct connection forms. The Node server, Express, Socket.IO and the Dockerfile are gone.
+
+- `npm run check` passes for the page and the Worker, and `npx vitest run` passes 225 tests in 13 files.
+  `tests/room-host.test.ts` ports the former server tests to the room host through in-memory links. `tests/signal-origins.test.ts` covers the Worker's origin allowlist, including look-alike hosts.
+- `npm run test:production` passes: the built page with a local Worker, a direct guest, host-authoritative movement, guest reload recovery, the host's exit closing the room, and an offline race afterwards.
+- Playwright: the full suite passed 25 of 27 before two test fixes, then `peer-room.e2e.ts`, `online-room.e2e.ts`, `network.e2e.ts` and the two-client race in `browser.e2e.ts` passed after them.
+  `peer-room.e2e.ts` covers a phone guest over direct WebRTC, a guest with WebRTC disabled over the relay, guest reload, input reaching the host, the host's exit, and the host tab closing without a goodbye.
+  The full suite once hung after its last test: `npm run dev` started Wrangler and Vite in their own process groups, so Playwright's shutdown missed them. They now share the dev server's group.
+- `npm run benchmark:multiplayer` runs the clean, delayed and host-stall scenarios: about 0.1 ms per host tick and at most one snapshot per loop after the stall.
+- The deployed Worker at `cbr-signal.sainytk.com` answers `/health`, refuses other origins with 403 and sends CORS headers to `https://cbr.sainytk.com`.
+- The owner tested a player-hosted room on a real phone over mobile data through `npm run tunnel` before the Worker replaced Railway.
+
+Not covered: Safari and Firefox WebRTC, and a hidden desktop host tab keeping 60 Hz (headless Chromium does not throttle hidden tabs).

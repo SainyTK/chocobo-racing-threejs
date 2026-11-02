@@ -1,6 +1,6 @@
 # Chocobo Racing browser remake
 
-A free, open-source racing game that aims to recreate the feel of old-school games like Chocobo Racing using modern web technologies. Built with TypeScript, Three.js, WebGL, Node.js and Socket.IO, it runs in the browser and supports local races and private online rooms.
+A free, open-source racing game that aims to recreate the feel of old-school games like Chocobo Racing using modern web technologies. Built with TypeScript, Three.js, WebGL and WebRTC, it runs in the browser and supports local races and private online rooms that run in a player's browser.
 
 This playable, unofficial fan interpretation of the 1999 PlayStation racer has free driving, ten racers (the eight Story racers with their vehicles, plus Bahamut on his own wings and Cloud on his motorbike) and an original-style Magic Stone system.
 
@@ -8,7 +8,7 @@ This playable, unofficial fan interpretation of the 1999 PlayStation racer has f
 
 [Play in your browser](https://cbr.sainytk.com/), or follow the instructions below to play locally.
 
-The public server uses Railway's free credits. It can sleep when idle and may be unavailable when credits run out. Rooms disappear when the server sleeps, restarts or deploys.
+Online rooms run in the browser of the player who creates them. A small Cloudflare Worker introduces players to each other and relays traffic for players who cannot connect directly. It runs on Cloudflare's free plan.
 
 This is not an identical port. Models, music, animations, maps and physics tuning are newly authored. Character and course names reference Square Enix's game. No original game files are bundled or required. The project is not affiliated with Square Enix.
 
@@ -36,6 +36,7 @@ npm run dev
 ```
 
 Open http://localhost:3000.
+`npm run dev` also runs the signaling Worker locally on port 8787 with Wrangler, so online rooms work offline on this computer.
 
 - Quick Race: six racers on the selected course, with CPU opponents.
 - Grand Prix: four courses, cumulative points, changing grids and a final champion.
@@ -67,25 +68,22 @@ Inside the room, every player picks a racer and ability and can change their nam
 Everyone sees each change in the room's racer list as it happens.
 The room starts with your last racer, ability and name.
 The host sets the course, laps and class, and starts the race.
-**Back to home** keeps your place for 60 seconds while others see you as Away.
+For guests, **Back to home** keeps your place for 60 seconds while others see you as Away.
 Enter the same code again, or reopen the link, to return to the same place.
-If the host goes home, the next player present becomes host.
 If a code is wrong, or the room is full, closed or already racing, the join card on the home page says so.
 
-#### Rooms hosted on a player's device
+#### Where a room runs
 
-The Create card has a **Race runs on** choice.
-**Race server** runs the room on the game server, as above.
-**My device** runs the room in the creating player's browser tab, and the other players connect to that tab.
-The game server only hands out the code and introduces the players to each other.
+A room runs in the browser tab of the player who created it, and the other players connect to that tab.
+The signaling Worker only hands out the code and introduces the players to each other.
 Guests connect straight to the host over WebRTC when their networks allow it.
-When they cannot, for example behind some mobile carriers or with WebRTC turned off, their traffic goes through the game server instead.
+When they cannot, for example behind some mobile carriers or with WebRTC turned off, their traffic is relayed through the Worker instead.
 The room shows how you are connected: HOSTED HERE, DIRECT P2P or P2P VIA RELAY, and the race HUD shows HOST, P2P or RELAY next to the ping.
 
 The host's tab is the room.
-Keep it open and in front: if the host goes home, exits or closes the tab, the room ends and every guest sees that the host closed it.
+Keep it open and in front: if the host goes home, exits, reloads or closes the tab, the room ends and every guest sees that it closed.
 Phones pause background tabs, so a phone host should not switch apps during a race.
-A guest who drops or reloads gets the same place back, as in a server room.
+A guest who drops or reloads gets the same place back.
 
 ### Driving
 
@@ -245,7 +243,7 @@ Online races skip the slow motion, and Time Attack skips the podium.
 Escape, Enter, Space or a click skips to the next shot.
 Finished racers roll to a stop at the roadside.
 
-Local menus pause the race. Online rooms continue running. Disconnected online racers get CPU control and can reconnect within 60 seconds, including after a page reload.
+Local menus pause the race. Online rooms continue running. Disconnected guests get CPU control and can reconnect within 60 seconds, including after a page reload.
 
 ### Music
 
@@ -261,13 +259,12 @@ Music starts after a click, tap or driving key because browsers require a user g
 
 ## Play on another device
 
-The server listens on `0.0.0.0`. Use this computer's LAN IP on devices on the same network, for example `http://192.168.1.20:3000`. Open the LAN address before copying an invite. A localhost link cannot reach another computer. Allow the port through the host firewall.
-
-For temporary internet play without deployment, use the tunnel setup below. For permanent hosting, deploy the Node server on a reachable HTTPS host with WebSocket support. Static-file hosting alone is insufficient.
+`npm run dev` listens on `0.0.0.0`, but the page looks for the signaling Worker on `localhost`, so another device cannot open rooms through it.
+To play from other devices, on the same network or not, use the tunnel below.
 
 ### Test online multiplayer locally with cloudflared
 
-A Cloudflare Quick Tunnel gives this computer's game server a temporary public HTTPS URL. Teammates can join from computers or phones on different networks without deploying to Railway. The host computer must stay awake with the command running. This tests internet play through the host computer and Cloudflare, not the production Singapore Railway route.
+A Cloudflare Quick Tunnel gives this computer's build of the game a temporary public HTTPS URL. Teammates can join from computers or phones on different networks without deploying. The computer must stay awake with the command running. Rooms find each other through the production signaling Worker, which accepts quick-tunnel origins.
 
 Install Node.js 22.12 or newer and [cloudflared](https://developers.cloudflare.com/tunnel/downloads/). Quick Tunnel instructions and limitations are in [Cloudflare's documentation](https://developers.cloudflare.com/tunnel/get-started/quick-tunnels/). On macOS with Homebrew, install it with `brew install cloudflared`.
 
@@ -277,13 +274,13 @@ Install Node.js 22.12 or newer and [cloudflared](https://developers.cloudflare.c
    npm run tunnel
    ```
 
-   Run `npm ci` first if dependencies are not installed. This command checks for cloudflared and a free port, builds the game, starts the production server on port `3219`, and opens the tunnel. No second terminal or manual origin configuration is needed. It uses the server's same-origin check for multiplayer, overriding any inherited `ALLOWED_ORIGINS` setting for this test session.
+   Run `npm ci` first if dependencies are not installed. This command checks for cloudflared and a free port, builds the game, serves the build on port `3219`, and opens the tunnel.
 
-   To use another port, run `PORT=3000 npm run tunnel`. If the port is occupied, the command stops rather than exposing another server.
+   To use another port, run `PORT=3000 npm run tunnel`. If the port is occupied, the command stops rather than exposing another service.
 
 2. Copy the actual `https://...trycloudflare.com` URL printed by cloudflared. It changes whenever the tunnel restarts. Keep the command running.
 
-3. Open the same tunnel URL on every device. Choose **Online**, create a room on one device, then join its six-character room code on the others, or send them the room's invite link. Each player picks a racer inside the room. Open the tunnel URL before copying an invite; a localhost invite does not work on a teammate's phone. With two players, the remaining four racers are CPU-controlled. On a phone, steer with your left thumb anywhere on the lower left and push that stick up to drive, or hold DRIVE with your right thumb. MAGIC and the ability button sit above DRIVE, and DRIFT and BRAKE sit next to it. Use mobile data on the phone to test separate internet connections, or the same Wi-Fi for a same-network test through the tunnel.
+3. Open the same tunnel URL on every device. Choose **Online**, create a room on one device, then join its six-character room code on the others, or send them the room's invite link. Each player picks a racer inside the room. Open the tunnel URL before copying an invite; a localhost invite does not work on a teammate's phone. With two players, the remaining four racers are CPU-controlled. On a phone, steer with your left thumb anywhere on the lower left and push that stick up to drive, or hold DRIVE with your right thumb. MAGIC and the ability button sit above DRIVE, and DRIFT and BRAKE sit next to it. Use mobile data on the phone to test separate internet connections.
 
 4. Optionally append `/?netPerf` to the tunnel URL to collect bounded frame/network diagnostics. Do not add `netDelay`, `netJitter` or `netDrop` for a real-connection test. Desktop Chrome's developer console can copy the telemetry with:
 
@@ -293,7 +290,7 @@ Install Node.js 22.12 or newer and [cloudflared](https://developers.cloudflare.c
 
    Record the device/browser, graphics setting and connection type alongside the telemetry. Try normal play without diagnostics too. See [multiplayer measurements and test methodology](docs/multiplayer-performance.md).
 
-Share the temporary URL only with the test team; anyone with it can access the local game service. This is a testing tunnel, not permanent hosting. When finished, press Ctrl+C to stop the server and cloudflared. Cancellation during the build also stops the build processes. If the server or tunnel exits unexpectedly, the command stops the other process too. No Railway deployment, paid service or billing change is needed.
+Share the temporary URL only with the test team. This is a testing tunnel, not permanent hosting. When finished, press Ctrl+C to stop the page server and cloudflared. Cancellation during the build also stops the build processes. If the page server or tunnel exits unexpectedly, the command stops the other process too.
 
 ## Studio
 
@@ -304,7 +301,7 @@ Characters include their hit, cast, overtake, win and lose reactions, and the ef
 npm run studio
 ```
 
-It opens http://localhost:5180 with its own Vite server, separate from the game server.
+It opens http://localhost:5180 with its own Vite server, separate from `npm run dev`.
 The production build does not include it.
 
 To listen without opening the game, search for `music` or scroll to the Music category. Select one of the courses or Menu music, then press **Play music**. The menu and the original eight courses each have a **Revised composition** used in the game and a **Previous composition** for before/after review; Fantasia, written after the revision, has only its composition. Choose the variant or press **All variants** to compare them in separate panes. Both versions use the updated instruments, so this compares the composition, not the old synthesizer sound.
@@ -343,66 +340,24 @@ The gimmicks themselves (pads, patches, ramps, gaps, railings, shortcuts and haz
 `tests/stage.test.ts` builds every course headless and checks budgets, disposal, Low-quality detail hiding, and that nothing stands on the road or a shortcut between the surface and 9 m overhead, where the chase camera rides. Moving hazard parts are skipped, since they enter the racing line on purpose.
 `tests/courses.test.ts` checks that every gimmick sits on its course, that shortcuts leave and rejoin the road at their join angle, and the jump, gap, hazard and shortcut-stone rules.
 
-## Production
-
-```sh
-npm run build
-ALLOWED_ORIGINS=https://racing.example.com PORT=3000 npm start
-```
-
-`ALLOWED_ORIGINS` accepts comma-separated exact origins. Without it, the server accepts matching Origin/Host pairs. Set it explicitly behind a reverse proxy and forward WebSocket upgrades.
-
-```sh
-docker build -t chocobo-racing .
-docker run --rm -p 3000:3000 \
-  -e ALLOWED_ORIGINS=http://localhost:3000 \
-  chocobo-racing
-```
-
-`ICE_SERVERS` optionally sets the WebRTC ICE servers that player-hosted rooms use, as a JSON array such as `[{"urls":"turn:turn.example.com:3478","username":"u","credential":"p"}]`. Without it, guests use public STUN servers and fall back to the game server relay.
-
-`GET /health` reports health, server rooms, player-hosted rooms and connections. The server is a single process with in-memory rooms. Restarting it clears rooms. Do not run unsynchronized replicas. Public hosting also needs infrastructure rate limiting and monitoring.
-
 ## Deployment
 
-The game page is served from Vercel at https://cbr.sainytk.com.
-The authoritative multiplayer server is a single Railway service in Singapore, and the page opens its Socket.IO connection to it.
-The Railway service also still serves the page itself at its own URL. The existing Dockerfile builds and starts both.
-No database is required.
+The game is a static page plus a small signaling Worker. No database or game server is required.
 
-The Railway project is `hearty-analysis`, service `chocobo-racing-threejs`, environment `production`. GitHub auto-deployment is connected to `main`. It uses one replica, `/health` for deployment checks, and idle sleeping.
-`ALLOWED_ORIGINS` is `https://chocobo-racing-threejs-production.up.railway.app,https://cbr.sainytk.com`.
-
-The Vercel project builds with `npm run build` into `dist` (see `vercel.json`).
-Its production environment sets `VITE_SERVER_URL` to `https://chocobo-racing-threejs-production.up.railway.app`, which `src/network.ts` uses as the Socket.IO server.
-When `VITE_SERVER_URL` is unset, the page connects to its own origin, as in development and on Railway.
-The client uses the WebSocket transport only, so the server's origin check in `ALLOWED_ORIGINS` is the only cross-origin setting.
-Vercel preview URLs are not in `ALLOWED_ORIGINS`, so multiplayer works only on the production domain.
+The page is served from Vercel at https://cbr.sainytk.com.
+The Vercel project builds with `npm run build` into `dist` (see `vercel.json`) and deploys every push to `main`.
+Builds point the page at the production Worker, `https://cbr-signal.sainytk.com` (set in `vite.config.ts`). Set `VITE_SIGNAL_URL` at build time to use another one.
 The DNS record `cbr` in the `sainytk.com` Cloudflare zone is a DNS-only A record to Vercel (`76.76.21.21`).
 
-Hosting stays on the free Trial, which automatically reverts to the Free plan with $1 monthly credit [3]. No paid subscription was created. Uptime depends on available credits. Idle sleeping reduces usage but active multiplayer connections can keep the server awake.
+The signaling Worker in `signaling/` runs on Cloudflare's free plan, with one SQLite-backed Durable Object per room code.
+It reserves codes, passes WebRTC offers, answers and ICE candidates between a room's host and its guests, and relays game traffic for guests that cannot connect directly.
+Deploy it with `npm run deploy:signal`, which needs Wrangler signed in to the Cloudflare account (`npx wrangler login`).
+Its custom domain `cbr-signal.sainytk.com` is set in `signaling/wrangler.jsonc`, and Cloudflare manages its DNS record.
+`ALLOWED_ORIGINS` there lists the pages that may use it: production, Vercel previews of this project, quick tunnels and localhost.
+`ICE_SERVERS` optionally sets the WebRTC ICE servers as a JSON array, for example to add a TURN server: `[{"urls":"turn:turn.example.com:3478","username":"u","credential":"p"}]`. Without it, browsers use public STUN servers.
+`GET /health` answers when the Worker is up, and `GET /rooms/<code>` says whether a code can be joined.
 
-Railway detects a repository Dockerfile automatically [1]. Use the repository root, branch `main`, one replica, a public HTTPS domain and healthcheck path `/health`. The server listens on `0.0.0.0` and reads Railway's `PORT` variable [2]. Set `ALLOWED_ORIGINS` to the exact public page origin, without a trailing slash. Add any custom-domain origin as another comma-separated value. Rooms live in memory and disappear on restart or deployment.
-
-### What to provide before deployment
-
-- Choose Railway-only, or Vercel frontend plus Railway backend. Railway-only needs no frontend/backend split.
-- Confirm the Railway workspace, project, environment and service name. Say whether to create a new project or use an existing one, and provide its ID or dashboard URL if it exists.
-- Authenticate Railway locally through its CLI, or connect Railway to GitHub and authorize access to this repository. Registration alone does not grant deployment access.
-- Specify the region nearest your players, an approved monthly hosting budget, and whether pushes to `main` should deploy automatically.
-- Choose a provider-generated domain or supply your custom domain and confirm you can edit its DNS.
-- If using Vercel, also supply the team/account scope and project name or existing project ID. Run `vercel login` locally and authorize GitHub access if using Git-based deployments.
-- Explicitly approve creating services or additional deployments. Do not upgrade the existing deployment to a paid plan without approval.
-
-Do not paste account passwords, API tokens or session cookies into chat. Sign in locally or store required credentials through the provider's secure settings. This game currently needs no third-party API keys.
-
-### Deployment sources
-
-[1] [Railway services and Dockerfile detection](https://docs.railway.com/services)
-
-[2] [Railway healthchecks and the PORT variable](https://docs.railway.com/deployments/healthchecks)
-
-[3] [Railway Free Trial and transition to the Free plan](https://docs.railway.com/pricing/free-trial)
+On the free plan the Worker allows 100,000 requests a day, reset at midnight UTC. Incoming WebSocket messages count as one request per 20 messages. Joining a room takes a few dozen messages; a relayed guest sends about 50 a second, so relayed play uses the allowance fastest. When it runs out, new joins fail until the reset.
 
 ## Tests
 
@@ -414,6 +369,7 @@ npx playwright install chromium
 npm run test:e2e
 npm run test:production
 npm run test:studio
+npm run benchmark:multiplayer
 
 # Optional WebKit compatibility check, with the dev server running
 npx playwright install webkit
@@ -436,7 +392,9 @@ Reports are in `output/playwright-report/`; screenshots are in `output/testing/`
   Race setup is in `setup.ts`, the inventory in `inventory.ts`, spell targets in `targeting.ts`, spell hits in `combat.ts`, item and ability use in `actions.ts`, jumps in `air.ts` and ground grip in `traction.ts`.
   The CPU driver is `bot.ts`, which combines `bot-driving.ts` (pedals, steering and pace), `bot-course.ts` (shortcuts and hazards) and `bot-magic.ts` with `bot-personalities.ts` (casting).
   `step/` runs one tick: per-racer physics, walls and course edges, pads and hazards, finished racers, projectiles, racer contacts and standings.
-- `server/index.ts`: authoritative room server, sessions, lobby racer changes, held places for players who step away, and input validation.
+- `shared/room/`: the room host that runs in the hosting player's page: lobby, sessions, lobby racer changes, held places for players who step away, input validation and the 60 Hz authoritative race loop.
+- `signaling/`: the Cloudflare Worker that reserves room codes, introduces guests to hosts and relays traffic for guests that cannot connect directly. `shared/signal-protocol.ts` lists its messages.
+- `src/net/`: the hosting page's room (`peer-host.ts`), a guest's connection to it (`peer-transport.ts`) over a WebRTC data channel (`rtc-pipe.ts`) or the Worker relay (`relay-pipe.ts`), the hosting player's own seat (`local-transport.ts`), and the Worker connections (`host-signaling.ts`, `guest-signaling.ts`).
 - `src/scene.ts`: course loading, pickups, shadows, bloom post-processing and 3D-rendered portraits.
 - `src/gfx/camera/`: the chase camera (`chase.ts`), its framing per screen shape (`framing.ts`) and the finish orbit and podium shots (`finish.ts`). `src/gfx/finish-stage.ts` and `src/gfx/podium.ts` stage those shots.
 - `src/gfx/characters/`: the racers. All ten are skinned GLBs made by the Blender pipeline in `scripts/characters/` (see `docs/characters.md`), drawn with cel shading and outlines. Chocobo's skate wheels, Mog's scooter wheels and fork, Chubby Chocobo's trike wheels and fork, Cloud's wheels and fork, Golem's wheels and steering knuckles, Goblin's cart wheels and front-wheel steering, and Behemoth's road wheels and track pads are bones the game turns in code, and White Mage's carpet is a chain of bones her clips ripple; Mog's pom-pom antenna and Goblin's lantern swing on a spring in code, and the tip of Black Magician's hat sways in code.
@@ -459,7 +417,7 @@ Reports are in `output/playwright-report/`; screenshots are in `output/testing/`
 - `src/finish-sequence.ts`: timing of the slow motion, orbit and podium after the player finishes.
 - `src/touch-controls.ts`, `src/touch-steering.ts` and `src/mobile-hud.ts`: the two-thumb touch controls. `src/touch-layout.css` holds the geometry tokens that `src/touch-controls.css` and `src/touch-hud.css` share.
 - `studio/`: the internal element viewer (`npm run studio`). `registry.ts` lists the elements, `elements/` defines them by category and `viewport.ts` renders one pane. `music-player.ts` previews the game's scores in the active music pane.
-- `src/network.ts`: reconnects, world-space interpolation and bounded extrapolation.
+- `src/network.ts`: creating and joining rooms, world-space interpolation and bounded extrapolation.
 - `src/audio.ts`: Web Audio instruments, stage music scheduling, sound playback and engine loops.
 - `src/sfx/`: synthesized sound recipes, character voices and engine profiles. `src/race-audio.ts` maps race events to them.
 - `src/music/`: separate original scores for all nine courses, menu music and shared score types.
@@ -479,4 +437,4 @@ This project's code and newly authored assets are released under the [MIT licens
 
 This is a fan remake, not an emulator or an exact reproduction. Story, Relay, secret racers other than Bahamut and Cloud, the F.F.VIII Circuit bonus track, original cutscenes, custom stat editing, split-screen and the original soundtrack are not included. Course layouts and handling differ from the PlayStation game; Fantasia follows the original map most closely, but its opening loops do not cross over themselves. See [the Fantasia notes](docs/fantasia.md). Time Attack records live only in local storage and are grouped by course, laps and ability. Ghost saves require a race under five minutes and available browser storage.
 
-Online driving uses bounded local prediction and server reconciliation. Collisions, pickups, abilities and race results remain authoritative, so network delays can still cause visual corrections. Public matchmaking, accounts and durable online leaderboards are not implemented. Keyboard and emulated touch tests do not establish physical gamepad or real-phone compatibility; test your devices with the tunnel workflow above.
+Online driving uses bounded local prediction and reconciliation with the host's race. Collisions, pickups, abilities and race results remain authoritative, so network delays can still cause visual corrections. Public matchmaking, accounts and durable online leaderboards are not implemented. Keyboard and emulated touch tests do not establish physical gamepad or real-phone compatibility; test your devices with the tunnel workflow above.

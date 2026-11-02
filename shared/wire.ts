@@ -1,9 +1,8 @@
 import type { Race, Racer } from './game/types.ts';
 /**
  * Fixed-order snapshots: the fields avoid repeating JSON property names at 20 Hz. Full initial state establishes static
- * metadata. A client sends `WIRE_VERSION` when it connects; the server refuses a fixed-order client of another version,
- * which would read every field after a change at the wrong index. Bump it whenever `DYNAMIC_FIELDS` changes.
- * Clients that send no version (v1) keep receiving full JSON state until they reload.
+ * metadata. A guest sends `WIRE_VERSION` in its hello; the room host refuses a guest of another version, which would
+ * read every field after a change at the wrong index. Bump it whenever `DYNAMIC_FIELDS` changes.
  * Version 3 added Bahamut's `flare`.
  * Version 4 dropped `Input.reverse`: brake reverses once the racer stops, and an older client would predict otherwise.
  * Version 5 added lobby racer changes (`profile`), stepping away (`away`) and the room class.

@@ -6,10 +6,9 @@ import { racerGridHtml } from '../racer-grid.ts';
 import { abilityPickerHtml } from '../ability-picker.ts';
 
 type Member = RoomView['members'][number];
-/** Where this room runs, as this player reaches it. Server rooms need no label. */
-const ROUTE_LABEL: Record<Route, string> = { server: '', host: 'HOSTED HERE', direct: 'DIRECT P2P', relay: 'P2P VIA RELAY' };
+/** How this player reaches the room, which runs in the host's browser. */
+const ROUTE_LABEL: Record<Route, string> = { host: 'HOSTED HERE', direct: 'DIRECT P2P', relay: 'P2P VIA RELAY' };
 const FINE_PRINT: Record<Route, string> = {
-  server: 'Going home keeps your place for 60 seconds. Enter the code again to come back.',
   host: 'This room runs in your browser. Keep this tab open and in front: going home or closing the tab ends the room for everyone.',
   direct: 'This room runs in the host’s browser. Going home keeps your place for 60 seconds. Enter the code again to come back.',
   relay: 'This room runs in the host’s browser. Going home keeps your place for 60 seconds. Enter the code again to come back.',
@@ -26,7 +25,7 @@ export function roomPanelHtml(room: RoomView, me: Member, route: Route, portrait
   }).join('');
   const select = (id: string, label: string, options: string) => `<label>${label}<select id="${id}" aria-label="Room ${label.toLowerCase()}" ${lock}>${options}</select></label>`;
   return `<section class="panel setup room" aria-label="Online room">
-<div class="room-head"><div><div class="section-title">ONLINE ROOM · ${room.members.filter(m => m.connected).length} / ${GRID_SIZE}</div>${route === 'server' ? '' : `<span class="room-route">${ROUTE_LABEL[route]}</span>`}<span class="room-code-label">CODE <strong id="room-code">${room.code}</strong></span></div><button data-action="copy">Copy invite</button></div>
+<div class="room-head"><div><div class="section-title">ONLINE ROOM · ${room.members.filter(m => m.connected).length} / ${GRID_SIZE}</div><span class="room-route">${ROUTE_LABEL[route]}</span><span class="room-code-label">CODE <strong id="room-code">${room.code}</strong></span></div><button data-action="copy">Copy invite</button></div>
 <div class="fields room-name"><label>NAME<input id="room-name" aria-label="Your name" value="${esc(me.name)}" maxlength="18" autocomplete="nickname"></label></div>
 ${racerGridHtml(me.character, portrait)}
 ${abilityPickerHtml(me.abilityId, 'room')}

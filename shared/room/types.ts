@@ -2,11 +2,11 @@ import type { AbilityId, DifficultyId, Race } from '../game/index.ts';
 import type { TrackId } from '../track/index.ts';
 
 /**
- * One player's connection to a room host, whatever carries it: a Socket.IO socket on the game server, a WebRTC data
- * channel to a player-hosted room, or a direct in-page call for the hosting player.
+ * One player's connection to the room host, whatever carries it: a WebRTC data channel, the signaling Worker's relay,
+ * or a direct in-page call for the hosting player.
  */
 export interface Link {
-  /** The fixed-order wire version the client announced, or undefined for a v1 client. */
+  /** The wire version the client announced in its hello. */
   readonly wire: number | undefined;
   /** Reliable, ordered delivery. */
   send(event: string, data: unknown): void;

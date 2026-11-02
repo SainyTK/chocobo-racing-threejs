@@ -1,12 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { spawn, type ChildProcess } from 'node:child_process';
-import { mkdtemp, writeFile, chmod, rm } from 'node:fs/promises';
+import { mkdtemp, mkdir, writeFile, chmod, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { createServer } from 'node:net';
 import { get } from 'node:http';
 
-// Stub the public tunnel and build commands; exercise the real game server and
+// Stub the public tunnel and build commands; exercise the real page server and
 // supervisor without publishing a service or rebuilding in each test.
 describe.skipIf(process.platform === 'win32')('one-command tunnel supervisor', () => {
   let dir: string;
@@ -29,6 +29,7 @@ describe.skipIf(process.platform === 'win32')('one-command tunnel supervisor', (
         setInterval(() => {}, 1000);
       }
     `);
+    await mkdir(join(dir, 'dist')); await writeFile(join(dir, 'dist', 'index.html'), '<!doctype html><title>stub page</title>');
     await writeFile(join(dir, 'cloudflared'), `#!/usr/bin/env node
       if (process.argv.includes('--version')) { console.log('stub cloudflared'); process.exit(0); }
       if (process.env.FAIL_TUNNEL) process.exit(3);
@@ -47,14 +48,14 @@ describe.skipIf(process.platform === 'win32')('one-command tunnel supervisor', (
     output = '';
     runner = spawn(process.execPath, ['scripts/tunnel.mjs'], {
       cwd: resolve('.'),
-      env: { ...process.env, PATH: `${dir}:${process.env.PATH}`, PORT: String(port), npm_execpath: join(dir, 'build.mjs'), ...extra },
+      env: { ...process.env, PATH: `${dir}:${process.env.PATH}`, PORT: String(port), PREVIEW_DIR: join(dir, 'dist'), npm_execpath: join(dir, 'build.mjs'), ...extra },
       stdio: ['ignore', 'pipe', 'pipe'],
     });
     for (const stream of [runner.stdout, runner.stderr]) stream!.on('data', chunk => { output += chunk; });
     exited = new Promise(resolve => runner!.once('exit', resolve));
   }
   // Resolves once the supervisor has printed `text`, or fails with its output if it exits first. Startup time depends on load
-  // (tsx compiles the real server), so readiness is awaited as an event, bounded by the test timeout, not polled for a second.
+  // (Vite starts the real page server), so readiness is awaited as an event, bounded by the test timeout, not polled for a second.
   function printed(text: string) {
     return new Promise<void>((resolve, reject) => {
       const check = () => { if (output.includes(text)) { done(); resolve(); } };
@@ -68,36 +69,32 @@ describe.skipIf(process.platform === 'win32')('one-command tunnel supervisor', (
   const gone = (pid: number) => {
     try { process.kill(pid, 0); return false; } catch { return true; }
   };
-  it('starts the server, accepts same-origin multiplayer, and stops both processes on Ctrl+C', async () => {
-    start({ ALLOWED_ORIGINS: 'https://stale.example' });
+  it('serves the built page, accepts the tunnel host, and stops both processes on Ctrl+C', async () => {
+    start();
     await printed('TUNNEL_READY=');
     const pid = Number(output.match(/TUNNEL_READY=(\d+)/)![1]);
-    expect((await fetch(`http://localhost:${port}/health`)).ok).toBe(true);
-    const socketUrl = `http://localhost:${port}/socket.io/?EIO=4&transport=polling`;
-    const handshake = (origin: string) => new Promise<number | undefined>((resolve, reject) => {
-      get(socketUrl, { headers: { Host: 'test.trycloudflare.com', Origin: origin } }, response => {
-        response.resume();
-        resolve(response.statusCode);
-      }).on('error', reject);
+    // fetch() cannot set Host, which is what the tunnel forwards.
+    const status = (host: string) => new Promise<number | undefined>((resolve, reject) => {
+      get(`http://localhost:${port}/`, { headers: { Host: host } }, response => { response.resume(); resolve(response.statusCode); }).on('error', reject);
     });
-    expect(await handshake('https://test.trycloudflare.com')).toBe(200);
-    expect(await handshake('https://unrelated.example')).toBe(403);
+    expect(await status('test.trycloudflare.com')).toBe(200); expect(await (await fetch(`http://localhost:${port}/`)).text()).toContain('stub page');
+    expect(await status('unrelated.example')).toBe(403);
     runner!.kill('SIGINT');
     expect(await exited).toBe(130);
     await expect.poll(() => gone(pid)).toBe(true);
-    await expect(fetch(`http://localhost:${port}/health`)).rejects.toThrow();
+    await expect(fetch(`http://localhost:${port}/`)).rejects.toThrow();
   });
-  it('stops the server when the tunnel fails', async () => {
+  it('stops the page server when the tunnel fails', async () => {
     start({ FAIL_TUNNEL: '1' });
     expect(await exited).toBe(3);
     expect(output).toContain('Tunnel stopped');
-    await expect(fetch(`http://localhost:${port}/health`)).rejects.toThrow();
+    await expect(fetch(`http://localhost:${port}/`)).rejects.toThrow();
   });
-  it('does not start a server after a failed build', async () => {
+  it('does not start the page server after a failed build', async () => {
     start({ FAIL_BUILD: '1' });
     expect(await exited).toBe(1);
     expect(output).toContain('Build exited with code 2');
-    expect(output).not.toContain('Starting the game');
+    expect(output).not.toContain('Serving the game');
   });
   it('cancels the build and its descendants', async () => {
     start({ SLOW_BUILD: '1' });
@@ -106,6 +103,6 @@ describe.skipIf(process.platform === 'win32')('one-command tunnel supervisor', (
     runner!.kill('SIGINT');
     expect(await exited).toBe(130);
     await expect.poll(() => gone(pid)).toBe(true);
-    expect(output).not.toContain('Starting the game');
+    expect(output).not.toContain('Serving the game');
   });
 });

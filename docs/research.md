@@ -351,13 +351,13 @@ Deliberate deviations:
 | Three.js | Retained for direct control of code-built 3D scenery, vehicle geometry and cameras. |
 | Phaser | Suitable for a 2D or pseudo-3D racer. Its authoritative multiplayer tutorial supports separating client input/rendering from server rules, but this project uses 3D geometry. [5] |
 | Colyseus | Strong alternative for room schemas and property-level state synchronization. Useful if bandwidth and persistent matchmaking justify migration. [6] |
-| Socket.IO | Retained for rooms, acknowledgements, reconnects and WebSocket fallback. It does not guarantee delivery of every event after disconnect. [7] |
-| Raw WebSocket | Smaller transport, but this application would need its own reconnect, heartbeats, room operations and acknowledgements. [9] |
-| WebRTC | Not chosen. Unreliable snapshots may help competitive racing, but signaling and connectivity add work. |
+| Socket.IO | Used until November 2026 for server-hosted rooms. Replaced when rooms moved into the host's browser, since only signaling needs a server. [7] |
+| Raw WebSocket | Carries signaling and the relay between browsers and the Cloudflare Worker. Reconnects, requests and acknowledgements are handled by the game's own peer protocol. [9] |
+| WebRTC | Chosen in November 2026. Guests connect to the hosting player's browser over data channels: a reliable ordered channel for requests and room state, and an unordered channel without retransmission for snapshots and held input. Guests that cannot connect directly are relayed through the signaling Worker. |
 | Full rigid-body physics | Not required for the current arcade solver. Movement is genuinely free, but uses a planar vehicle model projected onto the road's height. |
 | HTML UI | Semantic buttons, selects and event delegation keep the simulation independent of UI rendering. |
 
-The stack is TypeScript, Three.js, Vite, Node.js, Express, Socket.IO, Web Audio, Vitest and Playwright. The lockfile pins installed packages.
+The stack is TypeScript, Three.js, Vite, WebRTC, a Cloudflare Worker with Durable Objects for signaling, Web Audio, Vitest and Playwright. The lockfile pins installed packages.
 
 ## Simulation and multiplayer practices
 
@@ -365,15 +365,15 @@ The stack is TypeScript, Three.js, Vite, Node.js, Express, Socket.IO, Web Audio,
 
 Fiedler's accumulator design separates physics frequency from rendering frequency. Bounding elapsed time also prevents excessive catch-up work. [10]
 
-The simulation in `shared/game/` runs at 60 Hz. Local races run in the browser; online races run on the server. Both use the same code. Seeded random choices make repeatable tests possible. The browser uses requestAnimationFrame for display and caps accumulated frame time.
+The simulation in `shared/game/` runs at 60 Hz. Local races run in the browser; online races run in the hosting player's browser. Both use the same code. Seeded random choices make repeatable tests possible. The browser uses requestAnimationFrame for display and caps accumulated frame time.
 
 The solver advances world-space velocity and position. It does not set the player's heading to the road tangent. Projection determines route progress, surface, recovery and lap validation. A player can turn around, drive straight past a corner or leave a cliff. Sequential checkpoints prevent those shortcuts from awarding a lap.
 
 ### Authority and validation
 
-Online clients send only steering and button state. The server owns positions, pickups, hits, inventory, lap gates, finish times and ranking. Client-supplied coordinates have no effect. Host checks protect configuration, starting and rematching. Inputs must contain finite bounded steering and strict booleans.
+Guests send only steering and button state. The room host in the hosting player's page owns positions, pickups, hits, inventory, lap gates, finish times and ranking. Client-supplied coordinates have no effect. Host checks protect configuration, starting and rematching. Inputs must contain finite bounded steering and strict booleans.
 
-The server limits rooms to six members and 100 active rooms. It bounds message size, connection count, action frequency and input frequency. It sanitizes names and uses own-property checks for course IDs. Origin validation follows an explicit allowlist or matching Host rule. OWASP recommends origin validation, message-level authorization, payload validation and rate limits for WebSocket applications. [15]
+The room host limits rooms to six members. It bounds connection count, action frequency and input frequency, sanitizes names and uses own-property checks for course IDs. The signaling Worker bounds message size and rate per socket and accepts only an explicit origin allowlist. The hosting player controls the authoritative race, so a modified host page can cheat; rooms are private between friends. OWASP recommends origin validation, message-level authorization, payload validation and rate limits for WebSocket applications. [15]
 
 ### Snapshots and latency
 

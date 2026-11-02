@@ -10,19 +10,20 @@ async function open(browser: Browser, path: string, { noWebRtc = false, phone = 
   return { context, page, errors };
 }
 const roster = (page: Page) => page.getByRole('list', { name: 'Racers in this room' });
+/** What the signaling Worker says about a code. */
+const roomInfo = async (code: string) => (await fetch(`${process.env.SIGNAL_URL}/rooms/${code}`)).json();
 
 test('a room hosted on a player device races guests over direct WebRTC and the relay, and closes with its host', async ({ browser }) => {
   test.setTimeout(240000);
   const host = await open(browser, '/'), clients = [host];
   try {
     const a = host.page; await a.getByRole('button', { name: 'Online', exact: true }).click();
-    await a.getByRole('radio', { name: 'My device' }).check();
-    await expect(a.getByText('Your browser runs the race')).toBeVisible();
+    await expect(a.getByText('keep this tab open while you play')).toBeVisible();
     await a.getByRole('textbox', { name: 'Your name' }).fill('Host'); await a.getByRole('button', { name: 'Create room', exact: true }).click();
     const code = await a.locator('#room-code').innerText(); expect(code).toMatch(/^[0-9A-F]{6}$/);
     await expect(a.getByText('HOSTED HERE')).toBeVisible(); expect((await debug(a)).network.route).toBe('host');
-    // The game server knows the code but runs no room for it.
-    const health = await (await a.request.get('/health')).json(); expect(health.peerRooms).toBeGreaterThanOrEqual(1);
+    // The signaling Worker knows the code; the room itself runs in the host's page.
+    expect((await roomInfo(code)).ok).toBe(true);
 
     const direct = await open(browser, `/?room=${code}`, { phone: true }); clients.push(direct); const b = direct.page;
     await expect(b.locator('#room-code')).toHaveText(code, { timeout: 30000 }); await expect(b.getByText('DIRECT P2P')).toBeVisible();
@@ -60,7 +61,7 @@ test('a room hosted on a player device races guests over direct WebRTC and the r
     // When the host leaves, the room ends for everyone with a clear message.
     await a.getByRole('button', { name: 'Pause menu' }).click(); await a.locator('[data-action="exit"]').click(); await a.locator('[data-action="leave"]').click();
     for (const p of [b, c]) await expect(p.getByRole('alert')).toContainText(`The host closed room ${code}`, { timeout: 15000 });
-    await expect.poll(async () => (await (await a.request.get('/health')).json()).peerRooms).toBe(0);
+    await expect.poll(async () => (await roomInfo(code)).error).toMatch(/has closed/);
     for (const client of clients) expect(client.errors).toEqual([]);
   } finally { for (const client of clients) await client.context.close(); }
 });
@@ -70,12 +71,12 @@ test('guests learn the room is gone when the host tab closes without a goodbye',
   const host = await open(browser, '/'), clients = [host];
   try {
     const a = host.page; await a.getByRole('button', { name: 'Online', exact: true }).click();
-    await a.getByRole('radio', { name: 'My device' }).check(); await a.getByRole('button', { name: 'Create room', exact: true }).click();
+    await a.getByRole('button', { name: 'Create room', exact: true }).click();
     const code = await a.locator('#room-code').innerText();
     const direct = await open(browser, `/?room=${code}`), relayed = await open(browser, `/?room=${code}`, { noWebRtc: true }); clients.push(direct, relayed);
     for (const guest of [direct, relayed]) await expect(guest.page.locator('#room-code')).toHaveText(code, { timeout: 30000 });
     await host.context.close(); clients.shift();
-    // The game server still holds the code for a returning host, so each guest keeps retrying for a while before giving up.
+    // The signaling Worker holds the code for a returning host, so each guest keeps retrying for a while before giving up.
     for (const guest of [direct, relayed]) await expect(guest.page.getByRole('alert')).toContainText(/Lost the connection to the host|has closed/, { timeout: 90000 });
     for (const client of clients) expect(client.errors).toEqual([]);
   } finally { for (const client of clients) await client.context.close(); }
